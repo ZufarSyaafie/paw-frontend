@@ -4,7 +4,7 @@ import { colors } from "@/styles/colors"
 export default function Footer() {
   return (
     <footer 
-      className={`text-white py-8 mt-12`}
+      className={`text-white py-8`}
       style={{ backgroundColor: colors.textPrimary }}
     >
       <div className="max-w-7xl mx-auto px-4 text-center">
