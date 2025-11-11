@@ -57,7 +57,7 @@ export default function BookCard({
       
       <div className="p-4">
         <Link href={`/books/${id}`} className="w-full">
-          <Button className="w-full font-semibold transition-colors" style={{ backgroundColor: colors.info }}>
+          <Button className="w-full font-semibold transition-colors" variant="primary">
             View Details
           </Button>
         </Link>

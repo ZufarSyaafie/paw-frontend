@@ -24,7 +24,7 @@ export default function ForgotPasswordPage() {
   }
 
   const handleBackToLogin = () => {
-    router.push("/login")
+    router.push("/sign-in")
   }
 
   const handleResendEmail = () => {
@@ -94,8 +94,9 @@ export default function ForgotPasswordPage() {
 
             <div className="text-center space-y-2 mb-6">
               <p className="text-white/80">
-                We've sent a password reset link to <span className="font-semibold text-white">{email}</span>
+                We've sent a password reset link to
               </p>
+              <p className="font-semibold text-white">{email}</p>
               <p className="text-xs text-white/60">
                 Check your email and follow the instructions to reset your password. The link will expire in 24 hours.
               </p>
@@ -105,7 +106,7 @@ export default function ForgotPasswordPage() {
               onClick={handleBackToLogin}
               className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 text-base"
             >
-              Back to Login
+              Back to Sign In Page
             </Button>
 
             <p className="text-center text-sm text-white/70 font-medium">

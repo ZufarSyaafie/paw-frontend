@@ -72,7 +72,7 @@ export default function LoginPage() {
 
                 {/* Forgot Password */}
                 <div className="text-right">
-                    <a href="/forgot-password" className="text-sm text-cyan-300 hover:text-cyan-200 transition-colors">
+                    <a href="/forgot-password" className="text-sm text-white hover:text-cyan-200 transition-colors">
                         Forgot Password?
                     </a>
                 </div>
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 <Button
                     type="submit"
                     disabled={isLoading}
-                    className="w-full bg-gradient-to-r from-cyan-400 to-blue-500 text-white font-semibold py-3 rounded-lg hover:shadow-lg hover:shadow-cyan-400/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg hover:shadow-black-400/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isLoading ? "Signing in..." : "Sign In"}
                 </Button>
@@ -95,7 +95,7 @@ export default function LoginPage() {
             {/* Sign Up Link */}
             <p className="text-center text-sm text-white/70 mt-6">
                 Don't have an account?{" "}
-                <a href="/signup" className="text-cyan-300 font-semibold hover:text-cyan-200 transition-colors">
+                <a href="/sign-up" className="text-white font-semibold hover:text-cyan-200 transition-colors">
                     Create one
                 </a>
             </p>

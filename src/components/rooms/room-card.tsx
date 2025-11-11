@@ -70,7 +70,7 @@ export function RoomCard({ id, name, description, capacity, image, features, sta
           {/* Button */}
           <Button 
             className="w-full font-semibold transition-all"
-            style={{ backgroundColor: colors.info }}
+            variant="primary"
           >
             View Details & Book
           </Button>

@@ -133,12 +133,12 @@ export default function ProfilePage() {
                                         src={userData.profilePicture}
                                         alt={userData.username}
                                         className="w-32 h-32 rounded-full border-4"
-                                        style={{ borderColor: colors.info }}
+                                        style={{ borderColor: colors.primary }}
                                     />
                                     <button
                                         onClick={handleProfilePictureClick}
                                         className="absolute bottom-0 right-0 p-2 rounded-full text-white hover:opacity-90 transition-opacity"
-                                        style={{ backgroundColor: colors.info }}
+                                        style={{ backgroundColor: colors.primary }}
                                     >
                                         <Camera className="w-5 h-5" />
                                     </button>
@@ -204,26 +204,30 @@ export default function ProfilePage() {
                             <div className="space-y-2 pt-4 border-t border-slate-200">
                                 {isEditing ? (
                                     <>
+                                        {/* Save button - hijau */}
                                         <Button
                                             onClick={handleSaveProfile}
-                                            className="w-full text-white font-semibold py-2 rounded-lg transition-all"
-                                            style={{ backgroundColor: colors.info }}
+                                            variant="success"
+                                            className="w-full"
                                         >
                                             Save Changes
                                         </Button>
+
+                                        {/* Cancel button - abu-abu */}
                                         <Button
                                             onClick={handleCancel}
-                                            className="w-full font-semibold py-2 rounded-lg transition-colors"
-                                            style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                            variant="secondary"
+                                            className="w-full"
                                         >
                                             Cancel
                                         </Button>
                                     </>
                                 ) : (
+                                    /* Edit button - biru */
                                     <Button
                                         onClick={() => setIsEditing(true)}
-                                        className="w-full text-white font-semibold py-2 rounded-lg transition-all"
-                                        style={{ backgroundColor: colors.info }}
+                                        variant="primary"
+                                        className="w-full"
                                     >
                                         Edit Profile
                                     </Button>

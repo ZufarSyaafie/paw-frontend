@@ -63,9 +63,9 @@ export default function OTPPage() {
       // Hapus email dari localStorage karena sudah terverifikasi
       localStorage.removeItem("registrationEmail")
 
-      // 4. Arahkan ke halaman login (sesuai permintaan Anda)
+      // 4. Arahkan ke halaman sign-in (sesuai permintaan Anda)
       alert("Verifikasi berhasil! Silakan login.") // Opsional: beri notifikasi
-      router.push("/login")
+      router.push("/sign-in")
 
     } catch (err: any) {
       setError(err.message || "Verifikasi gagal. Silakan coba lagi.")

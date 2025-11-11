@@ -14,7 +14,7 @@ export function GoogleButton({ disabled, onClick, isLoading }: GoogleButtonProps
     <Button
       onClick={onClick}
       disabled={disabled}
-      className="w-full bg-white border border-slate-200 hover:bg-slate-50 text-slate-900 font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+      className="w-full bg-white/10 border border-slate-200 hover:bg-white/20 text-slate-900 font-semibold py-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
     >
       <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>

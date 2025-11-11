@@ -68,7 +68,7 @@ export default function Dashboard() {
 						href="/rooms"
 						label="Available Rooms"
 						value="1"
-						icon={<Users className="w-12 h-12" style={{ color: colors.primary }} />}
+						icon={<Users className="w-12 h-12" style={{ color: colors.success }} />}
 					/>
 					<StatCard
 						href="/announcements"
