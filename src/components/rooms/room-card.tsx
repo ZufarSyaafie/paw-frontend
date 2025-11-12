@@ -7,73 +7,82 @@ import { colors } from "@/styles/colors"
 type RoomCardProps = {
   id: string
   name: string
-  description: string
+  description?: string 
   capacity: number
-  image: string
-  features: string[]
+  photos: string[]
+  facilities: string[]
   status?: "available" | "booked"
 }
 
-export function RoomCard({ id, name, description, capacity, image, features, status = "available" }: RoomCardProps) {
+export function RoomCard({ id, name, description, capacity, photos, facilities, status = "available" }: RoomCardProps) {
+  const isAvailable = status === "available"
+
   return (
     <Link href={`/rooms/${id}`}>
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer h-full flex flex-col">
+      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-xl hover:shadow-blue-300/30 transition-all duration-300 cursor-pointer h-full flex flex-col hover:scale-[1.02]">
+        
         {/* Room Image */}
         <div className="bg-slate-100 h-48 flex items-center justify-center overflow-hidden">
           <img 
-            src={image} 
+            src={photos?.[0] || "https://via.placeholder.com/500x300?text=No+Image"} 
             alt={name} 
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
+            className="w-full h-full object-cover transition-transform duration-300" 
           />
         </div>
 
         <div className="p-4 flex flex-col flex-grow">
           {/* Room Name */}
-          <h3 className={`${typography.h4} hover:text-blue-500 transition-colors`}>
+           <h3 className={`${typography.h4} hover:text-cyan-600 transition-colors`}>
             {name}
           </h3>
 
-          {/* Description */}
-          <p className={`${typography.bodySmall} mt-1 flex-grow`}>
-            {description}
+         {/* Description */}
+          <p className={`${typography.bodySmall} mt-1 flex-grow line-clamp-2`}>
+            {description || "No description available."}
           </p>
 
           {/* Capacity */}
-          <div className="flex items-center gap-2 mt-3">
+           <div className="flex items-center gap-2 mt-3">
             <Users className="w-4 h-4" style={{ color: colors.textSecondary }} />
             <span className={`${typography.label}`}>Capacity: {capacity}</span>
           </div>
 
-          {/* Features */}
+          {/* Facilities */}
           <div className="flex flex-wrap gap-2 mt-3">
-            {features.map((feature, i) => (
+            {facilities?.slice(0, 3).map((facility, i) => (
               <span 
                 key={i} 
                 className={`${typography.labelSmall} bg-slate-100 px-2 py-1 rounded border border-slate-200`}
                 style={{ color: colors.textSecondary }}
               >
-                {feature}
+                 {facility}
               </span>
             ))}
           </div>
 
+     
           {/* Status */}
           <div className="mt-3 mb-3">
             <span 
               className={`${typography.label}`}
-              style={{ color: status === "available" ? colors.success : colors.danger }}
+               style={{ color: isAvailable ? colors.success : colors.danger }}
             >
-              {status === "available" ? "✓ Available" : "✗ Booked"}
+              {isAvailable ? "✓ Available" : "✗ Booked"}
             </span>
           </div>
 
           {/* Button */}
           <Button 
-            className="w-full font-semibold transition-all"
+            className={`w-full font-bold transition-all mt-2 ${
+                isAvailable 
+                     ? "bg-cyan-500 hover:bg-cyan-600" 
+                    : "bg-gray-400 cursor-not-allowed"
+            }`}
             variant="primary"
+            disabled={!isAvailable}
           >
             View Details & Book
-          </Button>
+           </Button>
         </div>
       </div>
     </Link>

@@ -1,28 +1,33 @@
 "use client"
 
-import { useState, useRef } from "react"
-import { Camera, Mail, Calendar, BookOpen, Users } from "lucide-react"
+import { useState, useRef, useEffect } from "react"
+import { Camera, Mail, Calendar, BookOpen, Users, Loader2, AlertCircle } from "lucide-react" 
 import { Button } from "@/components/ui/button"
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
-import type { User as UserType, UserActivity } from "@/types"
+import type { User as UserType, FrontendLoan, Booking } from "@/types"
+import { getAuthToken } from "@/lib/auth"
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 const STATUS_COLORS: Record<string, string> = {
-    active: "bg-emerald-50 text-emerald-700",
+    borrowed: "bg-cyan-50 text-cyan-700",
     upcoming: "bg-emerald-50 text-emerald-700",
     returned: "bg-slate-100 text-slate-600",
     completed: "bg-slate-100 text-slate-600",
     overdue: "bg-red-50 text-red-700",
     cancelled: "bg-red-50 text-red-700",
+    pending_payment: "bg-amber-50 text-amber-700", 
 }
 
 const STATUS_LABELS: Record<string, string> = {
-    active: "Active",
+    borrowed: "Borrowed",
     returned: "Returned",
     overdue: "Overdue",
     upcoming: "Upcoming",
     completed: "Completed",
     cancelled: "Cancelled",
+    pending_payment: "Pending Payment",
 }
 
 export default function ProfilePage() {
@@ -30,244 +35,431 @@ export default function ProfilePage() {
     const [isEditing, setIsEditing] = useState(false)
     const [activeTab, setActiveTab] = useState<"overview" | "books" | "rooms">("overview")
 
-    const [userData, setUserData] = useState<UserType>({
-        id: "user123",
-        username: "john_doe",
-        email: "john@example.com",
-        profilePicture: "https://api.dicebear.com/7.x/avataaars/svg?seed=john",
-        joinDate: "2024-01-15",
-        bio: "Book lover and study enthusiast",
-    })
+    const [userData, setUserData] = useState<UserType | null>(null)
+    const [userActivity, setUserActivity] = useState<{ loans: FrontendLoan[], bookings: Booking[] }>({ loans: [], bookings: [] })
+    
+    const [editedUsername, setEditedUsername] = useState("")
+    const [editedEmail, setEditedEmail] = useState("") 
+    const [editedBio, setEditedBio] = useState("")
 
-    const [editedUsername, setEditedUsername] = useState(userData.username)
-    const [editedBio, setEditedBio] = useState(userData.bio || "")
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
+    const [formError, setFormError] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
 
-    const [activity] = useState<UserActivity>({
-        borrowedBooks: [
-            {
-                id: "1",
-                bookId: "b1",
-                bookTitle: "The Great Gatsby",
-                bookAuthor: "F. Scott Fitzgerald",
-                borrowDate: "2024-11-01",
-                dueDate: "2024-11-15",
-                status: "active",
-            },
-            {
-                id: "2",
-                bookId: "b2",
-                bookTitle: "To Kill a Mockingbird",
-                bookAuthor: "Harper Lee",
-                borrowDate: "2024-10-20",
-                dueDate: "2024-11-03",
-                status: "returned",
-            },
-            {
-                id: "3",
-                bookId: "b3",
-                bookTitle: "1984",
-                bookAuthor: "George Orwell",
-                borrowDate: "2024-10-15",
-                dueDate: "2024-10-25",
-                status: "overdue",
-            },
-        ],
-        roomBookings: [
-            {
-                id: "r1",
-                roomId: "room1",
-                roomName: "Discussion Room A",
-                bookingDate: "2024-11-12",
-                timeSlot: "14:00 - 15:00",
-                status: "upcoming",
-            },
-            {
-                id: "r2",
-                roomId: "room2",
-                roomName: "Quiet Study Room",
-                bookingDate: "2024-11-10",
-                timeSlot: "10:00 - 11:00",
-                status: "completed",
-            },
-        ],
-    })
+    useEffect(() => {
+        const token = getAuthToken()
+        if (!token) {
+            setError("Authentication token not found.")
+            setIsLoading(false)
+            return
+        }
 
-    const handleProfilePictureClick = () => fileInputRef.current?.click()
+        const fetchUserData = async () => {
+             try {
+                const userRes = await fetch(`${API_URL}/api/users/me`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                 if (!userRes.ok) throw new Error("Failed to fetch user data.")
+                const userJson = await userRes.json() as UserType
+                
+                const userData = {
+                    ...userJson,
+                    username: userJson.name || userJson.username,
+                    joinDate: userJson.createdAt || new Date().toISOString(),
+                    profilePicture: userJson.profilePicture || "https://api.dicebear.com/7.x/avataaars/svg?seed=user_default"
+                }
 
+                setUserData(userData)
+
+                setEditedUsername(userData.username)
+                setEditedEmail(userData.email) 
+                setEditedBio(userData.bio || "")
+
+                localStorage.setItem('userProfilePicture', userData.profilePicture);
+                
+                const loansRes = await fetch(`${API_URL}/api/loans/my`, {
+                     headers: { "Authorization": `Bearer ${token}` }
+                })
+                const loansData = await loansRes.json() || []
+
+                const bookingsRes = await fetch(`${API_URL}/api/rooms/bookings/list`, {
+                    headers: { "Authorization": `Bearer ${token}` }
+                })
+                const bookingsData = await bookingsRes.json() || []
+
+                const processedLoans = loansData.map((loan: any) => {
+                    let status = loan.status as "borrowed" | "returned" | "overdue";
+                    const isOverdue = status === "borrowed" && new Date(loan.dueDate) < new Date();
+                    if (isOverdue) status = "overdue";
+                    return { ...loan, status: status } as FrontendLoan;
+                });
+                
+                const processedBookings = bookingsData
+                    .filter((b: Booking) => b.status !== "cancelled")
+                    .map((b: Booking) => ({
+                        ...b,
+                        displayStatus: b.status === "confirmed" ? "completed" : "pending_payment" 
+                    }));
+
+                setUserActivity({ loans: processedLoans, bookings: processedBookings })
+
+            } catch (err: any) {
+                console.error(err)
+                setError(err.message || "Failed to load profile data.")
+            } finally {
+                setIsLoading(false)
+             }
+        }
+
+        fetchUserData()
+    }, [])
+
+    const handleProfilePictureClick = () => {
+        const choice = window.confirm("Pilih 'OK' untuk upload file (hanya sementara, tidak tersimpan di database), atau 'Cancel' untuk memasukkan URL gambar (permanen).");
+
+        if (choice) {
+            // Pilihan 1: Upload File (Sementara)
+            fileInputRef.current?.click();
+        } else {
+            // Pilihan 2: Masukkan URL (Permanen)
+            const newImageUrl = window.prompt("Masukkan URL gambar online (e.g., https://i.imgur.com/...jpg):");
+            if (newImageUrl && newImageUrl.startsWith("http")) {
+                handleSaveProfilePictureUrl(newImageUrl);
+            } else if (newImageUrl) {
+                alert("URL tidak valid. Harus dimulai dengan 'http'.");
+            }
+        }
+    }
+
+    // Handler upload file (sementara)
     const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
+           const file = e.target.files?.[0]
         if (file) {
             const reader = new FileReader()
             reader.onloadend = () => {
-                setUserData({ ...userData, profilePicture: reader.result as string })
+                const tempUrl = reader.result as string;
+                setUserData({ ...userData!, profilePicture: tempUrl })
+                localStorage.setItem('userProfilePicture', tempUrl); 
+                window.dispatchEvent(new Event('storage')); // Trigger header
             }
             reader.readAsDataURL(file)
         }
     }
 
-    const handleSaveProfile = () => {
-        setUserData({ ...userData, username: editedUsername, bio: editedBio })
-        setIsEditing(false)
+    const handleSaveProfilePictureUrl = async (newUrl: string) => {
+        setIsSaving(true);
+        setFormError(null);
+        const token = getAuthToken();
+
+        try {
+            const response = await fetch(`${API_URL}/api/users/me`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    profilePicture: newUrl 
+                })
+            });
+
+            const updatedUser = await response.json();
+            if (!response.ok) throw new Error(updatedUser.message);
+
+            setUserData({ ...userData!, profilePicture: updatedUser.profilePicture });
+            localStorage.setItem('userProfilePicture', updatedUser.profilePicture);
+            window.dispatchEvent(new Event('storage')); 
+
+            alert("Foto profil berhasil diperbarui!");
+
+        } catch (err: any) {
+            alert(`Gagal update foto: ${err.message}`);
+        } finally {
+            setIsSaving(false);
+        }
     }
 
+    const handleSaveProfile = async () => {
+        
+        if (!window.confirm("Yakin mau simpan perubahan ini?")) {
+            return; 
+        }
+
+        setIsSaving(true);
+        setFormError(null);
+        const token = getAuthToken();
+        const oldEmail = userData?.email;
+
+        try {
+            const response = await fetch(`${API_URL}/api/users/me`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    username: editedUsername, 
+                    email: editedEmail, 
+                    bio: editedBio
+                })
+            });
+
+            const updatedUser = await response.json();
+
+            if (!response.ok) {
+                throw new Error(updatedUser.message || "Failed to save profile.");
+            }
+
+            setUserData({ 
+                ...userData!, 
+                username: updatedUser.name, 
+                bio: updatedUser.bio,
+                email: updatedUser.email,
+                isVerified: updatedUser.isVerified 
+            });
+            
+            if (oldEmail !== updatedUser.email && !updatedUser.isVerified) {
+                alert("Profile updated! Email Anda telah diganti dan sekarang UNVERIFIED. Silakan verifikasi email baru Anda.");
+            } else {
+                alert("Profile updated successfully!");
+            }
+            
+            setIsEditing(false);
+
+        } catch (err: any) {
+            setFormError(err.message || "An error occurred.");
+            alert(err.message || "An error occurred."); // Nampilin error spesifik
+        } finally {
+            setIsSaving(false);
+        }
+    }
+
+    // Handler Batal Edit
     const handleCancel = () => {
         setIsEditing(false)
-        setEditedUsername(userData.username)
-        setEditedBio(userData.bio || "")
+        setFormError(null);
+        setEditedUsername(userData!.username)
+        setEditedEmail(userData!.email) 
+        setEditedBio(userData!.bio || "")
     }
 
+    // Helper format tanggal
     const formatDate = (date: string) =>
         new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
+
+    
+    const isChanged = userData 
+        ? userData.username !== editedUsername || 
+          userData.email !== editedEmail || 
+          (userData.bio || "") !== editedBio 
+        : false;
+
+
+    // --- Render ---
+    if (isLoading) return (
+        <div className="flex justify-center items-center h-screen">
+            <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+            <p className="ml-3 text-gray-600 font-medium">Loading profile...</p>
+        </div>
+    )
+
+    if (error || !userData) return (
+         <div className="p-12 text-center">
+            <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
+            <h3 className="font-semibold text-red-800 mb-1">Error</h3>
+            <p className="text-sm text-red-700">{error || "User data not found."}</p>
+        </div>
+    )
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Profile Card */}
+                
+                     {/* Profile Card */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-6 shadow-sm">
                             {/* Profile Picture */}
-                            <div className="text-center">
+                             <div className="text-center">
                                 <div className="relative inline-block">
                                     <img
-                                        src={userData.profilePicture}
+                                         src={userData.profilePicture}
                                         alt={userData.username}
-                                        className="w-32 h-32 rounded-full border-4"
+                                         className="w-32 h-32 rounded-full border-4"
                                         style={{ borderColor: colors.primary }}
                                     />
-                                    <button
-                                        onClick={handleProfilePictureClick}
-                                        className="absolute bottom-0 right-0 p-2 rounded-full text-white hover:opacity-90 transition-opacity"
+                                     <button
+                                        onClick={handleProfilePictureClick} 
+                                         className="absolute bottom-0 right-0 p-2 rounded-full text-white hover:opacity-90 transition-opacity"
                                         style={{ backgroundColor: colors.primary }}
                                     >
-                                        <Camera className="w-5 h-5" />
+                                         <Camera className="w-5 h-5" />
                                     </button>
-                                </div>
+                                 </div>
                                 <input
                                     ref={fileInputRef}
-                                    type="file"
+                                     type="file"
                                     accept="image/*"
                                     onChange={handleProfilePictureChange}
-                                    className="hidden"
+                                     className="hidden"
                                 />
                             </div>
 
-                            {/* User Info */}
+                             {/* User Info */}
                             <div className="space-y-4">
                                 <div>
                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
                                         Username
                                     </p>
-                                    {isEditing ? (
+                                     {isEditing ? (
                                         <input
                                             type="text"
-                                            value={editedUsername}
+                                             value={editedUsername}
                                             onChange={(e) => setEditedUsername(e.target.value)}
-                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
+                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
                                             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
-                                        />
+                                         />
                                     ) : (
                                         <p className={typography.h4} style={{ color: colors.textPrimary }}>
-                                            {userData.username}
+                                             {userData.username}
                                         </p>
-                                    )}
+                                     )}
                                 </div>
 
-                                <InfoField icon={<Mail className="w-4 h-4" />} label="Email" value={userData.email} />
-                                <InfoField
+                                {/* Bagian Email */}
+                                <div>
+                                     {isEditing ? (
+                                        <>
+                                            <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
+                                                Email
+                                            </p>
+                                            <input
+                                                type="email"
+                                                value={editedEmail}
+                                                onChange={(e) => setEditedEmail(e.target.value)}
+                                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
+                                                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                            />
+                                        </>
+                                    ) : (
+                                        <InfoField 
+                                            icon={<Mail className="w-4 h-4" />} 
+                                            label="Email" 
+                                            value={
+                                                <div className="flex items-center gap-2">
+                                                    <span>{userData.email}</span>
+                                                    {!userData.isVerified && (
+                                                        <span className="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-700">
+                                                            Unverified
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            } 
+                                        />
+                                     )}
+                                </div>
+
+                                 <InfoField
                                     icon={<Calendar className="w-4 h-4" />}
                                     label="Member Since"
-                                    value={formatDate(userData.joinDate)}
+                                     value={formatDate(userData.joinDate)}
                                 />
 
                                 <div>
-                                    <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
+                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
                                         Bio
-                                    </p>
+                                     </p>
                                     {isEditing ? (
                                         <textarea
                                             value={editedBio}
-                                            onChange={(e) => setEditedBio(e.target.value)}
+                                             onChange={(e) => setEditedBio(e.target.value)}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 resize-none"
-                                            style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
                                             rows={3}
-                                        />
+                                            placeholder="Ceritakan sedikit tentang dirimu..." 
+                                         />
                                     ) : (
                                         <p className={typography.bodySmall} style={{ color: colors.textSecondary }}>
-                                            {userData.bio || "No bio added yet"}
+                                              {userData.bio || "No bio added yet"}
                                         </p>
-                                    )}
+                                     )}
                                 </div>
+                                
+                                {formError && (
+                                    <p className="text-sm text-red-600">{formError}</p>
+                                )}
                             </div>
 
-                            {/* Buttons */}
+                             {/* Tombol Aksi */}
                             <div className="space-y-2 pt-4 border-t border-slate-200">
                                 {isEditing ? (
                                     <>
-                                        {/* Save button - hijau */}
-                                        <Button
+                                        {/* Tombol Save */}
+                                         <Button
                                             onClick={handleSaveProfile}
-                                            variant="success"
+                                            variant="success" 
                                             className="w-full"
+                                            disabled={isSaving || !isChanged} 
                                         >
-                                            Save Changes
+                                           {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
                                         </Button>
-
-                                        {/* Cancel button - abu-abu */}
+                   
+                                        {/* Tombol Cancel */}
                                         <Button
-                                            onClick={handleCancel}
+                                             onClick={handleCancel}
                                             variant="secondary"
                                             className="w-full"
-                                        >
+                                            disabled={isSaving}
+                                         >
                                             Cancel
-                                        </Button>
+                                         </Button>
                                     </>
                                 ) : (
-                                    /* Edit button - biru */
+                                     /* Tombol Edit */
                                     <Button
-                                        onClick={() => setIsEditing(true)}
+                                         onClick={() => setIsEditing(true)}
                                         variant="primary"
                                         className="w-full"
-                                    >
+                                     >
                                         Edit Profile
-                                    </Button>
+                                     </Button>
                                 )}
                             </div>
                         </div>
-                    </div>
+                     </div>
 
-                    {/* Activity Section */}
+                    {/* Bagian Aktivitas */}
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
-                            {/* Tabs */}
+                             {/* Tabs */}
                             <div className="flex border-b border-slate-200">
                                 {[
-                                    { id: "overview", label: "Overview" },
-                                    { id: "books", label: "Books", icon: BookOpen, count: activity.borrowedBooks.length },
-                                    { id: "rooms", label: "Rooms", icon: Users, count: activity.roomBookings.length },
+                                     { id: "overview", label: "Overview" },
+                                    { id: "books", label: "Books", icon: BookOpen, count: userActivity.loans.length },
+                                    { id: "rooms", label: "Rooms", icon: Users, count: userActivity.bookings.length },
                                 ].map((tab) => (
                                     <TabButton
-                                        key={tab.id}
+                                         key={tab.id}
                                         isActive={activeTab === tab.id}
                                         onClick={() => setActiveTab(tab.id as "overview" | "books" | "rooms")}
                                         icon={tab.icon}
                                         label={tab.label}
-                                        count={tab.count}
+                                         count={tab.count}
                                     />
                                 ))}
-                            </div>
-
-                            {/* Content */}
+                             </div>
+                            {/* Konten Tab */}
                             <div className="p-6">
-                                {activeTab === "overview" && <OverviewTab activity={activity} />}
-                                {activeTab === "books" && <BooksTab books={activity.borrowedBooks} />}
-                                {activeTab === "rooms" && <RoomsTab bookings={activity.roomBookings} />}
+                                 {activeTab === "overview" && <OverviewTab activity={userActivity} />}
+                                {activeTab === "books" && <BooksTab books={userActivity.loans} />}
+                                {activeTab === "rooms" && <RoomsTab bookings={userActivity.bookings} />} 
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
+         </div>
     )
 }
 
@@ -307,42 +499,50 @@ function InfoField({
     value,
 }: {
     icon: React.ReactNode
-    label: string
-    value: string
+     label: string
+    value: React.ReactNode 
 }) {
     return (
         <div>
             <div className="flex items-center gap-2 mb-2">
                 <span style={{ color: colors.textSecondary }}>{icon}</span>
                 <p className={`${typography.labelSmall} uppercase`} style={{ color: colors.textSecondary }}>
-                    {label}
+                     {label}
                 </p>
             </div>
-            <p className={typography.body} style={{ color: colors.textPrimary }}>
+            <div className={typography.body} style={{ color: colors.textPrimary }}>
                 {value}
-            </p>
+            </div>
         </div>
     )
 }
 
-function OverviewTab({ activity }: { activity: UserActivity }) {
-    return (
+function OverviewTab({ activity }: { activity: { loans: FrontendLoan[], bookings: Booking[] } }) {
+     return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
-                <StatBox label="Books Borrowed" value={activity.borrowedBooks.length} />
-                <StatBox label="Room Bookings" value={activity.roomBookings.length} />
+                <StatBox label="Books Borrowed" value={activity.loans.length} />
+                <StatBox label="Room Bookings" value={activity.bookings.length} />
             </div>
             <div>
-                <h3 className={`${typography.h4} mb-3`} style={{ color: colors.textPrimary }}>
+                 <h3 className={`${typography.h4} mb-3`} style={{ color: colors.textPrimary }}>
                     Recent Activity
                 </h3>
                 <div className="space-y-3">
-                    {activity.borrowedBooks.slice(0, 2).map((book) => (
-                        <ActivityCard
-                            key={book.id}
-                            title={book.bookTitle}
-                            subtitle={book.bookAuthor}
-                            status={book.status}
+                    {activity.loans.slice(0, 2).map((loan) => (
+                         <ActivityCard
+                            key={loan.id}
+                            title={loan.book.title}
+                            subtitle={`By ${loan.book.author}`}
+                            status={loan.status}
+                        />
+                    ))}
+                    {activity.bookings.slice(0, 2).map((booking) => (
+                         <ActivityCard
+                            key={booking.id}
+                            title={booking.room.name}
+                             subtitle={`Slot: ${booking.startTime} - ${booking.endTime}`}
+                            status={booking.displayStatus || booking.status} 
                         />
                     ))}
                 </div>
@@ -351,77 +551,77 @@ function OverviewTab({ activity }: { activity: UserActivity }) {
     )
 }
 
-function BooksTab({ books }: { books: any[] }) {
+function BooksTab({ books }: { books: FrontendLoan[] }) {
     return (
-        <div className="space-y-3">
-            {books.map((book) => (
+         <div className="space-y-3">
+            {books.map((loan) => (
                 <div
-                    key={book.id}
+                    key={loan.id}
                     className="rounded-lg border border-slate-200 p-4"
-                    style={{ backgroundColor: colors.bgSecondary }}
+                     style={{ backgroundColor: colors.bgSecondary }}
                 >
                     <div className="flex items-start justify-between mb-3">
                         <div>
                             <p className={typography.h4} style={{ color: colors.textPrimary }}>
-                                {book.bookTitle}
+                                {loan.book.title}
                             </p>
                             <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
-                                by {book.bookAuthor}
+                                 by {loan.book.author}
                             </p>
                         </div>
-                        <StatusBadge status={book.status} />
+                         <StatusBadge status={loan.status} />
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                            <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
+                             <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
                                 Borrow Date
                             </p>
                             <p className={typography.body} style={{ color: colors.textPrimary }}>
-                                {new Date(book.borrowDate).toLocaleDateString()}
+                                {new Date(loan.borrowDate).toLocaleDateString()}
                             </p>
                         </div>
-                        <div>
+                         <div>
                             <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
                                 Due Date
-                            </p>
-                            <p style={{ color: book.status === "overdue" ? colors.danger : colors.textPrimary }}>
-                                {new Date(book.dueDate).toLocaleDateString()}
+                             </p>
+                            <p style={{ color: (loan.status as string) === "overdue" ? colors.danger : colors.textPrimary }}>
+                                {new Date(loan.dueDate).toLocaleDateString()}
                             </p>
                         </div>
-                    </div>
+                     </div>
                 </div>
             ))}
         </div>
     )
 }
 
-function RoomsTab({ bookings }: { bookings: any[] }) {
+function RoomsTab({ bookings }: { bookings: Booking[] }) {
     return (
         <div className="space-y-3">
             {bookings.map((booking) => (
-                <div
+                 <div
                     key={booking.id}
                     className="rounded-lg border border-slate-200 p-4"
                     style={{ backgroundColor: colors.bgSecondary }}
                 >
-                    <div className="flex items-start justify-between mb-3">
+                     <div className="flex items-start justify-between mb-3">
                         <div>
                             <p className={typography.h4} style={{ color: colors.textPrimary }}>
-                                {booking.roomName}
-                            </p>
+                                {booking.room.name}
+                             </p>
                             <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
-                                {booking.timeSlot}
-                            </p>
+                                {booking.startTime} - {booking.endTime}
+                             </p>
                         </div>
-                        <StatusBadge status={booking.status} />
+                        <StatusBadge status={booking.displayStatus || booking.status} /> 
                     </div>
                     <div>
                         <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
-                            Booking Date
+                             Booking Date
                         </p>
                         <p className={typography.body} style={{ color: colors.textPrimary }}>
-                            {new Date(booking.bookingDate).toLocaleDateString()}
-                        </p>
+                            {new Date(booking.date).toLocaleDateString()}
+                         </p>
                     </div>
                 </div>
             ))}
@@ -438,7 +638,7 @@ function StatBox({ label, value }: { label: string; value: number }) {
             <p className="text-3xl font-bold mt-1" style={{ color: colors.info }}>
                 {value}
             </p>
-        </div>
+         </div>
     )
 }
 
@@ -450,20 +650,20 @@ function ActivityCard({ title, subtitle, status }: { title: string; subtitle: st
         >
             <div>
                 <p className={typography.body} style={{ color: colors.textPrimary }}>
-                    {title}
+                     {title}
                 </p>
                 <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
                     {subtitle}
                 </p>
             </div>
-            <StatusBadge status={status} />
+             <StatusBadge status={status} />
         </div>
     )
 }
 
 function StatusBadge({ status }: { status: string }) {
     return (
-        <span className={`text-xs font-semibold px-2 py-1 rounded ${STATUS_COLORS[status] || STATUS_COLORS.active}`}>
+        <span className={`text-xs font-semibold px-2 py-1 rounded ${STATUS_COLORS[status] || STATUS_COLORS.borrowed}`}>
             {STATUS_LABELS[status] || status}
         </span>
     )

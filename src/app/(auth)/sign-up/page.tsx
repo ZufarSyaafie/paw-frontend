@@ -10,8 +10,7 @@ import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-// Ganti XXXX dengan port backend Anda (dari file .env backend)
-const API_URL = "http://localhost:XXXX"
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export default function RegisterPage() {
   const [username, setUsername] = useState("")
@@ -19,25 +18,21 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState("") // <-- TAMBAHKAN state untuk error
+  const [error, setError] = useState("") 
   const router = useRouter()
 
-  // --- MODIFIKASI DIMULAI DARI SINI ---
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setError("") // <-- Reset error setiap kali submit
+    setError("") 
 
     try {
-      // Panggil API backend Anda
-      const response = await fetch(`${API_URL}/auth/register`, {
+      const response = await fetch(`${API_URL}/api/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          // Pastikan nama field ini (username, phone)
-          // sesuai dengan yang diharapkan backend Anda
-          username: username,
-          phone: phone,
+          name: username, 
+          phone: phone, 
           email: email,
           password: password,
         }),
@@ -46,18 +41,14 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        // Jika backend mengembalikan error, tangkap pesannya
         throw new Error(data.message || "Registrasi gagal. Silakan coba lagi.")
       }
 
-      // SUKSES! Simpan email di localStorage untuk halaman OTP
       localStorage.setItem("registrationEmail", email)
 
-      // Arahkan ke halaman OTP
-      router.push("/otp")
+      router.push("/otp?flow=register")
 
     } catch (err: any) {
-      // Tangkap dan tampilkan error
       setError(err.message)
     } finally {
       setIsLoading(false)
@@ -66,11 +57,8 @@ export default function RegisterPage() {
 
   const handleGoogleSignUp = () => {
     setIsLoading(true)
-    // Alur OAuth yang benar adalah mengarahkan browser ke endpoint backend
-    // Backend akan menangani autentikasi Google dan me-redirect kembali ke frontend
-    window.location.href = `${API_URL}/auth/google`
+    window.location.href = `${API_URL}/api/auth/google` // <-- Gunakan path /api/auth/google
   }
-  // --- MODIFIKASI SELESAI ---
 
   const isFormValid = username && phone && email && password
 

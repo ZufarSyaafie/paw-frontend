@@ -1,71 +1,92 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import AnnouncementCard from "@/components/announcements/announcement-card"
-import { Search, Filter, X } from "lucide-react"
+import { Search, Filter, X, Loader2, AlertCircle, Bell } from "lucide-react" // Import semua yang dibutuhkan
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import type { Announcement } from "@/types"
+import { getAuthToken } from "@/lib/auth"
 
-const SAMPLE_ANNOUNCEMENTS: Announcement[] = [
-	{
-		id: 1,
-		title: "Library System Maintenance",
-		snippet:
-			"The library system will undergo scheduled maintenance on Saturday, November 15th from 10 PM to 2 AM.",
-		fullContent:
-			"The library system will undergo scheduled maintenance on Saturday, November 15th from 10 PM to 2 AM. Services will be temporarily unavailable during this time.\n\nDuring this period:\n• Online book catalog will not be accessible\n• Room booking system will be offline\n• Digital resources will be unavailable\n• Physical library access will remain open\n\nWe apologize for any inconvenience and appreciate your patience as we work to improve our services. If you have any questions, please contact our support team at support@naratama.com.",
-		date: "2024-11-10",
-	},
-]
+const API_URL = process.env.NEXT_PUBLIC_API_URL
 
-const SORT_OPTIONS = ["Newest First", "Oldest First"]
+const sampleAnnouncements: Announcement[] = []
 
 export default function AnnouncementsPage() {
+	const [announcements, setAnnouncements] = useState<Announcement[]>(sampleAnnouncements)
+	const [isLoading, setIsLoading] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+
 	const [searchQuery, setSearchQuery] = useState("")
-	const [sortBy, setSortBy] = useState("Newest First")
 	const [showFilters, setShowFilters] = useState(false)
 
-	const filteredAnnouncements = SAMPLE_ANNOUNCEMENTS.filter(
-		(announcement) =>
-			announcement.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			announcement.snippet.toLowerCase().includes(searchQuery.toLowerCase())
-	)
+	useEffect(() => {
+		const fetchAnnouncements = async () => {
+			const token = getAuthToken()
 
-	const hasActiveFilters = searchQuery !== ""
+			setIsLoading(true)
+			setError(null)
+
+			try {
+				const headers: HeadersInit = {};
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+				const response = await fetch(`${API_URL}/api/announcements`, {
+					headers: headers, 
+				})
+
+				if (!response.ok) {
+					const errorData = await response.json()
+					if (response.status === 401 || response.status === 403) {
+						throw new Error("Login required to view announcements, even though they are public list.");
+					}
+					throw new Error(errorData.message || "Failed to fetch announcements.")
+				}
+
+				const data = await response.json()
+				setAnnouncements(data || []) 
+			} catch (err: any) {
+				console.error("Fetch Announcements Error:", err)
+				setError("Failed to load announcements. Please check backend status and log in.")
+				setAnnouncements([])
+			} finally {
+				setIsLoading(false)
+			}
+		}
+
+		fetchAnnouncements()
+	}, []) // Array kosong agar hanya di-fetch sekali
+
+    const hasActiveFilters = searchQuery !== "" 
+    
+    const filteredAnnouncements = announcements.filter((a) => {
+        const safeTitle = (a.title || a.bookTitle || "") as string; 
+        const safeSnippet = (a.snippet || a.message || "") as string;
+
+        return (
+            safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            safeSnippet.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }).sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime()); // Sort by newest first
 
 	return (
-		<div
-			className="min-h-screen"
-			style={{ backgroundColor: colors.bgPrimary }}
-		>
-			{/* Main Content */}
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-				{/* Title Section */}
-				<div
-					className="py-8 border-b"
-					style={{ borderBottomColor: "#e2e8f0" }}
-				>
-					<h1
-						className={typography.h1}
-						style={{ color: colors.textPrimary }}
-					>
+		<div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+				{/* Header */}
+				<div className="py-4 border-b mb-8" style={{ borderBottomColor: "#e2e8f0" }}>
+					<h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
 						Announcements
 					</h1>
-					<p
-						className={`${typography.bodySmall} mt-2`}
-						style={{ color: colors.textSecondary }}
-					>
-						{filteredAnnouncements.length} result
-						{filteredAnnouncements.length !== 1 ? "s" : ""} found
+					<p className={`${typography.bodySmall} mt-2`} style={{ color: colors.textSecondary }}>
+						{filteredAnnouncements.length} latest updates from the library.
 					</p>
 				</div>
 
-				{/* Search & Filters */}
+				{/* Search & Filters Placeholder */}
 				<div className="py-6 space-y-4">
-					{/* Search Bar & Action Buttons */}
 					<div className="flex flex-row items-center justify-between gap-2 sm:gap-3">
-						{/* Search Input */}
 						<div className="relative flex-1 min-w-0">
 							<Search
 								className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
@@ -86,20 +107,15 @@ export default function AnnouncementsPage() {
 							/>
 						</div>
 
-						{/* Button Group */}
 						<div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
 							{/* Filter Button */}
 							<button
 								onClick={() => setShowFilters(!showFilters)}
 								className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm sm:text-base"
 								style={{
-									backgroundColor: showFilters
-										? colors.info
-										: colors.bgPrimary,
+									backgroundColor: showFilters ? colors.info : colors.bgPrimary,
 									color: showFilters ? "white" : colors.textSecondary,
-									border: `1px solid ${
-										showFilters ? colors.info : "#cbd5e1"
-									}`,
+									border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
 									minHeight: "42px",
 									padding: "10px 12px",
 								}}
@@ -127,81 +143,51 @@ export default function AnnouncementsPage() {
 							)}
 						</div>
 					</div>
-
-					{/* Filters Panel */}
+					{/* Filters Panel - Sorting logic should be here if needed */}
 					{showFilters && (
-						<div
-							className="rounded-lg p-4 sm:p-6 border space-y-4 sm:space-y-6 overflow-x-auto"
-							style={{
-								backgroundColor: colors.bgPrimary,
-								borderColor: "#e2e8f0",
-							}}
-						>
-							<div>
-								<p
-									className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`}
-									style={{ color: colors.textPrimary }}
-								>
-									Sort By
-								</p>
-								<select
-									value={sortBy}
-									onChange={(e) => setSortBy(e.target.value)}
-									className="w-full px-3 sm:px-4 py-2 rounded-lg border font-medium focus:outline-none focus:ring-2 transition-all text-sm sm:text-base"
-									style={{
-										backgroundColor: colors.bgSecondary,
-										borderColor: "#cbd5e1",
-										color: colors.textPrimary,
-										borderWidth: "1px",
-									}}
-								>
-									{SORT_OPTIONS.map((option) => (
-										<option key={option} value={option}>
-											{option}
-										</option>
-									))}
-								</select>
-							</div>
-						</div>
-					)}
+                        <div className="rounded-lg p-4 border bg-gray-50">
+                            <p className="text-sm text-gray-600">Sorting options can go here.</p>
+                        </div>
+                    )}
 				</div>
-			</div>
+				
 
-			{/* Announcements List */}
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				{filteredAnnouncements.length > 0 ? (
-					<div className="space-y-4">
+				{/* Content based on state */}
+				{isLoading ? (
+					<div className="flex justify-center items-center h-48">
+						<Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+						<p className="ml-3 text-gray-600 font-medium">Loading announcements...</p>
+					</div>
+				) : error ? (
+					<div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center flex flex-col items-center">
+						<AlertCircle className="w-8 h-8 text-red-600 mb-3" />
+						<h3 className="font-semibold text-red-800 mb-1">Error Loading Data</h3>
+						<p className="text-sm text-red-700">{error}</p>
+					</div>
+				) : filteredAnnouncements.length > 0 ? (
+					<div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
 						{filteredAnnouncements.map((announcement) => (
-							<AnnouncementCard key={announcement.id} {...announcement} />
+							<AnnouncementCard 
+								key={(announcement.id || announcement._id) as string} 
+								id={(announcement.id || announcement._id) as string}
+								title={(announcement.bookTitle || announcement.title || "New Update") as string}
+								snippet={(announcement.message || announcement.snippet || "") as string}
+								date={(announcement.createdAt || announcement.date || "") as string}
+							/>
 						))}
 					</div>
 				) : (
-					<EmptyState />
+					<div className="text-center py-16">
+						<Bell className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textTertiary }} />
+						<h3 className={`${typography.h3} mb-2`} style={{ color: colors.textSecondary }}>
+							No new announcements
+						</h3>
+						<p className={typography.bodySmall} style={{ color: colors.textTertiary }}>
+							The library currently has no active announcements.
+						</p>
+					</div>
 				)}
 			</div>
-		</div>
-	)
-}
-
-function EmptyState() {
-	return (
-		<div className="text-center py-16">
-			<Filter
-				className="w-12 h-12 mx-auto mb-4"
-				style={{ color: colors.textTertiary }}
-			/>
-			<h3
-				className={`${typography.h3} mb-2`}
-				style={{ color: colors.textSecondary }}
-			>
-				No announcements found
-			</h3>
-			<p
-				className={typography.bodySmall}
-				style={{ color: colors.textTertiary }}
-			>
-				Try adjusting your search
-			</p>
 		</div>
 	)
 }

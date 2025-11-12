@@ -1,3 +1,4 @@
+// ------------ src/components/books/book-card.tsx ------------
 "use client"
 
 import Link from "next/link"
@@ -5,13 +6,14 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { typography } from "@/styles/typography"
-import { colors } from "@/styles/colors"
+// import { colors } from "@/styles/colors" // <-- Dihapus, ini Error 5 (unused)
 
 type BookCardProps = {
   id: string
   title: string
   author: string
-  cover: string
+  // 'cover' dibuat opsional (?:) karena gak ada di BE
+  cover?: string 
   stock: number
 }
 
@@ -19,7 +21,7 @@ export default function BookCard({
   id, 
   title, 
   author, 
-  cover, 
+  cover, // Ini bakal sering undefined
   stock
 }: BookCardProps) {
   const isInStock = stock > 0
@@ -28,7 +30,8 @@ export default function BookCard({
     <Card className="overflow-hidden flex flex-col transition-transform duration-200 hover:-translate-y-1 bg-white border-slate-200">
       <div className="relative h-48 w-full bg-slate-100">
         <img 
-          src={cover || "https://via.placeholder.com/150x200?text=Book+Cover"} 
+          // Kalo 'cover' gak ada (undefined), pake placeholder
+          src={cover || "https://via.placeholder.com/150x200?text=No+Cover"} 
           alt={title} 
           className="object-cover w-full h-full hover:scale-105 transition-transform duration-300" 
         />
@@ -39,7 +42,7 @@ export default function BookCard({
           {title}
         </CardTitle>
         <CardDescription className={typography.bodySmall}>
-          {author}
+           {author}
         </CardDescription>
       </CardHeader>
       
@@ -53,7 +56,7 @@ export default function BookCard({
             ✗ Out of Stock
           </Badge>
         )}
-      </CardContent>
+       </CardContent>
       
       <div className="p-4">
         <Link href={`/books/${id}`} className="w-full">

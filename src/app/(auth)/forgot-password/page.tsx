@@ -8,33 +8,58 @@ import { AuthHeader } from "@/components/auth/auth-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setTimeout(() => {
-      setIsLoading(false)
-      setEmailSent(true)
-    }, 1000)
+    setError(null)
+    
+    const endpoint = `${API_URL}/api/auth/forgot-password` 
+
+    try {
+        const response = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: email }),
+        })
+
+        const data = await response.json()
+
+        if (!response.ok) {
+            throw new Error(data.message || "Failed to send reset link.")
+        }
+        
+        setEmailSent(true)
+
+    } catch (err: any) {
+        setError(err.message || "Failed to connect to the server.")
+    } finally {
+        setIsLoading(false)
+    }
   }
+
 
   const handleBackToLogin = () => {
     router.push("/sign-in")
   }
 
   const handleResendEmail = () => {
-    setEmail("")
     setEmailSent(false)
+    setError(null)
   }
 
   return (
     <AuthLayout>
-      {!emailSent ? (
+      {!emailSent ?
+(
         <>
           <AuthHeader title="Forgot Password" subtitle="Enter your email to reset your password" />
 
@@ -56,6 +81,9 @@ export default function ForgotPasswordPage() {
             <p className="text-xs text-white/60 text-center">
               We'll send you an email with instructions to reset your password.
             </p>
+            
+            {/* Tampilkan Error */}
+            {error && <p className="text-center text-red-400 text-sm">{error}</p>}
 
             <form onSubmit={handleSubmit}>
               <Button
@@ -71,7 +99,7 @@ export default function ForgotPasswordPage() {
               Remember your password?{" "}
               <button
                 type="button"
-                onClick={() => router.push("/login")}
+                onClick={() => router.push("/sign-in")} // Ganti /login menjadi /sign-in
                 className="text-white font-semibold hover:text-white/80 transition-colors bg-transparent border-none cursor-pointer"
               >
                 Sign in

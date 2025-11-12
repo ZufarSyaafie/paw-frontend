@@ -1,5 +1,6 @@
 "use client"
 
+import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AuthLayout } from "@/components/auth/auth-layout"
@@ -9,27 +10,48 @@ import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Mail, Lock } from "lucide-react"
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+
 export default function LoginPage() {
     const router = useRouter()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState("") 
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault()
         setIsLoading(true)
-        setTimeout(() => {
+        setError("")
+
+        try {
+            const response = await fetch(`${API_URL}/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            })
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                throw new Error(data.message || "Login gagal. Periksa email atau password.")
+            }
+
+            localStorage.setItem("loginEmail", email) // Simpan untuk verifikasi di halaman OTP
+            
+            alert("Login berhasil. Silakan cek email Anda untuk kode OTP.")
+            router.push("/otp?flow=login")
+
+        } catch (err: any) {
+            setError(err.message || "Login gagal. Silakan coba lagi.")
+        } finally {
             setIsLoading(false)
-            router.push("/dashboard")
-        }, 1000)
+        }
     }
 
     const handleGoogleSignIn = () => {
         setIsLoading(true)
-        setTimeout(() => {
-            setIsLoading(false)
-            router.push("/dashboard")
-        }, 1000)
+        window.location.href = `${API_URL}/api/auth/google`
     }
 
     return (
@@ -70,6 +92,9 @@ export default function LoginPage() {
                     </div>
                 </div>
 
+                {/* Tampilkan Error */}
+                {error && <p className="text-center text-red-400 text-sm">{error}</p>}
+            
                 {/* Forgot Password */}
                 <div className="text-right">
                     <a href="/forgot-password" className="text-sm text-white hover:text-cyan-200 transition-colors">
@@ -80,7 +105,7 @@ export default function LoginPage() {
                 {/* Sign In Button */}
                 <Button
                     type="submit"
-                    disabled={isLoading}
+                    disabled={isLoading || !email || !password}
                     className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-semibold py-3 rounded-lg hover:shadow-lg hover:shadow-black-400/50 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isLoading ? "Signing in..." : "Sign In"}
