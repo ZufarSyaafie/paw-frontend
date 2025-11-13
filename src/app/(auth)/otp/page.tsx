@@ -8,13 +8,16 @@ import { AuthHeader } from "@/components/auth/auth-header"
 import { Button } from "@/components/ui/button"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
 import { setAuthToken } from "@/lib/auth" 
+import { useSelector, useDispatch } from 'react-redux'
+import { RootState } from '@/lib/store/store'
+import { clearTempEmail } from '@/lib/store/authSlice'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export default function OTPPage() {
   const router = useRouter()
   const searchParams = useSearchParams() 
-  const flow = searchParams.get("flow") || "register" // 'register' atau 'login'
+  const flow = searchParams.get("flow") || "register"
   
   const [otp, setOtp] = useState("")
   const [email, setEmail] = useState("")
@@ -22,16 +25,16 @@ export default function OTPPage() {
   const [isResending, setIsResending] = useState(false)
   const [error, setError] = useState("")
 
-  const emailStorageKey = flow === "login" ? "loginEmail" : "registrationEmail"
+  const dispatch = useDispatch()
+  const tempEmail = useSelector((state: RootState) => state.auth.tempEmail)
 
   useEffect(() => {
-    const storedEmail = localStorage.getItem(emailStorageKey)
-    if (storedEmail) {
-      setEmail(storedEmail)
+    if (tempEmail) {
+      setEmail(tempEmail)
     } else {
       setError("Sesi tidak ditemukan. Silakan kembali ke halaman utama.")
     }
-  }, [flow, emailStorageKey, router])
+  }, [tempEmail])
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -44,9 +47,9 @@ export default function OTPPage() {
       return
     }
 
-    const endpoint = flow === "login" ? 
-        `${API_URL}/api/auth/verify-login-otp` : 
-        `${API_URL}/api/auth/verify-registration-otp`
+    const endpoint = flow === "login" 
+      ? `${API_URL}/api/auth/verify-login-otp` 
+      : `${API_URL}/api/auth/verify-registration-otp`
 
     try {
       const response = await fetch(endpoint, {
@@ -62,10 +65,10 @@ export default function OTPPage() {
       }
 
       setAuthToken(data.token)
-      localStorage.removeItem(emailStorageKey) // Hapus email dari storage
+      dispatch(clearTempEmail())
 
       alert("Verifikasi berhasil! Anda sekarang masuk.")
-      router.push("/dashboard") // Redirect ke dashboard
+      router.push("/dashboard") 
 
     } catch (err: any) {
       setError(err.message || "Verifikasi gagal. Silakan coba lagi.")
@@ -84,9 +87,9 @@ export default function OTPPage() {
       return
     }
 
-    const endpoint = flow === "login" ? 
-        `${API_URL}/api/auth/resend-login-otp` : 
-        `${API_URL}/api/auth/resend-registration-otp`
+    const endpoint = flow === "login" 
+      ? `${API_URL}/api/auth/resend-login-otp` 
+      : `${API_URL}/api/auth/resend-registration-otp`
         
     try {
       const response = await fetch(endpoint, {
@@ -119,53 +122,65 @@ export default function OTPPage() {
         subtitle={headerSubtitle}
       />
 
-      <div className="space-y-6">
-        {/* OTP Input */}
-        <div className="flex justify-center">
-          <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-            <InputOTPGroup className="gap-3">
-               {Array.from({ length: 6 }).map((_, index) => (
-                <InputOTPSlot
-                  key={index}
-                  index={index}
-                  className="h-12 w-12 border border-white/20 bg-white/[0.05] rounded-lg text-lg font-semibold text-white 
-                             placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 
-                             focus:border-blue-400 focus:bg-white/[0.08] transition-all duration-200 
-                             backdrop-blur-sm text-center"
-                 />
-              ))}
-            </InputOTPGroup>
-          </InputOTP>
-        </div>
-
-        {/* Error Message */}
-        {error && <p className="text-center text-red-400 text-sm">{error}</p>}
-
-        {/* Verify Button */}
-        <form onSubmit={handleVerify}>
-           <Button
-            type="submit"
-            disabled={isLoading || otp.length !== 6 || !email}
-            className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+      {error && !email ? (
+        // STATE 1: KALO FATAL ERROR (SESI HILANG)
+        <div className="space-y-4 text-center">
+          <p className="text-center text-red-400 text-sm font-semibold">{error}</p>
+          <Button
+            onClick={() => router.push("/sign-in")}
+            className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 text-base"
           >
-            {isLoading ? "Verifying..." : "Verify Code"}
+            Kembali ke Halaman Sign In
           </Button>
-        </form>
-
-        {/* Resend Link */}
-        <div className="text-center pt-2">
-          <p className="text-sm text-white/70 font-medium">
-            Didn't get a code?{" "}
-            <button
-              onClick={handleResend}
-               disabled={isResending || !email}
-              className="text-white font-semibold hover:text-white/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isResending ? "Resending..." : "Resend"}
-            </button>
-          </p>
         </div>
-      </div>
+
+      ) : (
+
+        // STATE 2: HALAMAN NORMAL (NAMPILIN FORM OTP)
+        <div className="space-y-6">
+          <div className="flex justify-center">
+            <InputOTP maxLength={6} value={otp} onChange={setOtp}>
+              <InputOTPGroup className="gap-3">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <InputOTPSlot
+                    key={index}
+                    index={index}
+                    className="h-12 w-12 border border-white/20 bg-white/[0.05] rounded-lg text-lg font-semibold text-white 
+                              placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 
+                              focus:border-blue-400 focus:bg-white/[0.08] transition-all duration-200 
+                              backdrop-blur-sm text-center"
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </div>
+
+          {error && <p className="text-center text-red-400 text-sm">{error}</p>}
+
+          <form onSubmit={handleVerify}>
+            <Button
+              type="submit"
+              disabled={isLoading || otp.length !== 6 || !email}
+              className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+            >
+              {isLoading ? "Verifying..." : "Verify Code"}
+            </Button>
+          </form>
+
+          <div className="text-center pt-2">
+            <p className="text-sm text-white/70 font-medium">
+              Didn't get a code?{" "}
+              <button
+                onClick={handleResend}
+                disabled={isResending || !email}
+                className="text-white font-semibold hover:text-white/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isResending ? "Resending..." : "Resend"}
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
     </AuthLayout>
   )
 }

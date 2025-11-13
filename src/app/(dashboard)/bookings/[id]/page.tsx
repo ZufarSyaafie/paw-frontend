@@ -1,11 +1,13 @@
 "use client"
 
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Loader2, AlertCircle, Clock, Calendar, Users, DollarSign, XCircle, CheckCircle } from "lucide-react"
+import { ArrowLeft, Loader2, AlertCircle, Clock, Calendar, Users, DollarSign, XCircle, CheckCircle } from "lucide-react" 
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import type { Booking } from "@/types"
 import { getAuthToken } from "@/lib/auth"
+// import { typography } from "@/styles/typography"
+// import { colors } from "@/styles/colors"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -41,29 +43,19 @@ const STATUS_CONFIG = {
     confirmed: { color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle, label: 'CONFIRMED' },
     pending_payment: { color: 'bg-amber-100 text-amber-800', icon: Clock, label: 'PENDING PAYMENT' },
     cancelled: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'CANCELLED' },
+    
+    completed: { color: 'bg-slate-200 text-slate-700', icon: CheckCircle, label: 'COMPLETED' },
 }
 
-const MOCK_BOOKING: Booking = {
+const MOCK_BOOKING: Booking = { 
     id: "MOCK-456",
-    room: { 
-        id: "R-MOCK", 
-        name: "Discussion Room A (Mock)", 
-        capacity: 6, 
-        image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop",
-        features: ["Whiteboard", "Projector", "WiFi"] as string[], // SINKRONISASI
-    },
+    room: { id: "R-MOCK", name: "Discussion Room A (Mock)", capacity: 6, image: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop", features: ["Whiteboard", "Projector", "WiFi"] as string[], },
     user: { id: "U-001", name: "Mock User", email: "mock@test.com" },
     date: new Date().toISOString(),
-    startTime: "10:00",
-    endTime: "12:00",
-    durationHours: 2,
-    totalPrice: 100000,
-    status: "confirmed",
-    paymentStatus: "paid",
-    phone: "081234567890",
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-} as unknown as Booking // Casting tegas agar tidak ada inferensi tipe parsial
+    startTime: "10:00", endTime: "12:00", durationHours: 2, totalPrice: 100000,
+    status: "confirmed", paymentStatus: "paid", phone: "081234567890",
+    createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+} as unknown as Booking
 
 export default function BookingDetailPage() {
     const router = useRouter()
@@ -74,6 +66,18 @@ export default function BookingDetailPage() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [isCancelling, setIsCancelling] = useState(false)
+
+    const checkIfCompleted = (booking: Booking): boolean => {
+        if (booking.status !== 'confirmed') return false; 
+        
+        const bookingEndDateTime = new Date(booking.date);
+        const [hours, minutes] = booking.endTime.split(':').map(Number);
+        
+        bookingEndDateTime.setHours(hours, minutes, 0, 0); 
+
+        const now = new Date();
+        return now.getTime() > bookingEndDateTime.getTime();
+    };
 
     useEffect(() => {
         const fetchBooking = async () => {
@@ -95,7 +99,10 @@ export default function BookingDetailPage() {
                 }
 
                 const list = await response.json() as Booking[]
-                const found = list.find(b => b.id === bookingId)
+                const found = list.find(b => 
+                    String(b.id) === bookingId ||
+                    String((b as any)._id) === bookingId
+                )
 
                 if (!found) {
                     throw new Error(`Booking with ID ${bookingId} not found in user list.`)
@@ -106,7 +113,7 @@ export default function BookingDetailPage() {
             } catch (err: any) {
                 console.error(err)
                 setError(err.message || "Failed to load booking details. Using fallback data.")
-                setBooking(MOCK_BOOKING) // Fallback ke Mock Data jika Gagal
+                setBooking(MOCK_BOOKING) 
             } finally {
                 setIsLoading(false)
             }
@@ -142,7 +149,7 @@ export default function BookingDetailPage() {
             }
 
             alert(`Booking successfully cancelled!`)
-            router.push("/bookings") // Redirect ke daftar Bookings
+            router.push("/bookings") 
 
         } catch (err: any) {
             setError(err.message || "Failed to process cancellation.")
@@ -171,28 +178,29 @@ export default function BookingDetailPage() {
         return null; 
     }
     
-    const statusKey = booking.status as keyof typeof STATUS_CONFIG
-    const statusInfo = STATUS_CONFIG[statusKey] || STATUS_CONFIG.cancelled
+    let statusKey: keyof typeof STATUS_CONFIG = booking.status as keyof typeof STATUS_CONFIG;
+    
+    if (checkIfCompleted(booking)) {
+        statusKey = 'completed';
+    }
 
+    const statusInfo = STATUS_CONFIG[statusKey] || STATUS_CONFIG.cancelled
+    
     const isCancellable = booking.status === 'confirmed' || booking.status === 'pending_payment'
+    const isFinished = statusKey === 'completed'; // Tambah flag finished
 
     return (
         <div className="min-h-screen bg-white">
             {/* Header - Back Button */}
-            <div className="sticky top-16 z-40 bg-white border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
-                    >
-                        <ArrowLeft className="w-4 h-4" />
-                        Back to My Bookings
-                    </button>
-                </div>
-            </div>
+            <button
+                onClick={() => router.back()}
+                className="fixed top-24 left-[calc(theme(spacing.4)+1rem)] sm:left-[calc(theme(spacing.6)+1.5rem)] lg:left-[calc(theme(spacing.7)+1rem)] z-40 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg border border-gray-100 bg-white/80 backdrop-blur-md text-gray-600 hover:text-gray-900 hover:bg-slate-100/80 transition-all font-medium text-sm ring-1 ring-black/5"
+            >
+                <ArrowLeft className="w-4 h-4" /> 
+            </button>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
                 {error && (
                     <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-6">
                         <p className="text-sm text-red-700 font-medium">{error}</p>
@@ -220,13 +228,13 @@ export default function BookingDetailPage() {
                                 <p className="text-sm font-semibold text-slate-700">Payment Status: {booking.paymentStatus.toUpperCase()}</p>
                             </div>
                             
-                            {/* Cancel Button */}
+                            {/* Cancel Button - DISABLE KALO SUDAH SELESAI */}
                             <Button
                                 onClick={handleCancel}
-                                disabled={isCancelling || !isCancellable}
-                                className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${isCancellable ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-400 cursor-not-allowed'}`}
+                                disabled={isCancelling || !isCancellable || isFinished} // Disable jika sudah selesai
+                                className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${isCancellable && !isFinished ? 'bg-red-500 hover:bg-red-600' : 'bg-gray-400 cursor-not-allowed'}`}
                             >
-                                {isCancelling ? "Processing Cancellation..." : !isCancellable ? "Cannot Cancel" : "Cancel Booking"}
+                                {isFinished ? "Session Completed" : isCancelling ? "Processing Cancellation..." : !isCancellable ? "Cannot Cancel" : "Cancel Booking"}
                             </Button>
                         </div>
                     </div>
@@ -261,7 +269,6 @@ export default function BookingDetailPage() {
                         <div className="bg-gray-50 rounded-lg p-6">
                             <h3 className="font-semibold text-gray-900 mb-3">Room Features</h3>
                             <div className="flex flex-wrap gap-2">
-                                {/* FIX FINAL: Casting ke any dan optional chaining untuk keamanan dan menghilangkan error compiler */}
                                 {((booking.room as any).features as string[] || []).map((feature: string, index: number) => (
                                     <span key={index} className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm font-medium">
                                         {feature}

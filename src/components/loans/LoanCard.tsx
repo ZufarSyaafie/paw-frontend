@@ -11,15 +11,19 @@ interface LoanCardProps {
 
 export const LoanCard: React.FC<LoanCardProps> = ({ loan }) => {
   const loanStatusString = loan.status as string;
-
   const statusConfig = {
     borrowed: { color: 'bg-cyan-100 text-cyan-800', label: 'BORROWED' },
     returned: { color: 'bg-green-100 text-green-800', label: 'RETURNED' },
     overdue: { color: 'bg-red-100 text-red-800', label: 'OVERDUE' }, 
   }
 
+  const definitiveId = (loan.id || loan._id) as string;
+  if (!definitiveId) {
+    console.error("Loan object is missing both id and _id:", loan);
+    return null;
+  }
+
   const config = statusConfig[loanStatusString as keyof typeof statusConfig] || statusConfig.borrowed; 
-  
   const isOverdue = loanStatusString === 'overdue' // <-- FIXED
   const isReturned = loanStatusString === 'returned' // <-- FIXED
   
@@ -79,7 +83,7 @@ export const LoanCard: React.FC<LoanCardProps> = ({ loan }) => {
         {/* Link Detail/Action */}
         <div className='mt-auto pt-4 border-t border-gray-100'>
             <Link
-                href={`/loans/${loan.id}`}
+                href={`/loans/${definitiveId}`}
                 className="text-cyan-600 hover:text-cyan-700 transition-colors text-sm font-semibold flex items-center gap-1"
             >
                 View Details & Return <ArrowRight className='w-4 h-4' />

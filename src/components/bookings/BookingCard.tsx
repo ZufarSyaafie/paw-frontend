@@ -18,6 +18,12 @@ export const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
 
   const config = statusConfig[booking.status] || statusConfig.cancelled
 
+  const definitiveId = (booking.id || booking._id) as string;
+  if (!definitiveId) {
+    console.error("Booking object is missing both id and _id:", booking);
+    return null;
+  }
+
   const date = new Date(booking.date)
   const formattedDate = date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
   const formattedTime = `${booking.startTime} - ${booking.endTime}`
@@ -68,7 +74,7 @@ export const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
         {/* Link Detail/Action */}
         <div className='mt-4 pt-4 border-t border-gray-100'>
             <Link
-                href={`/bookings/${booking.id}`}
+                href={`/bookings/${definitiveId}`}
                 className="text-cyan-600 hover:text-cyan-700 transition-colors text-sm font-semibold flex items-center gap-1"
             >
                 View Details & Actions →

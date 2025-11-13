@@ -1,54 +1,96 @@
 "use client"
 
-import { Button } from "@/components/ui/button"
-import { typography } from "@/styles/typography"
 import Link from "next/link"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { typography } from "@/styles/typography"
 
-interface BookCardProps {
+type BookCardProps = {
   id: string
+  _id?: string
   title: string
   author: string
-  cover: string
+  cover?: string
   stock: number
 }
 
-export default function BookCard({ id, title, author, cover, stock }: BookCardProps) {
-  const stockStatus = stock > 0 ? "In Stock" : "Out of Stock"
-  const stockColor = stock > 0 ? "text-emerald-600" : "text-red-600"
+export default function BookCard({
+  id,
+  _id,
+  title,
+  author,
+  cover,
+  stock
+}: BookCardProps) {
+  const isInStock = stock > 0
+  const finalId = (id || _id) as string
+  if (!finalId) return null
 
   return (
-    <Link href={`/books/${id}`}>
-      <div className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer h-full flex flex-col">
-        {/* Book Cover */}
-        <div className="bg-slate-200 h-48 flex items-center justify-center overflow-hidden">
+    <Link
+      href={`/books/${finalId}`}
+      className="block h-full"
+      style={{ textDecoration: "none" }}
+    >
+      <Card
+        className="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm hover:shadow-xl hover:shadow-blue-300/30 transition-all duration-300 cursor-pointer h-full flex flex-col hover:scale-[1.02]"
+      >
+        {/* Cover Buku */}
+        <div className="relative h-48 w-full bg-slate-100 flex items-center justify-center overflow-hidden">
           <img
-            src={cover || "https://via.placeholder.com/150x200?text=Book+Cover"}
+            src={cover || "https://via.placeholder.com/150x200?text=No+Cover"}
             alt={title}
-            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+            className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+            draggable={false}
           />
         </div>
 
-        {/* Book Info */}
+        {/* Konten Buku */}
         <div className="p-4 flex flex-col flex-grow">
-          <h3 className={`${typography.h4} mb-1 line-clamp-2 hover:text-blue-500 transition-colors`}>
+          {/* Judul */}
+          <h3
+            className={`${typography.h4} hover:text-cyan-600 transition-colors line-clamp-2`}
+          >
             {title}
           </h3>
-          <p className={`${typography.bodySmall} mb-4 flex-grow`}>{author}</p>
 
-          {/* Stock Status */}
-          <div className="mt-2 mb-3">
-            <span className={`text-sm font-medium ${stockColor}`}>
-              {stockStatus === "In Stock" ? "✓ " : "✗ "}
-              Stock: {stock}
-            </span>
+          {/* Penulis */}
+          <p className={`${typography.bodySmall} mt-1 text-slate-600`}>
+            {author}
+          </p>
+
+          {/* Status stok */}
+          <div className="mt-3 mb-3">
+            {isInStock ? (
+              <Badge
+                variant="outline"
+                className="text-emerald-600 border-emerald-200 bg-emerald-50"
+              >
+                ✓ Stock: {stock}
+              </Badge>
+            ) : (
+              <Badge
+                variant="destructive"
+                className="bg-red-100 text-red-600 border-red-200"
+              >
+                ✗ Out of Stock
+              </Badge>
+            )}
           </div>
 
-          {/* View Details Button */}
-          <Button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 rounded-lg transition-all">
-            View Details
-          </Button>
+          <div className="mt-auto">
+            <div
+              className={`w-full text-center font-bold py-2 rounded-md transition-all select-none ${
+                isInStock
+                  ? "bg-cyan-500 hover:bg-cyan-600 text-white"
+                  : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
+            >
+              View Details
+            </div>
+          </div>
         </div>
-      </div>
+      </Card>
     </Link>
   )
 }

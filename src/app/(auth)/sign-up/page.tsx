@@ -9,10 +9,13 @@ import { AuthDivider } from "@/components/auth/auth-divider"
 import { GoogleButton } from "@/components/auth/google-button"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { useDispatch } from "react-redux"
+import { setTempEmail } from "@/lib/store/authSlice"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export default function RegisterPage() {
+  const dispatch = useDispatch()
   const [username, setUsername] = useState("")
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
@@ -44,7 +47,7 @@ export default function RegisterPage() {
         throw new Error(data.message || "Registrasi gagal. Silakan coba lagi.")
       }
 
-      localStorage.setItem("registrationEmail", email)
+      dispatch(setTempEmail(email));
 
       router.push("/otp?flow=register")
 

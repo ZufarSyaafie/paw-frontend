@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import AnnouncementCard from "@/components/announcements/announcement-card"
-import { Search, Filter, X, Loader2, AlertCircle, Bell } from "lucide-react" // Import semua yang dibutuhkan
+import { Search, X, Loader2, AlertCircle, Bell } from "lucide-react"
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import type { Announcement } from "@/types"
@@ -18,7 +18,7 @@ export default function AnnouncementsPage() {
 	const [error, setError] = useState<string | null>(null)
 
 	const [searchQuery, setSearchQuery] = useState("")
-	const [showFilters, setShowFilters] = useState(false)
+	// const [showFilters, setShowFilters] = useState(false)
 
 	useEffect(() => {
 		const fetchAnnouncements = async () => {
@@ -57,7 +57,7 @@ export default function AnnouncementsPage() {
 		}
 
 		fetchAnnouncements()
-	}, []) // Array kosong agar hanya di-fetch sekali
+	}, [])
 
     const hasActiveFilters = searchQuery !== "" 
     
@@ -69,88 +69,91 @@ export default function AnnouncementsPage() {
             safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
             safeSnippet.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }).sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime()); // Sort by newest first
+    }).sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
 
 	return (
 		<div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				{/* Header */}
-				<div className="py-4 border-b mb-8" style={{ borderBottomColor: "#e2e8f0" }}>
-					<h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
-						Announcements
-					</h1>
-					<p className={`${typography.bodySmall} mt-2`} style={{ color: colors.textSecondary }}>
-						{filteredAnnouncements.length} latest updates from the library.
-					</p>
-				</div>
-
-				{/* Search & Filters Placeholder */}
+				
+				{/* Header, Search, & Filters digabung jadi satu baris */}
 				<div className="py-6 space-y-4">
-					<div className="flex flex-row items-center justify-between gap-2 sm:gap-3">
-						<div className="relative flex-1 min-w-0">
-							<Search
-								className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
-								style={{ color: colors.textTertiary }}
-							/>
-							<input
-								type="text"
-								placeholder="Search announcements..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full max-w-sm pl-12 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm sm:text-base"
-								style={{
-									backgroundColor: colors.bgPrimary,
-									borderColor: "#cbd5e1",
-									color: colors.textPrimary,
-									minWidth: "120px",
-								}}
-							/>
-						</div>
-
-						<div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-							{/* Filter Button */}
-							<button
-								onClick={() => setShowFilters(!showFilters)}
-								className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm sm:text-base"
-								style={{
-									backgroundColor: showFilters ? colors.info : colors.bgPrimary,
-									color: showFilters ? "white" : colors.textSecondary,
-									border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
-									minHeight: "42px",
-									padding: "10px 12px",
-								}}
-							>
-								<Filter className="w-5 h-5 flex-shrink-0" />
-								<span className="hidden sm:inline">Filters</span>
-							</button>
-
-							{/* Clear Button */}
-							{hasActiveFilters && (
-								<button
-									onClick={() => setSearchQuery("")}
-									className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm sm:text-base"
-									style={{
-										backgroundColor: colors.bgPrimary,
-										color: colors.danger,
-										border: `1px solid #fecaca`,
-										minHeight: "42px",
-										padding: "10px 12px",
-									}}
-								>
-									<X className="w-5 h-5 flex-shrink-0" />
-									<span className="hidden sm:inline">Clear</span>
-								</button>
-							)}
-						</div>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        
+                        <div>
+                            <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
+                                Announcements
+                            </h1>
+                            <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
+                                {filteredAnnouncements.length} latest updates from the library.
+                            </p>
+                        </div>
 					</div>
-					{/* Filters Panel - Sorting logic should be here if needed */}
-					{showFilters && (
+					<div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
+                        {/* KANAN: Search + Filter/Clear buttons */}
+                        <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
+                            {/* Search bar */}
+                            <div className="relative flex-1 min-w-0 sm:flex-auto">
+                                <Search
+                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+                                    style={{ color: colors.textTertiary }}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Search..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+                                    style={{
+                                        backgroundColor: colors.bgPrimary,
+                                        borderColor: "#cbd5e1",
+                                        color: colors.textPrimary,
+                                    }}
+                                />
+                            </div>
+
+                            {/* Filter Button */}
+                            {/* <button
+                                onClick={() => setShowFilters(!showFilters)}
+                                className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
+                                style={{
+                                    backgroundColor: showFilters ? colors.info : colors.bgPrimary,
+                                    color: showFilters ? "white" : colors.textSecondary,
+                                    border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
+                                    minHeight: "42px",
+                                    padding: "10px 12px",
+                                }}
+                            >
+                                <Filter className="w-5 h-5 flex-shrink-0" />
+                                <span className="hidden sm:inline">Filters</span>
+                            </button> */}
+
+                            {/* Clear Button */}
+                            {hasActiveFilters && (
+                                <button
+                                    onClick={() => setSearchQuery("")}
+                                    className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
+                                    style={{
+                                        backgroundColor: colors.bgPrimary,
+                                        color: colors.danger,
+                                        border: `1px solid #fecaca`,
+                                        minHeight: "42px",
+                                        padding: "10px 12px",
+                                    }}
+                                >
+                                    <X className="w-5 h-5 flex-shrink-0" />
+                                    <span className="hidden sm:inline">Clear</span>
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                    
+                    {/* Panel Filter */}
+                    {/* {showFilters && (
                         <div className="rounded-lg p-4 border bg-gray-50">
                             <p className="text-sm text-gray-600">Sorting options can go here.</p>
                         </div>
-                    )}
-				</div>
-				
+                    )} */}
+                </div>				
 
 				{/* Content based on state */}
 				{isLoading ? (

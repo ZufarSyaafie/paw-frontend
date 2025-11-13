@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Camera, Mail, Calendar, BookOpen, Users, Loader2, AlertCircle } from "lucide-react" 
+import { Camera, Mail, Calendar, BookOpen, Users, Loader2, AlertCircle, Phone } from "lucide-react" // <-- Tambah ikon Phone
 import { Button } from "@/components/ui/button"
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
@@ -41,6 +41,7 @@ export default function ProfilePage() {
     const [editedUsername, setEditedUsername] = useState("")
     const [editedEmail, setEditedEmail] = useState("") 
     const [editedBio, setEditedBio] = useState("")
+    const [editedPhone, setEditedPhone] = useState("") // <-- State baru
 
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -61,7 +62,8 @@ export default function ProfilePage() {
                     headers: { "Authorization": `Bearer ${token}` }
                 })
                  if (!userRes.ok) throw new Error("Failed to fetch user data.")
-                const userJson = await userRes.json() as UserType
+                
+                 const userJson = await userRes.json() as UserType
                 
                 const userData = {
                     ...userJson,
@@ -75,9 +77,10 @@ export default function ProfilePage() {
                 setEditedUsername(userData.username)
                 setEditedEmail(userData.email) 
                 setEditedBio(userData.bio || "")
+                setEditedPhone(userData.phone || "")
 
                 localStorage.setItem('userProfilePicture', userData.profilePicture);
-                
+
                 const loansRes = await fetch(`${API_URL}/api/loans/my`, {
                      headers: { "Authorization": `Bearer ${token}` }
                 })
@@ -94,7 +97,7 @@ export default function ProfilePage() {
                     if (isOverdue) status = "overdue";
                     return { ...loan, status: status } as FrontendLoan;
                 });
-                
+
                 const processedBookings = bookingsData
                     .filter((b: Booking) => b.status !== "cancelled")
                     .map((b: Booking) => ({
@@ -109,7 +112,7 @@ export default function ProfilePage() {
                 setError(err.message || "Failed to load profile data.")
             } finally {
                 setIsLoading(false)
-             }
+            }
         }
 
         fetchUserData()
@@ -117,12 +120,9 @@ export default function ProfilePage() {
 
     const handleProfilePictureClick = () => {
         const choice = window.confirm("Pilih 'OK' untuk upload file (hanya sementara, tidak tersimpan di database), atau 'Cancel' untuk memasukkan URL gambar (permanen).");
-
         if (choice) {
-            // Pilihan 1: Upload File (Sementara)
             fileInputRef.current?.click();
         } else {
-            // Pilihan 2: Masukkan URL (Permanen)
             const newImageUrl = window.prompt("Masukkan URL gambar online (e.g., https://i.imgur.com/...jpg):");
             if (newImageUrl && newImageUrl.startsWith("http")) {
                 handleSaveProfilePictureUrl(newImageUrl);
@@ -132,16 +132,15 @@ export default function ProfilePage() {
         }
     }
 
-    // Handler upload file (sementara)
     const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
            const file = e.target.files?.[0]
-        if (file) {
+           if (file) {
             const reader = new FileReader()
             reader.onloadend = () => {
                 const tempUrl = reader.result as string;
                 setUserData({ ...userData!, profilePicture: tempUrl })
-                localStorage.setItem('userProfilePicture', tempUrl); 
-                window.dispatchEvent(new Event('storage')); // Trigger header
+                localStorage.setItem('userProfilePicture', tempUrl);
+                window.dispatchEvent(new Event('storage')); 
             }
             reader.readAsDataURL(file)
         }
@@ -163,14 +162,12 @@ export default function ProfilePage() {
                     profilePicture: newUrl 
                 })
             });
-
             const updatedUser = await response.json();
             if (!response.ok) throw new Error(updatedUser.message);
 
             setUserData({ ...userData!, profilePicture: updatedUser.profilePicture });
             localStorage.setItem('userProfilePicture', updatedUser.profilePicture);
-            window.dispatchEvent(new Event('storage')); 
-
+            window.dispatchEvent(new Event('storage'));
             alert("Foto profil berhasil diperbarui!");
 
         } catch (err: any) {
@@ -181,9 +178,8 @@ export default function ProfilePage() {
     }
 
     const handleSaveProfile = async () => {
-        
         if (!window.confirm("Yakin mau simpan perubahan ini?")) {
-            return; 
+            return;
         }
 
         setIsSaving(true);
@@ -201,12 +197,13 @@ export default function ProfilePage() {
                 body: JSON.stringify({
                     username: editedUsername, 
                     email: editedEmail, 
-                    bio: editedBio
+                    bio: editedBio,
+                    phone: editedPhone, 
+                    profilePicture: userData!.profilePicture 
                 })
             });
 
             const updatedUser = await response.json();
-
             if (!response.ok) {
                 throw new Error(updatedUser.message || "Failed to save profile.");
             }
@@ -216,8 +213,13 @@ export default function ProfilePage() {
                 username: updatedUser.name, 
                 bio: updatedUser.bio,
                 email: updatedUser.email,
-                isVerified: updatedUser.isVerified 
+                phone: updatedUser.phone, 
+                isVerified: updatedUser.isVerified,
+                profilePicture: updatedUser.profilePicture
             });
+
+            localStorage.setItem('userProfilePicture', updatedUser.profilePicture);
+            window.dispatchEvent(new Event('storage'));
             
             if (oldEmail !== updatedUser.email && !updatedUser.isVerified) {
                 alert("Profile updated! Email Anda telah diganti dan sekarang UNVERIFIED. Silakan verifikasi email baru Anda.");
@@ -226,37 +228,34 @@ export default function ProfilePage() {
             }
             
             setIsEditing(false);
-
         } catch (err: any) {
             setFormError(err.message || "An error occurred.");
-            alert(err.message || "An error occurred."); // Nampilin error spesifik
+            alert(err.message || "An error occurred.");
         } finally {
             setIsSaving(false);
         }
     }
 
-    // Handler Batal Edit
     const handleCancel = () => {
         setIsEditing(false)
         setFormError(null);
         setEditedUsername(userData!.username)
         setEditedEmail(userData!.email) 
         setEditedBio(userData!.bio || "")
+        setEditedPhone(userData!.phone || "") // < reset phone pas cancel
     }
 
-    // Helper format tanggal
     const formatDate = (date: string) =>
         new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
-    
+    // Cek perubahan (termasuk phone)
     const isChanged = userData 
         ? userData.username !== editedUsername || 
           userData.email !== editedEmail || 
-          (userData.bio || "") !== editedBio 
+          (userData.bio || "") !== editedBio ||
+          (userData.phone || "") !== editedPhone // cek phone
         : false;
 
-
-    // --- Render ---
     if (isLoading) return (
         <div className="flex justify-center items-center h-screen">
             <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
@@ -275,22 +274,21 @@ export default function ProfilePage() {
     return (
         <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
+                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                      {/* Profile Card */}
                     <div className="lg:col-span-1">
                         <div className="bg-white rounded-lg border border-slate-200 p-6 space-y-6 shadow-sm">
-                            {/* Profile Picture */}
+                             {/* Profile Picture */}
                              <div className="text-center">
                                 <div className="relative inline-block">
-                                    <img
+                                     <img
                                          src={userData.profilePicture}
-                                        alt={userData.username}
+                                         alt={userData.username}
                                          className="w-32 h-32 rounded-full border-4"
                                         style={{ borderColor: colors.primary }}
                                     />
                                      <button
-                                        onClick={handleProfilePictureClick} 
+                                         onClick={handleProfilePictureClick} 
                                          className="absolute bottom-0 right-0 p-2 rounded-full text-white hover:opacity-90 transition-opacity"
                                         style={{ backgroundColor: colors.primary }}
                                     >
@@ -298,37 +296,37 @@ export default function ProfilePage() {
                                     </button>
                                  </div>
                                 <input
-                                    ref={fileInputRef}
+                                     ref={fileInputRef}
                                      type="file"
                                     accept="image/*"
-                                    onChange={handleProfilePictureChange}
+                                     onChange={handleProfilePictureChange}
                                      className="hidden"
                                 />
-                            </div>
+                             </div>
 
                              {/* User Info */}
                             <div className="space-y-4">
-                                <div>
+                                 <div>
                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
-                                        Username
+                                         Username
                                     </p>
                                      {isEditing ? (
                                         <input
                                             type="text"
-                                             value={editedUsername}
+                                            value={editedUsername}
                                             onChange={(e) => setEditedUsername(e.target.value)}
-                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
+                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
                                             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
-                                         />
+                                        />
                                     ) : (
                                         <p className={typography.h4} style={{ color: colors.textPrimary }}>
                                              {userData.username}
                                         </p>
-                                     )}
+                                    )}
                                 </div>
 
                                 {/* Bagian Email */}
-                                <div>
+                                 <div>
                                      {isEditing ? (
                                         <>
                                             <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
@@ -342,12 +340,12 @@ export default function ProfilePage() {
                                                 style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
                                             />
                                         </>
-                                    ) : (
+                                     ) : (
                                         <InfoField 
                                             icon={<Mail className="w-4 h-4" />} 
                                             label="Email" 
                                             value={
-                                                <div className="flex items-center gap-2">
+                                             <div className="flex items-center gap-2">
                                                     <span>{userData.email}</span>
                                                     {!userData.isVerified && (
                                                         <span className="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-700">
@@ -359,23 +357,47 @@ export default function ProfilePage() {
                                         />
                                      )}
                                 </div>
+                                
+                                <div>
+                                     {isEditing ? (
+                                        <>
+                                            <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
+                                                Phone Number
+                                            </p>
+                                            <input
+                                                type="tel"
+                                                value={editedPhone}
+                                                onChange={(e) => setEditedPhone(e.target.value)}
+                                                placeholder="0812..."
+                                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
+                                                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                            />
+                                        </>
+                                     ) : (
+                                        <InfoField 
+                                            icon={<Phone className="w-4 h-4" />} 
+                                            label="Phone" 
+                                            value={userData.phone || "No phone added yet"} 
+                                        />
+                                     )}
+                                </div>
 
                                  <InfoField
                                     icon={<Calendar className="w-4 h-4" />}
                                     label="Member Since"
-                                     value={formatDate(userData.joinDate)}
+                                    value={formatDate(userData.joinDate)}
                                 />
 
                                 <div>
-                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
+                                    <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
                                         Bio
-                                     </p>
+                                    </p>
                                     {isEditing ? (
                                         <textarea
                                             value={editedBio}
-                                             onChange={(e) => setEditedBio(e.target.value)}
+                                            onChange={(e) => setEditedBio(e.target.value)}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 resize-none"
-                                             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                            style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
                                             rows={3}
                                             placeholder="Ceritakan sedikit tentang dirimu..." 
                                          />
@@ -395,8 +417,7 @@ export default function ProfilePage() {
                             <div className="space-y-2 pt-4 border-t border-slate-200">
                                 {isEditing ? (
                                     <>
-                                        {/* Tombol Save */}
-                                         <Button
+                                        <Button
                                             onClick={handleSaveProfile}
                                             variant="success" 
                                             className="w-full"
@@ -404,29 +425,26 @@ export default function ProfilePage() {
                                         >
                                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
                                         </Button>
-                   
-                                        {/* Tombol Cancel */}
                                         <Button
                                              onClick={handleCancel}
-                                            variant="secondary"
+                                             variant="secondary"
                                             className="w-full"
-                                            disabled={isSaving}
+                                             disabled={isSaving}
                                          >
                                             Cancel
-                                         </Button>
+                                        </Button>
                                     </>
-                                ) : (
-                                     /* Tombol Edit */
+                                 ) : (
                                     <Button
                                          onClick={() => setIsEditing(true)}
                                         variant="primary"
-                                        className="w-full"
+                                         className="w-full"
                                      >
                                         Edit Profile
-                                     </Button>
+                                    </Button>
                                 )}
                             </div>
-                        </div>
+                         </div>
                      </div>
 
                     {/* Bagian Aktivitas */}
@@ -435,23 +453,23 @@ export default function ProfilePage() {
                              {/* Tabs */}
                             <div className="flex border-b border-slate-200">
                                 {[
-                                     { id: "overview", label: "Overview" },
+                                    { id: "overview", label: "Overview" },
                                     { id: "books", label: "Books", icon: BookOpen, count: userActivity.loans.length },
                                     { id: "rooms", label: "Rooms", icon: Users, count: userActivity.bookings.length },
                                 ].map((tab) => (
                                     <TabButton
-                                         key={tab.id}
+                                        key={tab.id}
                                         isActive={activeTab === tab.id}
                                         onClick={() => setActiveTab(tab.id as "overview" | "books" | "rooms")}
                                         icon={tab.icon}
                                         label={tab.label}
-                                         count={tab.count}
+                                        count={tab.count}
                                     />
                                 ))}
                              </div>
                             {/* Konten Tab */}
                             <div className="p-6">
-                                 {activeTab === "overview" && <OverviewTab activity={userActivity} />}
+                                {activeTab === "overview" && <OverviewTab activity={userActivity} />}
                                 {activeTab === "books" && <BooksTab books={userActivity.loans} />}
                                 {activeTab === "rooms" && <RoomsTab bookings={userActivity.bookings} />} 
                             </div>
@@ -499,7 +517,7 @@ function InfoField({
     value,
 }: {
     icon: React.ReactNode
-     label: string
+    label: string
     value: React.ReactNode 
 }) {
     return (
@@ -518,30 +536,30 @@ function InfoField({
 }
 
 function OverviewTab({ activity }: { activity: { loans: FrontendLoan[], bookings: Booking[] } }) {
-     return (
+    return (
         <div className="space-y-6">
             <div className="grid grid-cols-2 gap-4">
                 <StatBox label="Books Borrowed" value={activity.loans.length} />
                 <StatBox label="Room Bookings" value={activity.bookings.length} />
             </div>
             <div>
-                 <h3 className={`${typography.h4} mb-3`} style={{ color: colors.textPrimary }}>
+                <h3 className={`${typography.h4} mb-3`} style={{ color: colors.textPrimary }}>
                     Recent Activity
                 </h3>
                 <div className="space-y-3">
                     {activity.loans.slice(0, 2).map((loan) => (
                          <ActivityCard
-                            key={loan.id}
+                            key={(loan.id || loan._id) as string}
                             title={loan.book.title}
                             subtitle={`By ${loan.book.author}`}
                             status={loan.status}
                         />
                     ))}
                     {activity.bookings.slice(0, 2).map((booking) => (
-                         <ActivityCard
-                            key={booking.id}
+                        <ActivityCard
+                            key={(booking.id || booking._id) as string}
                             title={booking.room.name}
-                             subtitle={`Slot: ${booking.startTime} - ${booking.endTime}`}
+                            subtitle={`Slot: ${booking.startTime} - ${booking.endTime}`}
                             status={booking.displayStatus || booking.status} 
                         />
                     ))}
@@ -553,42 +571,42 @@ function OverviewTab({ activity }: { activity: { loans: FrontendLoan[], bookings
 
 function BooksTab({ books }: { books: FrontendLoan[] }) {
     return (
-         <div className="space-y-3">
+        <div className="space-y-3">
             {books.map((loan) => (
                 <div
-                    key={loan.id}
+                    key={(loan.id || loan._id) as string}
                     className="rounded-lg border border-slate-200 p-4"
-                     style={{ backgroundColor: colors.bgSecondary }}
+                    style={{ backgroundColor: colors.bgSecondary }}
                 >
-                    <div className="flex items-start justify-between mb-3">
+                     <div className="flex items-start justify-between mb-3">
                         <div>
                             <p className={typography.h4} style={{ color: colors.textPrimary }}>
                                 {loan.book.title}
-                            </p>
+                             </p>
                             <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
-                                 by {loan.book.author}
-                            </p>
+                               by {loan.book.author}
+                             </p>
                         </div>
-                         <StatusBadge status={loan.status} />
+                        <StatusBadge status={loan.status} />
                     </div>
                     <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
-                             <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
+                            <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
                                 Borrow Date
                             </p>
-                            <p className={typography.body} style={{ color: colors.textPrimary }}>
+                             <p className={typography.body} style={{ color: colors.textPrimary }}>
                                 {new Date(loan.borrowDate).toLocaleDateString()}
                             </p>
                         </div>
-                         <div>
+                        <div>
                             <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
                                 Due Date
-                             </p>
+                            </p>
                             <p style={{ color: (loan.status as string) === "overdue" ? colors.danger : colors.textPrimary }}>
                                 {new Date(loan.dueDate).toLocaleDateString()}
                             </p>
                         </div>
-                     </div>
+                    </div>
                 </div>
             ))}
         </div>
@@ -600,20 +618,20 @@ function RoomsTab({ bookings }: { bookings: Booking[] }) {
         <div className="space-y-3">
             {bookings.map((booking) => (
                  <div
-                    key={booking.id}
+                    key={(booking.id || booking._id) as string}
                     className="rounded-lg border border-slate-200 p-4"
-                    style={{ backgroundColor: colors.bgSecondary }}
+                     style={{ backgroundColor: colors.bgSecondary }}
                 >
                      <div className="flex items-start justify-between mb-3">
                         <div>
-                            <p className={typography.h4} style={{ color: colors.textPrimary }}>
+                             <p className={typography.h4} style={{ color: colors.textPrimary }}>
                                 {booking.room.name}
                              </p>
                             <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
                                 {booking.startTime} - {booking.endTime}
                              </p>
                         </div>
-                        <StatusBadge status={booking.displayStatus || booking.status} /> 
+                         <StatusBadge status={booking.displayStatus || booking.status} /> 
                     </div>
                     <div>
                         <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
@@ -621,7 +639,7 @@ function RoomsTab({ bookings }: { bookings: Booking[] }) {
                         </p>
                         <p className={typography.body} style={{ color: colors.textPrimary }}>
                             {new Date(booking.date).toLocaleDateString()}
-                         </p>
+                        </p>
                     </div>
                 </div>
             ))}
@@ -638,7 +656,7 @@ function StatBox({ label, value }: { label: string; value: number }) {
             <p className="text-3xl font-bold mt-1" style={{ color: colors.info }}>
                 {value}
             </p>
-         </div>
+        </div>
     )
 }
 
@@ -650,13 +668,13 @@ function ActivityCard({ title, subtitle, status }: { title: string; subtitle: st
         >
             <div>
                 <p className={typography.body} style={{ color: colors.textPrimary }}>
-                     {title}
+                    {title}
                 </p>
                 <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
                     {subtitle}
                 </p>
             </div>
-             <StatusBadge status={status} />
+            <StatusBadge status={status} />
         </div>
     )
 }

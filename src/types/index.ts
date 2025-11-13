@@ -12,6 +12,7 @@ export interface User {
   joinDate: string
   createdAt?: string
   bio?: string
+  phone?: string
 }
 
 // Book Types
@@ -22,7 +23,7 @@ export interface Book {
   author: string
   cover?: string 
   stock: number
-  status: "available" | "rented" | "unavailable"
+  status: "available" | "unavailable"
   isbn?: string
   category: string
   year: number
@@ -47,7 +48,7 @@ export interface Room {
   photos: string[] 
   features?: string[]
   facilities: string[]
-  status: "available" | "booked"
+  status: "available" | "booked" | "maintenance"
   price: number
 }
 
@@ -81,7 +82,7 @@ export interface Loan {
   id: string
   _id?: string
   user: { id: string, email: string }
-  book: { id: string, title: string, author: string, cover: string, image: string } 
+  book: { id: string, title: string, author: string, cover: string, image: string, synopsis?: string } 
   borrowDate: string
   dueDate: string
   returnDate?: string | undefined

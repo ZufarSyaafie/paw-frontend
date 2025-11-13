@@ -87,8 +87,7 @@ export default function AnnouncementDetailPage() {
     )
 
     const title = announcement.bookTitle || announcement.title || MOCK_ANNOUNCEMENT.title
-    const snippet = announcement.message || announcement.snippet || MOCK_ANNOUNCEMENT.snippet
-    const fullContent = announcement.message || announcement.fullContent || MOCK_ANNOUNCEMENT.fullContent // FIX: Gunakan message/fullContent
+    const fullContent = announcement.message || announcement.fullContent || MOCK_ANNOUNCEMENT.fullContent
     const date = announcement.createdAt || announcement.date || MOCK_ANNOUNCEMENT.date
     
     const formattedDate = new Date(date!).toLocaleDateString("en-US", { 
@@ -101,49 +100,40 @@ export default function AnnouncementDetailPage() {
 
     return (
         <div className="min-h-screen bg-white">
-            {/* Header */}
-            <div className="sticky top-16 z-40 bg-white border-b border-gray-100">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                    <button
-                        onClick={() => router.back()}
-                        className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors text-sm"
-                    >
-                        <ArrowLeft className="w-4 h-4" /> 
-                        Back to Announcements
-                    </button>
-                </div>
-            </div>
+            <button
+                onClick={() => router.back()}
+                className="fixed top-24 left-[calc(theme(spacing.4)+1rem)] sm:left-[calc(theme(spacing.6)+1.5rem)] lg:left-[calc(theme(spacing.7)+1rem)] z-40 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg border border-gray-100 bg-white/80 backdrop-blur-md text-gray-600 hover:text-gray-900 hover:bg-slate-100/80 transition-all font-medium text-sm ring-1 ring-black/5"
+            >
+                <ArrowLeft className="w-4 h-4" /> 
+            </button>
+
 
             {/* Main Content */}
-            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
               
-            {/* Date Badge */}
+                {/* Date Badge */}
                 <div className="px-3 py-2 rounded-lg border border-gray-200 flex items-center gap-2 bg-gray-50 w-fit mb-6">
                     <Calendar className="w-4 h-4 text-gray-600" />
                     <span className="font-semibold text-sm text-gray-700">{formattedDate}</span>
                 </div>
 
      
-           {/* Title */}
+                {/* Title */}
                 <div className="mb-8">
                     <h1 className={typography.h1}>{title}</h1>
-                    <p className={`${typography.body} text-gray-600 mt-2`}>{snippet}</p>
                 </div>
 
           
-            {/* Divider */}
+                {/* Divider */}
                 <div className="border-t border-gray-100 my-8" />
 
                 {/* Content */}
-                <div className="space-y-4">
-                    {/* Split content by newline for paragraphs */}
+                <div className="bg-slate-50 border border-slate-200 rounded-lg p-6 lg:p-8 space-y-4">
                     {contentToDisplay.split("\n").map((paragraph, idx) => (
-              
-                    <p key={idx} className={`${typography.body} text-gray-700`}>
-                        {paragraph}
-                    </p>    
-                ))}
-               
+                        <p key={idx} className={`${typography.body} text-gray-800 leading-relaxed`}>
+                            {paragraph}
+                        </p>    
+                    ))}
                 </div>
             </div>
         </div>

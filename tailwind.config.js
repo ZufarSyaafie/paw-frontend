@@ -9,6 +9,25 @@ module.exports = {
   ],
   theme: {
   	extend: {
+		fontFamily: {
+			sans: ["var(--font-jakarta)", "sans-serif"],
+		},
+		// colors: {
+        //     primary: "#1a7b93",
+        //     primaryDark: "#0f4c75",
+        //     success: "#10b981",
+        //     danger: "#ef4444",
+        //     warning: "#f59e0b",
+        //     info: "#0891b2",
+        //     // Text
+        //     textPrimary: "#0f172a",
+        //     textSecondary: "#475569",
+        //     textTertiary: "#94a3b8",
+        //     // Background
+        //     bgPrimary: "#ffffff",
+        //     bgSecondary: "#f8fafc",
+        //     bgTertiary: "#e2e8f0",
+        // },
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

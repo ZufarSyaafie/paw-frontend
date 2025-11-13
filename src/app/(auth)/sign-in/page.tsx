@@ -3,6 +3,8 @@
 import type React from "react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { useDispatch } from 'react-redux'
+import { setTempEmail } from '@/lib/store/authSlice'
 import { AuthLayout } from "@/components/auth/auth-layout"
 import { AuthHeader } from "@/components/auth/auth-header"
 import { AuthDivider } from "@/components/auth/auth-divider"
@@ -14,6 +16,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export default function LoginPage() {
     const router = useRouter()
+    const dispatch = useDispatch()
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
     const [isLoading, setIsLoading] = useState(false)
@@ -37,7 +40,7 @@ export default function LoginPage() {
                 throw new Error(data.message || "Login gagal. Periksa email atau password.")
             }
 
-            localStorage.setItem("loginEmail", email) // Simpan untuk verifikasi di halaman OTP
+            dispatch(setTempEmail(email));
             
             alert("Login berhasil. Silakan cek email Anda untuk kode OTP.")
             router.push("/otp?flow=login")
@@ -58,9 +61,7 @@ export default function LoginPage() {
         <AuthLayout>
             <AuthHeader title="Welcome Back" subtitle="Sign in to your account to continue" />
 
-            {/* Form */}
             <form onSubmit={handleLogin} className="space-y-4">
-                {/* Email Input */}
                 <div>
                     <label className="text-sm font-semibold text-white/80 block mb-2">Email Address</label>
                     <div className="relative">
@@ -76,7 +77,6 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Password Input */}
                 <div>
                     <label className="text-sm font-semibold text-white/80 block mb-2">Password</label>
                     <div className="relative">
@@ -92,17 +92,14 @@ export default function LoginPage() {
                     </div>
                 </div>
 
-                {/* Tampilkan Error */}
                 {error && <p className="text-center text-red-400 text-sm">{error}</p>}
             
-                {/* Forgot Password */}
                 <div className="text-right">
                     <a href="/forgot-password" className="text-sm text-white hover:text-cyan-200 transition-colors">
                         Forgot Password?
                     </a>
                 </div>
 
-                {/* Sign In Button */}
                 <Button
                     type="submit"
                     disabled={isLoading || !email || !password}
@@ -114,10 +111,8 @@ export default function LoginPage() {
 
             <AuthDivider />
 
-            {/* Google Button */}
             <GoogleButton disabled={isLoading} onClick={handleGoogleSignIn} isLoading={isLoading} />
 
-            {/* Sign Up Link */}
             <p className="text-center text-sm text-white/70 mt-6">
                 Don't have an account?{" "}
                 <a href="/sign-up" className="text-white font-semibold hover:text-cyan-200 transition-colors">
