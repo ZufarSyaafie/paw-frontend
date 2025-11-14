@@ -39,7 +39,7 @@ export default function HeroSection() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
-          <Button asChild size="lg" variant="primary" className="bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-4 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95">
+          <Button asChild size="lg" variant="primary" className="bg-gradient-to-r from-blue-500 via-cyan-400 hover:from-blue-600 hover:via-cyan-500 text-white font-bold py-4 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95">
             <Link href="/sign-up">Join Now, Gratis!</Link>
           </Button>
         </motion.div>
