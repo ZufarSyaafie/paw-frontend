@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { useDispatch } from "react-redux"
 import { setTempEmail } from "@/lib/store/authSlice"
+import { User, Phone, Mail, Lock, CheckCircle } from "lucide-react"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -20,12 +21,19 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [confirmPassword, setConfirmPassword] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState("") 
   const router = useRouter()
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    if (password !== confirmPassword) {
+      setError("Passwords do not match")
+      return
+    }
+    
     setIsLoading(true)
     setError("") 
 
@@ -63,7 +71,7 @@ export default function RegisterPage() {
     window.location.href = `${API_URL}/api/auth/google` // <-- Gunakan path /api/auth/google
   }
 
-  const isFormValid = username && phone && email && password
+  const isFormValid = username && phone && email && password && confirmPassword && password === confirmPassword
 
   return (
     <AuthLayout>
@@ -73,14 +81,17 @@ export default function RegisterPage() {
         {/* Username Input */}
         <div>
           <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">Name</label>
-          <Input
-            type="text"
-            placeholder="Your full name"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
-          />
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input
+              type="text"
+              placeholder="Your full name"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all placeholder-white/40 text-white"
+            />
+          </div>
         </div>
 
         {/* Phone Number Input */}
@@ -88,14 +99,17 @@ export default function RegisterPage() {
           <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">
             Phone Number
           </label>
-          <Input
-            type="tel"
-            placeholder="Your phone number"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            required
-            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
-          />
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input
+              type="tel"
+              placeholder="Your phone number"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all placeholder-white/40 text-white"
+            />
+          </div>
         </div>
 
         {/* Email Input */}
@@ -103,27 +117,56 @@ export default function RegisterPage() {
           <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">
             Email Address
           </label>
-          <Input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
-          />
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input
+              type="email"
+              placeholder="Enter your email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all placeholder-white/40 text-white"
+            />
+          </div>
         </div>
 
         {/* Password Input */}
         <div>
           <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">Password</label>
-          <Input
-            type="password"
-            placeholder="Create a strong password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
-          />
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input
+              type="password"
+              placeholder="Create a strong password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent transition-all placeholder-white/40 text-white"
+            />
+          </div>
+        </div>
+
+        {/* Confirm Password Input */}
+        <div>
+          <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">Confirm Password</label>
+          <div className="relative">
+            <CheckCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
+            <Input
+              type="password"
+              placeholder="Confirm your password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+              className={`w-full pl-10 pr-4 py-2 bg-white/10 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent transition-all placeholder-white/40 text-white ${
+                confirmPassword && password !== confirmPassword 
+                  ? "border-red-500 focus:ring-red-400" 
+                  : "border-white/20 focus:ring-cyan-400"
+              }`}
+            />
+          </div>
+          {confirmPassword && password !== confirmPassword && (
+            <p className="text-red-400 text-xs mt-1">Passwords do not match</p>
+          )}
         </div>
 
         {/* Tampilkan Error di sini */}
@@ -136,7 +179,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isLoading || !isFormValid}
-            className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+            className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 hover:from-blue-600 hover:via-cyan-500 text-white font-bold py-3 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
             {isLoading ? "Processing..." : "Create Account"}
           </Button>

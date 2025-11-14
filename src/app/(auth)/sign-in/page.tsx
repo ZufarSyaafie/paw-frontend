@@ -104,7 +104,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={isLoading || !email || !password}
-          className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+          className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 hover:from-blue-600 hover:via-cyan-500 text-white font-bold py-3 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isLoading ? "Signing in..." : "Sign In"}
         </Button>
@@ -116,7 +116,7 @@ export default function LoginPage() {
 
       <p className="text-center text-sm text-white/70 mt-6">
         Don't have an account?{" "}
-        <a href="/sign-up" className="text-white font-semibold hover:text-cyan-200 transition-colors">
+        <a href="/sign-up" className="text-white font-semibold hover:text-white/80 transition-colors">
           Create one
         </a>
       </p>

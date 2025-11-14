@@ -32,7 +32,7 @@ export default function CTASection() {
           viewport={{ amount: 0.5 }} // <-- UBAH DI SINI
           transition={{ duration: 0.5, delay: 0.4 }}
         >
-          <Button asChild size="lg" variant="primary" className="bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-4 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95">
+          <Button asChild size="lg" variant="primary" className="bg-gradient-to-r from-blue-500 via-cyan-400 hover:from-blue-600 hover:via-cyan-500 text-white font-bold py-4 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95">
             <Link href="/sign-up">Daftar Akun Sekarang</Link>
           </Button>
         </motion.div>
