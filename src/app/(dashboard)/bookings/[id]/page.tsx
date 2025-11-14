@@ -8,6 +8,7 @@ import type { Booking } from "@/types"
 import { getAuthToken } from "@/lib/auth"
 // import { typography } from "@/styles/typography"
 // import { colors } from "@/styles/colors"
+export const dynamic = "force-dynamic";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
