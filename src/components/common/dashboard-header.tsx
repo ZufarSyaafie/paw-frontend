@@ -153,7 +153,7 @@ export default function DashboardHeader() {
                                 isActive("/dashboard") ? "opacity-100" : "opacity-70 hover:opacity-100 hover:bg-slate-100"
                             }`}
                         >
-                            <img src="/logo.png" alt="Naratama" className="h-10 w-auto" />
+                            <img src="/logo-warna.png" alt="Naratama" className="h-10 w-auto" />
                         </Link>
                     </div>
 
@@ -232,7 +232,7 @@ export default function DashboardHeader() {
                         <button
                             onClick={() => setIsMenuOpen((s) => !s)}
                             className="lg:hidden p-2 rounded-lg transition-colors"
-                            style={{ color: colors.textSecondary, backgroundColor: colors.bgSecondary }}
+                            style={{ color: colors.info, backgroundColor: colors.bgSecondary }}
                             aria-label="menu"
                         >
                             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -243,7 +243,12 @@ export default function DashboardHeader() {
 
             {/* mobile dropdown - logout moved here for mobile only */}
             {isMenuOpen && (
-                <nav className="lg:hidden mt-2 py-4 px-4 space-y-1 bg-white shadow-lg rounded-xl ring-1 ring-black/5" style={{ border: `1px solid #e2e8f0` }}>
+                <nav className="lg:hidden mt-2 py-4 px-4 space-y-1 rounded-xl shadow-lg ring-1 ring-white/20" 
+                style={{ 
+                    background: 'rgba(100, 100, 100, 0.1)',
+                    backdropFilter: 'blur(12px)',
+                    border: `1px solid rgba(100, 100, 100, 0.2)`
+                }}>
                     {userRole === 'admin' && (
                          <Link
                             href="/admin/dashboard"
