@@ -14,7 +14,7 @@ export default function PublicFooter() {
           {/* DIV 1: Logo & Deskripsi */}
           <div className="space-y-4 md:w-1/3 lg:w-2/5">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Naratama" className="h-10 w-auto bg-white rounded-md p-1" />
+              <img src="/logo-warna.png" alt="Naratama" className="h-12 w-auto p-1" />
               <span className={`${typography.h4} font-bold`} style={{ color: "white" }}>
                 Digital Library
               </span>
