@@ -10,7 +10,7 @@ import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import { spacing } from "@/styles/spacing"
 import type { Book, Room, Announcement, Loan } from "@/types"
-import { getAuthToken } from "@/lib/auth"
+import { getAuthToken, setAuthToken } from "@/lib/auth"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -51,6 +51,18 @@ export default function Dashboard() {
     const [lateLoans, setLateLoans] = useState<Loan[]>([])
 
     useEffect(() => {
+        // Tangkap token dari query saat redirect OAuth (?token=...)
+        try {
+            const url = new URL(window.location.href)
+            const t = url.searchParams.get("token")
+            if (t && typeof t === "string" && t !== "undefined") {
+                setAuthToken(t)
+                // Hapus param token dari URL agar lebih rapi
+                url.searchParams.delete("token")
+                window.history.replaceState({}, document.title, url.pathname + url.search)
+            }
+        } catch {}
+
         const hour = new Date().getHours()
         if (hour < 11) setGreeting("Selamat Pagi")
         else if (hour < 15) setGreeting("Selamat Siang")
@@ -60,12 +72,6 @@ export default function Dashboard() {
 
     useEffect(() => {
         const token = getAuthToken()
-        if (!token) {
-            setError("Authentication required.")
-            setIsLoading(false)
-            return
-        }
-
         const stored = localStorage.getItem("username")
         if (stored) setUsername(stored)
 
@@ -74,8 +80,11 @@ export default function Dashboard() {
         ;(async () => {
             try {
                 if (!API_URL) return
+                const headers: HeadersInit = {}
+                if (token) headers["Authorization"] = `Bearer ${token}`
                 const res = await fetch(`${API_URL}/api/users/me`, {
-                    headers: { Authorization: `Bearer ${token}` },
+                    headers,
+                    credentials: "include",
                 })
                 if (!res.ok) return
                 const data = await res.json()
@@ -97,22 +106,23 @@ export default function Dashboard() {
 
     useEffect(() => {
         const token = getAuthToken()
-        if (!token) {
-            setError("Authentication required.")
-            setIsLoading(false)
-            return
-        }
 
         const fetchDashboardData = async () => {
             setIsLoading(true)
             setError(null)
             try {
+                const common: RequestInit = {
+                    credentials: "include",
+                }
+                const headers: HeadersInit = {}
+                if (token) headers["Authorization"] = `Bearer ${token}`
+
                 const [featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes] = await Promise.all([
-                    fetch(`${API_URL}/api/books?limit=3`, { headers: { Authorization: `Bearer ${token}` } }),
-                    fetch(`${API_URL}/api/books?limit=1`, { headers: { Authorization: `Bearer ${token}` } }), // Panggil endpoint /books lagi tapi cuma minta 1
-                    fetch(`${API_URL}/api/rooms`, { headers: { Authorization: `Bearer ${token}` } }),
-                    fetch(`${API_URL}/api/announcements`, { headers: { Authorization: `Bearer ${token}` } }),
-                    fetch(`${API_URL}/api/loans/my`, { headers: { Authorization: `Bearer ${token}` } })
+                    fetch(`${API_URL}/api/books?limit=3`, { ...common, headers }),
+                    fetch(`${API_URL}/api/books?limit=1`, { ...common, headers }),
+                    fetch(`${API_URL}/api/rooms`, { ...common, headers }),
+                    fetch(`${API_URL}/api/announcements`, { ...common, headers }),
+                    fetch(`${API_URL}/api/loans/my`, { ...common, headers })
                 ])
 
                 const featuredBooksData = await featuredBooksRes.json()

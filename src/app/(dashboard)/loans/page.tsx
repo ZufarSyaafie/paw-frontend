@@ -70,16 +70,14 @@ export default function LoansPage() {
   useEffect(() => {
     const fetchLoans = async () => {
       const token = getAuthToken()
-      if (!token) {
-        setError("Authentication required. Please log in again.")
-        setIsLoading(false)
-        return
-      }
       setIsLoading(true)
 
       try {
+        const headers: HeadersInit = {}
+        if (token) headers["Authorization"] = `Bearer ${token}`
         const response = await fetch(`${API_URL}/api/loans/my`, {
-          headers: { Authorization: `Bearer ${token}` },
+          headers,
+          credentials: "include",
         })
         if (!response.ok) {
           const errorData = await response.json()
