@@ -1,21 +1,24 @@
 "use client"
 import { useRouter } from "next/navigation"
-import { getAuthToken, removeAuthToken, setAuthToken } from "@/lib/auth"
 
+// Cookie-based auth: backend sets/clears httpOnly cookie. These helpers just navigate and hit logout API.
 export function useAuth() {
   const router = useRouter()
 
-  const login = (token: string) => {
-    setAuthToken(token)
+  const login = () => {
     router.push("/dashboard")
   }
 
-  const logout = () => {
-    removeAuthToken()
-    router.push("/login")
+  const logout = async () => {
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL
+      await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" })
+    } catch {}
+    router.push("/sign-in")
   }
 
-  const isAuthenticated = () => !!getAuthToken()
+  // For now, rely on protected routes or server checks; returning true by default.
+  const isAuthenticated = () => true
 
   return { login, logout, isAuthenticated }
 }

@@ -9,7 +9,7 @@ export function useApi<T>(url: string) {
   const fetchData = async () => {
     setLoading(true)
     try {
-      const response = await fetch(url)
+      const response = await fetch(url, { credentials: "include" })
       const result = await response.json()
       setData(result)
       setError(null)

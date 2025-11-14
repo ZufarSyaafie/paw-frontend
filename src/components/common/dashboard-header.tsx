@@ -3,7 +3,6 @@ import Link from "next/link";
 import { LogOut, Menu, X, Bell, ShieldCheck } from "lucide-react";
 import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { removeAuthToken, getAuthToken } from "@/lib/auth";
 import { colors } from "@/styles/colors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -49,8 +48,10 @@ export default function DashboardHeader() {
     }`;
 
     // logout logic
-    const handleLogout = () => {
-        removeAuthToken();
+    const handleLogout = async () => {
+        try {
+            await fetch(`${API_URL}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+        } catch {}
         localStorage.removeItem("userProfilePicture");
         localStorage.removeItem("lastNotifRead");
         localStorage.removeItem("userRole");
@@ -76,38 +77,28 @@ export default function DashboardHeader() {
         const storedPic = localStorage.getItem("userProfilePicture");
         if (storedPic) setProfilePicUrl(storedPic);
 
-        const checkUserRole = async () => {
-          const token = getAuthToken();
-          if (!token) return;
-
-          const cachedRole = localStorage.getItem("userRole");
-          if (cachedRole) {
-            setUserRole(cachedRole);
-            return;
-          }
-
-          try {
-            const res = await fetch(`${API_URL}/api/users/me`, {
-              headers: { Authorization: `Bearer ${token}` },
-            });
-            if (res.ok) {
-              const user = await res.json();
-              setUserRole(user.role);
-              localStorage.setItem("userRole", user.role);
-            }
-          } catch (error) {
-            console.error("failed to fetch user role:", error);
-          }
-        };
+                const checkUserRole = async () => {
+                    const cachedRole = localStorage.getItem("userRole");
+                    if (cachedRole) {
+                        setUserRole(cachedRole);
+                    }
+                    try {
+                        const res = await fetch(`${API_URL}/api/users/me`, { credentials: 'include' });
+                        if (res.ok) {
+                            const user = await res.json();
+                            setUserRole(user.role);
+                            localStorage.setItem("userRole", user.role);
+                        }
+                    } catch (error) {
+                        console.error("failed to fetch user role:", error);
+                    }
+                };
 
         // check latest announcement to flag unread
         const checkNotifications = async () => {
-            const token = getAuthToken();
-            if (!token || !API_URL) return;
+            if (!API_URL) return;
             try {
-                const res = await fetch(`${API_URL}/api/announcements?limit=1`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
+                const res = await fetch(`${API_URL}/api/announcements?limit=1`, { credentials: 'include' });
                 if (!res.ok) throw new Error("failed to fetch announcements");
                 const announcements = await res.json();
                 if (Array.isArray(announcements) && announcements.length > 0) {

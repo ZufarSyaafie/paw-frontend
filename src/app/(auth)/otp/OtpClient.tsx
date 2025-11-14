@@ -7,7 +7,7 @@ import { AuthLayout } from "@/components/auth/auth-layout"
 import { AuthHeader } from "@/components/auth/auth-header"
 import { Button } from "@/components/ui/button"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
-import { setAuthToken } from "@/lib/auth"
+// Cookie-based auth: no localStorage token
 // import { useSelector, useDispatch } from "react-redux"
 // import { RootState } from "@/lib/store/store"
 // import { clearTempEmail } from "@/lib/store/authSlice"
@@ -57,13 +57,14 @@ export default function OtpClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, otp }),
+        credentials: "include",
       })
 
       const data = await response.json()
       if (!response.ok) throw new Error(data.message || "Kode OTP tidak valid")
 
-      setAuthToken(data.token)
-      localStorage.removeItem(emailStorageKey); // <-- PAKE INI
+  // Cookie has been set by server; just clear temp email
+  localStorage.removeItem(emailStorageKey)
       // dispatch(clearTempEmail())
       
       alert("Verifikasi berhasil!")
@@ -95,6 +96,7 @@ export default function OtpClient() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
+        credentials: "include",
       })
 
       const data = await response.json()
