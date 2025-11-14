@@ -25,16 +25,14 @@ export default function BookingsPage() {
     useEffect(() => {
         const fetchBookings = async () => {
             const token = getAuthToken()
-            if (!token) {
-                setError("Authentication required. Please log in again.")
-                setIsLoading(false)
-                return
-            }
 
             setIsLoading(true)
             try {
+                const headers: HeadersInit = {}
+                if (token) headers["Authorization"] = `Bearer ${token}`
                 const response = await fetch(`${API_URL}/api/rooms/bookings/list`, {
-                    headers: { "Authorization": `Bearer ${token}` },
+                    headers,
+                    credentials: "include",
                 })
 
                 if (!response.ok) {

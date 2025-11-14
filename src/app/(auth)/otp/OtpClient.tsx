@@ -7,6 +7,7 @@ import { AuthLayout } from "@/components/auth/auth-layout"
 import { AuthHeader } from "@/components/auth/auth-header"
 import { Button } from "@/components/ui/button"
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp"
+import { setAuthToken } from "@/lib/auth"
 // Cookie-based auth: no localStorage token
 // import { useSelector, useDispatch } from "react-redux"
 // import { RootState } from "@/lib/store/store"
@@ -65,6 +66,10 @@ export default function OtpClient() {
 
   // Cookie has been set by server; just clear temp email
   localStorage.removeItem(emailStorageKey)
+      // Simpan token ke localStorage untuk header Authorization pada halaman yang memerlukannya
+      if (data?.token && typeof data.token === "string") {
+        setAuthToken(data.token)
+      }
       // dispatch(clearTempEmail())
       
       alert("Verifikasi berhasil!")

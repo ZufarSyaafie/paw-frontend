@@ -1,5 +1,6 @@
 "use client"
 import { useRouter } from "next/navigation"
+import { removeAuthToken } from "@/lib/auth"
 
 // Cookie-based auth: backend sets/clears httpOnly cookie. These helpers just navigate and hit logout API.
 export function useAuth() {
@@ -14,6 +15,8 @@ export function useAuth() {
       const API_URL = process.env.NEXT_PUBLIC_API_URL
       await fetch(`${API_URL}/api/auth/logout`, { method: "POST", credentials: "include" })
     } catch {}
+    // clear stored token for header-based requests
+    removeAuthToken()
     router.push("/sign-in")
   }
 
