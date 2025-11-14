@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button";
 export default function PublicHeader() {
   return (
     <header className="fixed top-0 left-0 right-0 z-50 pt-4 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto bg-white/80 backdrop-blur-md rounded-xl shadow-lg ring-1 ring-black/5" style={{ border: `1px solid #e2e8f0` }}>
+      <div className="max-w-7xl mx-auto bg-white/100 backdrop-blur-lg rounded-xl shadow-lg ring-1 ring-white/20" style={{ background: 'rgba(255, 255, 255, 0.1)', backdropFilter: 'blur(12px)' }}>
         <div className="relative flex items-center justify-between h-16 px-4 sm:px-6">
           {/* Kiri: Logo */}
           <div className="flex-shrink-0">
             <Link href="/" className="flex items-center gap-3 p-2">
-              <img src="/logo.png" alt="Naratama" className="h-10 w-auto" />
-              <span className="font-bold text-lg text-slate-800"></span>
+              <img src="/logo-warna.png" alt="Naratama" className="h-12 w-auto p-1" />
+              <span className="font-bold text-lg text-slate-700"></span>
             </Link>
           </div>
           

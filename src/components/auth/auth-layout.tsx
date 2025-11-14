@@ -28,15 +28,14 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
 
         {/* LOGO */}
         <Image
-          src="/logo.png"
+          src="/logo-putih.png"
           alt="Naratama Logo"
           width={200}
           height={240}
-          className="drop-shadow-[0_0_8px_rgba(255,255,255,0.4)]"
         />
       </div>
 
-      <p className="text-xs text-white/60 uppercase tracking-[0.3em] mt-1">
+      <p className="text-xs text-white/80 uppercase tracking-[0.3em] mt-1">
         Digital Library
       </p>
     </div>
