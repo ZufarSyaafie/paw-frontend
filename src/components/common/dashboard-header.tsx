@@ -138,7 +138,12 @@ export default function DashboardHeader() {
 
     return (
         <header className="fixed top-0 left-0 right-0 z-50 pt-4 px-4 sm:px-6 lg:px-8">
-            <div className="max-w-7xl mx-auto bg-white rounded-xl shadow-lg ring-1 ring-black/5" style={{ border: `1px solid #e2e8f0` }}>
+            <div className="max-w-7xl mx-auto rounded-xl shadow-lg ring-1 ring-white/20" 
+                 style={{ 
+                    background: 'rgba(255, 255, 255, 0.1)',
+                    backdropFilter: 'blur(12px)',
+                    border: `1px solid rgba(255, 255, 255, 0.2)`
+                    }}>
                 <div className="relative flex items-center justify-between h-16 px-4 sm:px-6">
                     {/* kiri: logo */}
                     <div className="flex-shrink-0">
