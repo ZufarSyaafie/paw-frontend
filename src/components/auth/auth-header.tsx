@@ -1,10 +1,7 @@
-export function AuthHeader({ title, subtitle }: { title: string; subtitle: string }) {
+export function AuthHeader({ title }: { title: string }) {
   return (
     <div className="text-center mb-8">
-      <h1 className="text-4xl font-bold text-white mb-2">NARATAMA</h1>
-      <p className="text-xs text-white/60 uppercase tracking-widest mb-6">Digital Library</p>
-      <h2 className="text-3xl font-bold text-white mb-2">{title}</h2>
-      <p className="text-sm text-white/70">{subtitle}</p>
+      <h2 className="text-2xl font-bold text-white">{title}</h2>
     </div>
   )
 }

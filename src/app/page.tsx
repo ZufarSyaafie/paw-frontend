@@ -1,14 +1,21 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { useRouter } from "next/navigation"
+import PublicHeader from "@/components/landing/PublicHeader";
+import HeroSection from "@/components/landing/HeroSection";
+import FeaturesSection from "@/components/landing/FeaturesSection";
+import CTASection from "@/components/landing/CTASection";
+import Footer from "@/components/common/Footer";
 
 export default function Home() {
-  const router = useRouter()
-
-  useEffect(() => {
-    router.push("/sign-in")
-  }, [router])
-
-  return null
+  return (
+    <div className="flex flex-col min-h-screen">
+      <PublicHeader />
+      <main className="flex-grow">
+        <HeroSection />
+        <FeaturesSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </div>
+  )
 }

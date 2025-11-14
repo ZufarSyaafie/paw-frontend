@@ -113,14 +113,20 @@ export default function OTPPage() {
   }
 
   const headerTitle = flow === "login" ? "Login Verification" : "Email Verification"
-  const headerSubtitle = `We sent a 6-digit verification code to ${email || "your email address"}.`
+  // const headerSubtitle = `We sent a 6-digit verification code to ${email || "your email address"}.`
 
   return (
     <AuthLayout>
       <AuthHeader
         title={headerTitle}
-        subtitle={headerSubtitle}
       />
+
+      {email && (
+        <p className="text-center text-white/60 text-sm mb-4">
+          We sent a 6-digit verification code to{" "}
+          <span className="text-white/80 font-semibold">{email}</span>.
+        </p>
+      )}
 
       {error && !email ? (
         // STATE 1: KALO FATAL ERROR (SESI HILANG)
@@ -128,7 +134,8 @@ export default function OTPPage() {
           <p className="text-center text-red-400 text-sm font-semibold">{error}</p>
           <Button
             onClick={() => router.push("/sign-in")}
-            className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 text-base"
+            className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3
+            rounded-lg transition-all duration-200 active:scale-95 text-base"
           >
             Kembali ke Halaman Sign In
           </Button>

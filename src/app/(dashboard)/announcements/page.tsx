@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import AnnouncementCard from "@/components/announcements/announcement-card"
-import { Search, X, Loader2, AlertCircle, Bell } from "lucide-react"
+import { Search, Filter, X, Loader2, AlertCircle, Bell } from "lucide-react"
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import type { Announcement } from "@/types"
@@ -18,8 +18,12 @@ export default function AnnouncementsPage() {
 	const [error, setError] = useState<string | null>(null)
 
 	const [searchQuery, setSearchQuery] = useState("")
-	// const [showFilters, setShowFilters] = useState(false)
+    
+    const [startDate, setStartDate] = useState(''); 
+    const [endDate, setEndDate] = useState(''); 
 
+	const [showFilters, setShowFilters] = useState(false)
+    
 	useEffect(() => {
 		const fetchAnnouncements = async () => {
 			const token = getAuthToken()
@@ -59,26 +63,52 @@ export default function AnnouncementsPage() {
 		fetchAnnouncements()
 	}, [])
 
-    const hasActiveFilters = searchQuery !== "" 
+    const hasActiveFilters = searchQuery !== "" || startDate !== "" || endDate !== "";
     
-    const filteredAnnouncements = announcements.filter((a) => {
-        const safeTitle = (a.title || a.bookTitle || "") as string; 
-        const safeSnippet = (a.snippet || a.message || "") as string;
+    const filteredAnnouncements = useMemo(() => {
+        return announcements.filter((a) => {
+            const safeTitle = (a.title || a.bookTitle || "") as string; 
+            const safeSnippet = (a.message || a.snippet || "") as string;
 
-        return (
-            safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            safeSnippet.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }).sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+            // filter Text
+            const textMatches = (
+                safeTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                safeSnippet.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            // filter Date
+            const announcementDate = new Date(a.createdAt || a.date || 0);
+            let matchesDate = true;
+            
+            if (startDate) {
+                const start = new Date(startDate);
+                // compare timestamp
+                matchesDate = matchesDate && announcementDate.getTime() >= start.getTime();
+            }
+            
+            if (endDate) {
+                const end = new Date(endDate);
+                // Tambah satu hari biar inklusif (sampai akhir hari yang dipilih)
+                end.setDate(end.getDate() + 1); 
+                matchesDate = matchesDate && announcementDate.getTime() < end.getTime();
+            }
+
+            return textMatches && matchesDate;
+        }).sort((a, b) => new Date(b.createdAt || b.date || 0).getTime() - new Date(a.createdAt || a.date || 0).getTime());
+    }, [announcements, searchQuery, startDate, endDate]);
+    
+    const handleClearFilters = () => {
+        setSearchQuery("");
+        setStartDate(''); // Clear date filters
+        setEndDate('');
+    };
 
 	return (
 		<div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				
-				{/* Header, Search, & Filters digabung jadi satu baris */}
 				<div className="py-6 space-y-4">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        
                         <div>
                             <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
                                 Announcements
@@ -88,8 +118,9 @@ export default function AnnouncementsPage() {
                             </p>
                         </div>
 					</div>
+					
+                    {/* SEARCH INPUT & FILTER BUTTONS */}
 					<div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
-                        {/* KANAN: Search + Filter/Clear buttons */}
                         <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
                             {/* Search bar */}
                             <div className="relative flex-1 min-w-0 sm:flex-auto">
@@ -112,7 +143,7 @@ export default function AnnouncementsPage() {
                             </div>
 
                             {/* Filter Button */}
-                            {/* <button
+                            <button
                                 onClick={() => setShowFilters(!showFilters)}
                                 className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
                                 style={{
@@ -125,12 +156,12 @@ export default function AnnouncementsPage() {
                             >
                                 <Filter className="w-5 h-5 flex-shrink-0" />
                                 <span className="hidden sm:inline">Filters</span>
-                            </button> */}
+                            </button>
 
                             {/* Clear Button */}
                             {hasActiveFilters && (
                                 <button
-                                    onClick={() => setSearchQuery("")}
+                                    onClick={handleClearFilters}
                                     className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
                                     style={{
                                         backgroundColor: colors.bgPrimary,
@@ -147,12 +178,35 @@ export default function AnnouncementsPage() {
                         </div>
                     </div>
                     
-                    {/* Panel Filter */}
-                    {/* {showFilters && (
-                        <div className="rounded-lg p-4 border bg-gray-50">
-                            <p className="text-sm text-gray-600">Sorting options can go here.</p>
+                    {showFilters && (
+                        <div className="rounded-lg p-4 border bg-gray-50 space-y-4">
+                            <h3 className="font-semibold text-gray-700 text-sm mb-2">Filter by Date</h3>
+                            <div className="grid grid-cols-2 gap-4 max-w-lg">
+                                {/* Input From Date */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">From Date</label>
+                                    <input
+                                        type="date"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500"
+                                        style={{ backgroundColor: colors.bgPrimary }}
+                                    />
+                                </div>
+                                {/* Input To Date */}
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-500 mb-1">To Date</label>
+                                    <input
+                                        type="date"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.target.value)}
+                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500"
+                                        style={{ backgroundColor: colors.bgPrimary }}
+                                    />
+                                </div>
+                            </div>
                         </div>
-                    )} */}
+                    )}
                 </div>				
 
 				{/* Content based on state */}
@@ -173,7 +227,8 @@ export default function AnnouncementsPage() {
 							<AnnouncementCard 
 								key={(announcement.id || announcement._id) as string} 
 								id={(announcement.id || announcement._id) as string}
-								title={(announcement.bookTitle || announcement.title || "New Update") as string}
+                                // Fallback logic (priority: title > bookTitle)
+								title={(announcement.title || announcement.bookTitle || "New Update") as string}
 								snippet={(announcement.message || announcement.snippet || "") as string}
 								date={(announcement.createdAt || announcement.date || "") as string}
 							/>

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { ChevronRight, BookOpen, Users, Bell, Loader2, AlertCircle } from "lucide-react"
+import { ChevronRight, BookOpen, Users, Bell, Loader2, AlertCircle, AlertTriangle } from "lucide-react"
 import { useState, useEffect } from "react"
 import BookCard from "@/components/books/book-card"
 import { RoomCard } from "@/components/rooms/room-card"
@@ -9,7 +9,7 @@ import AnnouncementCard from "@/components/announcements/announcement-card"
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import { spacing } from "@/styles/spacing"
-import type { Book, Room, Announcement } from "@/types"
+import type { Book, Room, Announcement, Loan } from "@/types"
 import { getAuthToken } from "@/lib/auth"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
@@ -47,15 +47,16 @@ export default function Dashboard() {
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [username, setUsername] = useState("")
-	const [greeting, setGreeting] = useState("")
+    const [greeting, setGreeting] = useState("")
+    const [lateLoans, setLateLoans] = useState<Loan[]>([])
 
-	useEffect(() => {
-		const hour = new Date().getHours()
-		if (hour < 11) setGreeting("Selamat Pagi")
-		else if (hour < 15) setGreeting("Selamat Siang")
-		else if (hour < 18) setGreeting("Selamat Sore")
-		else setGreeting("Selamat Malam")
-	}, [])
+    useEffect(() => {
+        const hour = new Date().getHours()
+        if (hour < 11) setGreeting("Selamat Pagi")
+        else if (hour < 15) setGreeting("Selamat Siang")
+        else if (hour < 18) setGreeting("Selamat Sore")
+        else setGreeting("Selamat Malam")
+    }, [])
 
     useEffect(() => {
         const token = getAuthToken()
@@ -106,10 +107,11 @@ export default function Dashboard() {
             setIsLoading(true)
             setError(null)
             try {
-                const [booksRes, roomsRes, announcementsRes] = await Promise.all([
+                const [booksRes, roomsRes, announcementsRes, loansRes] = await Promise.all([
                     fetch(`${API_URL}/api/books?limit=3`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_URL}/api/rooms`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_URL}/api/announcements`, { headers: { Authorization: `Bearer ${token}` } }),
+                    fetch(`${API_URL}/api/loans/my`, { headers: { Authorization: `Bearer ${token}` } })
                 ])
 
                 const booksData = await booksRes.json()
@@ -123,6 +125,10 @@ export default function Dashboard() {
                 const announcementsData = await announcementsRes.json()
                 const featuredAnnouncements = (announcementsData || []).slice(0, 3)
                 const announcementCount = (announcementsData || []).length
+
+                const loansData: Loan[] = await loansRes.json();
+                const late = loansData.filter(loan => loan.status === 'late');
+                setLateLoans(late);
 
                 setStats({
                     totalBooks,
@@ -175,6 +181,21 @@ export default function Dashboard() {
                     <p className={typography.body}>Explore books, reserve rooms, and stay updated</p>
                 </div>
             </div>
+
+            {lateLoans.length > 0 && (
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 mb-10">
+                <div className="p-4 bg-red-50 border border-red-300 rounded-lg flex items-center gap-3">
+                  <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-red-800">Peringatan Keterlambatan!</h3>
+                    <p className="text-sm text-red-700">
+                      Lu punya {lateLoans.length} buku yang telat dibalikin. 
+                      Cek <Link href="/loans" className="font-bold underline">Halaman Pinjaman</Link> buat liat denda.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

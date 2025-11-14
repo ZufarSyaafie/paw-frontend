@@ -5,7 +5,7 @@ export { AuthLayout as default } from "./common/auth-layout"
 
 // Dashboard Components
 export { default as BookCard } from "./dashboard/book-card"
-export { RoomCard } from "./dashboard/room-card"
+export { RoomCard } from "./rooms/room-card"
 export { default as SearchFilterBar } from "./dashboard/search-filter-bar"
 
 // Common Components

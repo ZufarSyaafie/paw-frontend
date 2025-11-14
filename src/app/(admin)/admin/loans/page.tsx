@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { Loader2, CheckCircle, Clock, RotateCcw, Search } from "lucide-react";
+import { Loader2, CheckCircle, Clock, RotateCcw, Search, AlertCircle } from "lucide-react";
 import type { Loan } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL;
 const statusConfig = {
   borrowed: { color: 'text-amber-800', icon: Clock, label: 'Borrowed' },
   returned: { color: 'text-green-800', icon: CheckCircle, label: 'Returned' },
+  late: { color: 'text-red-800', icon: AlertCircle ,label: 'LATE'}
 };
 
 export default function ManageLoansPage() {
@@ -92,25 +93,33 @@ export default function ManageLoansPage() {
         <h1 className="text-3xl font-bold">Manage Loans</h1>
       </div>
 
+      {/* Filter Bar */}
       <div className="flex gap-4 mb-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+        {/* Search Field */}
+        <div className="relative flex-1 min-w-0 sm:flex-auto">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0" />
           <Input 
             value={search} 
             onChange={(e) => setSearch(e.target.value)} 
             placeholder="Cari nama buku atau email user..." 
-            className="pl-10"
+            className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
           />
         </div>
-        <div className="flex gap-2">
+
+        {/* Filter Buttons (HIDE on MOBILE) */}
+        <div className="hidden sm:flex gap-2 flex-shrink-0">
           {['all', 'borrowed', 'returned'].map(status => (
             <Button
               key={status}
               variant={filter === status ? 'primary' : 'secondary'}
               onClick={() => setFilter(status)}
-              className="capitalize"
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors capitalize ${
+                filter === status
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50'
+              }`}
             >
-              {status}
+              {status.replace('_', ' ')}
             </Button>
           ))}
         </div>

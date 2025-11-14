@@ -67,19 +67,19 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
-      <AuthHeader title="Create Account" subtitle="Join NARATAMA today" />
+      <AuthHeader title="Create Account" />
 
       <div className="space-y-4">
         {/* Username Input */}
         <div>
-          <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">Username</label>
+          <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">Name</label>
           <Input
             type="text"
-            placeholder="Choose your username"
+            placeholder="Your full name"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required
-            className="w-full px-4 py-3 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
+            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
           />
         </div>
 
@@ -94,7 +94,7 @@ export default function RegisterPage() {
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
             required
-            className="w-full px-4 py-3 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
+            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
           />
         </div>
 
@@ -109,7 +109,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-3 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
+            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
           />
         </div>
 
@@ -122,7 +122,7 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full px-4 py-3 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
+            className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
           />
         </div>
 
@@ -136,7 +136,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isLoading || !isFormValid}
-            className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+            className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
             {isLoading ? "Processing..." : "Create Account"}
           </Button>

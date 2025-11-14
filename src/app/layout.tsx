@@ -11,6 +11,9 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "Perpustakaan Naratama",
   description: "Perpustakaan Digital Modern",
+  icons: {
+    icon: "images/logo(min).ico"
+  }
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

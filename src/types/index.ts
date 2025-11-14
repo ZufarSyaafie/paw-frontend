@@ -75,6 +75,7 @@ export interface Booking {
     createdAt: string
     updatedAt: string
     displayStatus?: string 
+    cancelledAt: Date
 }
 
 // Loan Types
@@ -86,15 +87,16 @@ export interface Loan {
   borrowDate: string
   dueDate: string
   returnDate?: string | undefined
-  status: 'borrowed' | 'returned'
+  status: 'borrowed' | 'returned' | 'late'
   midtransOrderId?: string
   depositAmount: number
   paymentStatus: 'unpaid' | 'paid' | 'failed'
   refundStatus: 'pending' | 'refunded' | 'forfeited'
   createdAt: string
+  fineAmount?: number
 }
 
-export type FrontendLoan = Loan & { status: 'borrowed' | 'returned' | 'overdue' };
+export type FrontendLoan = Loan;
 
 // Payment Types
 export interface Payment {

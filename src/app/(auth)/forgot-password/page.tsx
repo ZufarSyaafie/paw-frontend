@@ -25,27 +25,26 @@ export default function ForgotPasswordPage() {
     const endpoint = `${API_URL}/api/auth/forgot-password` 
 
     try {
-        const response = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email: email }),
-        })
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email }),
+      })
 
-        const data = await response.json()
+      const data = await response.json()
 
-        if (!response.ok) {
-            throw new Error(data.message || "Failed to send reset link.")
-        }
-        
-        setEmailSent(true)
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to send reset link.")
+      }
+      
+      setEmailSent(true)
 
     } catch (err: any) {
-        setError(err.message || "Failed to connect to the server.")
+      setError(err.message || "Failed to connect to the server.")
     } finally {
-        setIsLoading(false)
+      setIsLoading(false)
     }
   }
-
 
   const handleBackToLogin = () => {
     router.push("/sign-in")
@@ -58,12 +57,14 @@ export default function ForgotPasswordPage() {
 
   return (
     <AuthLayout>
-      {!emailSent ?
-(
+      {!emailSent ? (
         <>
-          <AuthHeader title="Forgot Password" subtitle="Enter your email to reset your password" />
+          <AuthHeader title="Forgot Password" />
+          {/* <p className="text-center text-white/60 text-sm mb-4">
+              Enter your email to reset your password</p> */}
 
           <div className="space-y-4">
+
             <div>
               <label className="block text-xs font-semibold text-white/80 mb-2 uppercase tracking-wider">
                 Email Address
@@ -74,32 +75,38 @@ export default function ForgotPasswordPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
+                className="w-full px-4 py-2 bg-white/[0.05] border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition-all duration-200 font-medium backdrop-blur-sm"
               />
             </div>
 
-            <p className="text-xs text-white/60 text-center">
-              We'll send you an email with instructions to reset your password.
-            </p>
-            
-            {/* Tampilkan Error */}
-            {error && <p className="text-center text-red-400 text-sm">{error}</p>}
+            <div className="mt-4 mb-8">
+              <p className="text-xs text-white/60 text-center">
+                We'll send you an email with instructions to reset your password.
+              </p>
+            </div>
 
-            <form onSubmit={handleSubmit}>
-              <Button
-                type="submit"
-                disabled={isLoading || !email}
-                className="w-full bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
-              >
-                {isLoading ? "Sending..." : "Send Reset Link"}
-              </Button>
-            </form>
+            {/* Tampilkan Error */}
+            {error && (
+              <p className="text-center text-red-400 text-sm mt-10">{error}</p>
+            )}
+
+            <div>
+              <form onSubmit={handleSubmit}>
+                <Button
+                  type="submit"
+                  disabled={isLoading || !email}
+                  className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 to-green-500 hover:from-blue-600 hover:via-cyan-500 hover:to-green-600 text-white font-bold py-3 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
+                >
+                  {isLoading ? "Sending..." : "Send Reset Link"}
+                </Button>
+              </form>
+            </div>
 
             <p className="text-center text-sm text-white/70 font-medium">
               Remember your password?{" "}
               <button
                 type="button"
-                onClick={() => router.push("/sign-in")} // Ganti /login menjadi /sign-in
+                onClick={() => router.push("/sign-in")}
                 className="text-white font-semibold hover:text-white/80 transition-colors bg-transparent border-none cursor-pointer"
               >
                 Sign in
@@ -109,9 +116,14 @@ export default function ForgotPasswordPage() {
         </>
       ) : (
         <>
-          <AuthHeader title="Check Your Email" subtitle="Password reset link sent successfully" />
+          <AuthHeader title="Check Your Email" />
+
+          <p className="text-center text-white/60 text-sm mb-4">
+            Password reset link sent successfully
+          </p>
 
           <div className="space-y-4">
+
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-green-500/20 border border-green-500/40 rounded-full flex items-center justify-center">
                 <svg className="w-8 h-8 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -121,9 +133,7 @@ export default function ForgotPasswordPage() {
             </div>
 
             <div className="text-center space-y-2 mb-6">
-              <p className="text-white/80">
-                We've sent a password reset link to
-              </p>
+              <p className="text-white/80">We've sent a password reset link to</p>
               <p className="font-semibold text-white">{email}</p>
               <p className="text-xs text-white/60">
                 Check your email and follow the instructions to reset your password. The link will expire in 24 hours.
@@ -146,6 +156,7 @@ export default function ForgotPasswordPage() {
                 Try again
               </button>
             </p>
+
           </div>
         </>
       )}

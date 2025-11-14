@@ -1,9 +1,9 @@
 'use client'
 
-import { FrontendLoan } from '@/types' 
+import type { FrontendLoan } from '@/types' 
 import { Card } from '@/components/ui/card' 
 import Link from 'next/link'
-import { Clock, BookOpen, DollarSign, ArrowRight } from 'lucide-react'
+import { Clock, BookOpen, DollarSign, ArrowRight, AlertCircle } from 'lucide-react'
 
 interface LoanCardProps {
   loan: FrontendLoan
@@ -11,10 +11,11 @@ interface LoanCardProps {
 
 export const LoanCard: React.FC<LoanCardProps> = ({ loan }) => {
   const loanStatusString = loan.status as string;
+  
   const statusConfig = {
     borrowed: { color: 'bg-cyan-100 text-cyan-800', label: 'BORROWED' },
     returned: { color: 'bg-green-100 text-green-800', label: 'RETURNED' },
-    overdue: { color: 'bg-red-100 text-red-800', label: 'OVERDUE' }, 
+    late: { color: 'bg-red-100 text-red-800', label: 'LATE' }, // Pake 'late'
   }
 
   const definitiveId = (loan.id || loan._id) as string;
@@ -24,8 +25,12 @@ export const LoanCard: React.FC<LoanCardProps> = ({ loan }) => {
   }
 
   const config = statusConfig[loanStatusString as keyof typeof statusConfig] || statusConfig.borrowed; 
-  const isOverdue = loanStatusString === 'overdue' // <-- FIXED
-  const isReturned = loanStatusString === 'returned' // <-- FIXED
+  const isLate = loanStatusString === 'late';
+  const isReturned = loanStatusString === 'returned';
+  
+  const fine = loan.fineAmount || 0;
+  const deposit = loan.depositAmount || 25000; // Default deposit
+  const hasFine = fine > 0;
   
   const daysLeft = Math.ceil(
     (new Date(loan.dueDate).getTime() - new Date().getTime()) /
@@ -34,15 +39,27 @@ export const LoanCard: React.FC<LoanCardProps> = ({ loan }) => {
 
   const daysOverdue = Math.abs(daysLeft)
 
+  // Logic buat nentuin teks link
+  let linkText = "View Details & Return";
+  let linkColor = "text-cyan-600 hover:text-cyan-700";
+  
+  if (isLate && !isReturned) {
+    linkColor = "text-red-600 hover:text-red-700";
+    if (fine >= deposit) {
+      linkText = "Return (Deposit Hangus)";
+    } else {
+      linkText = "Return (Denda dipotong)";
+    }
+  }
+
   return (
     <Card className={`overflow-hidden transition-all duration-300 hover:shadow-lg ${
-        isOverdue ? 'border-l-4 border-red-500 hover:shadow-red-300/30' : 'hover:border-cyan-400'
+        isLate ? 'border-l-4 border-red-500 hover:shadow-red-300/30' : 'hover:border-cyan-400'
     } h-full flex flex-col`}>
       <div className="space-y-4 p-4 flex flex-col flex-grow">
         <div className="flex justify-between items-start border-b pb-3 border-gray-100">
           <h3 className="text-xl font-bold text-gray-900 line-clamp-1">{loan.book.title}</h3>
           
-          {/* Status Badge */}
           <span
             className={`px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1 ${config.color} flex-shrink-0`}
           >
@@ -51,42 +68,42 @@ export const LoanCard: React.FC<LoanCardProps> = ({ loan }) => {
         </div>
 
         <div className="grid grid-cols-2 gap-y-3 text-sm">
-          
-          {/* Penulis */}
           <InfoItem icon={BookOpen} label="Author" value={loan.book.author} />
-          
-          {/* Deposit */}
-          <InfoItem icon={DollarSign} label="Deposit" value={`Rp ${loan.depositAmount.toLocaleString('id-ID')}`} />
-          
-          {/* Borrow Date */}
+          <InfoItem icon={DollarSign} label="Deposit" value={`Rp ${deposit.toLocaleString('id-ID')}`} />
           <InfoItem icon={Clock} label="Borrowed" value={new Date(loan.borrowDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} />
-
-          {/* Due Date */}
           <InfoItem 
             icon={Clock} 
-            label={isOverdue ? "OVERDUE DATE" : "Due Date"} 
+            label={isLate ? "LATE DATE" : "Due Date"} 
             value={new Date(loan.dueDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} 
-            valueClass={isOverdue ? 'text-red-600 font-bold' : 'text-gray-900'}
+            valueClass={isLate ? 'text-red-600 font-bold' : 'text-gray-900'}
           />
         </div>
 
-        {/* Info Waktu */}
+        {/* Nampilin Denda kalo ada */}
+        {hasFine && !isReturned && (
+          <InfoItem 
+            icon={AlertCircle} 
+            label="Current Fine" 
+            value={`Rp ${fine.toLocaleString('id-ID')}`} 
+            valueClass="text-red-600 font-bold"
+          />
+        )}
+
         {!isReturned && (
-          <div className={`mt-2 p-3 rounded-lg text-sm font-semibold ${isOverdue ? 'bg-red-50 text-red-800' : 'bg-cyan-50 text-cyan-800'}`}>
-            {isOverdue 
-              ? `OVERDUE by ${daysOverdue} days!`
+          <div className={`mt-2 p-3 rounded-lg text-sm font-semibold ${isLate ? 'bg-red-50 text-red-800' : 'bg-cyan-50 text-cyan-800'}`}>
+            {isLate 
+              ? `LATE by ${daysOverdue} days!`
               : `${daysLeft} days left to return.`
             }
           </div>
         )}
 
-        {/* Link Detail/Action */}
         <div className='mt-auto pt-4 border-t border-gray-100'>
             <Link
                 href={`/loans/${definitiveId}`}
-                className="text-cyan-600 hover:text-cyan-700 transition-colors text-sm font-semibold flex items-center gap-1"
+                className={`transition-colors text-sm font-semibold flex items-center gap-1 ${linkColor}`}
             >
-                View Details & Return <ArrowRight className='w-4 h-4' />
+                {linkText} <ArrowRight className='w-4 h-4' />
             </Link>
         </div>
       </div>

@@ -30,7 +30,16 @@ export default function BooksPage() {
         setError(null)
 
         const queryParams = new URLSearchParams()
-        if (activeSearch) queryParams.append("search", activeSearch)
+        const isYear = /^\d{4}$/.test(activeSearch);
+        if (activeSearch) {
+            if (isYear && parseInt(activeSearch) > 1900 && parseInt(activeSearch) <= new Date().getFullYear()) {
+                // Kalo taun, kirim sebagai parameter 'year'
+                queryParams.append("year", activeSearch)
+            } else {
+                // Kalo bukan tahun, kirim sebagai parameter 'search' umum
+                queryParams.append("search", activeSearch)
+            }        
+        }
         if (selectedCategory !== "All") queryParams.append("category", selectedCategory)
         if (selectedStatus !== "All") queryParams.append("status", selectedStatus)
 
@@ -129,6 +138,15 @@ export default function BooksPage() {
         fetchBooks()
     }, [selectedCategory, selectedStatus, activeSearch, fetchBooks])
 
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setActiveSearch(searchQuery)
+        }, 500);
+        return()=> {
+            clearTimeout(handler);
+        };
+    }, [searchQuery]);
+
     // const handleSearchSubmit = (e: React.FormEvent) => {
     //     e.preventDefault()
     //     setActiveSearch(searchQuery)
@@ -168,22 +186,23 @@ export default function BooksPage() {
 						<div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
 							{/* Search bar */}
 							<div className="relative flex-1 min-w-0 sm:flex-auto">
-								<Search
-									className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
-									style={{ color: colors.textTertiary }}
-								/>
-								<input
-									type="text"
-									placeholder="Search book..."
-									value={searchQuery}
-									onChange={(e) => setSearchQuery(e.target.value)}
-									className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
-									style={{
-										backgroundColor: colors.bgPrimary,
-										borderColor: "#cbd5e1",
-										color: colors.textPrimary,
-									}}
-								/>
+                                {/* <form onSubmit={handleSearchSubmit}> */}
+                                <Search
+                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+                                    style={{ color: colors.textTertiary }}
+                                />
+                                <input
+                                    type="text"
+                                    placeholder="Search title, ISBN, year, cat..."                                        value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+                                    style={{
+                                        backgroundColor: colors.bgPrimary,
+                                        borderColor: "#cbd5e1",
+                                        color: colors.textPrimary,
+                                    }}
+                                />
+                                {/* </form> */}
 							</div>
 
 							{/* Filter button */}

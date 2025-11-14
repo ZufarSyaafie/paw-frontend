@@ -308,7 +308,7 @@ export default function ProfilePage() {
                             <div className="space-y-4">
                                  <div>
                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
-                                         Username
+                                         Name
                                     </p>
                                      {isEditing ? (
                                         <input
