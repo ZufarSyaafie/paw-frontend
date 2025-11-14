@@ -35,7 +35,7 @@ export default function OtpClient() {
       setError("Sesi tidak ditemukan. Silakan kembali ke halaman utama.")
     }
   }, [flow, emailStorageKey])
-
+  
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
@@ -64,8 +64,8 @@ export default function OtpClient() {
 
       setAuthToken(data.token)
       localStorage.removeItem(emailStorageKey); // <-- PAKE INI
-      // dispatch(clearTempEmail()) // HAPUS
-
+      // dispatch(clearTempEmail())
+      
       alert("Verifikasi berhasil!")
       router.push("/dashboard")
     } catch (err: any) {
@@ -100,7 +100,7 @@ export default function OtpClient() {
       const data = await response.json()
       if (!response.ok) throw new Error(data.message || "Gagal mengirim ulang kode")
 
-      // ALERT FALLBACK DEMOOTP 
+      // ALERT OTP BARU) 
       if (data.demoOtp) {
           alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP BARU Anda adalah: ${data.demoOtp}`);
       } else {
@@ -113,7 +113,7 @@ export default function OtpClient() {
       setIsResending(false)
     }
   }
-
+  
   const headerTitle = flow === "login" ? "Login Verification" : "Email Verification"
 
   return (
@@ -143,7 +143,6 @@ export default function OtpClient() {
                   <InputOTPSlot
                     key={index}
                     index={index}
-                    // --- BALIKIN STYLING YANG BENER ---
                     className="h-12 w-12 border border-white/20 bg-white/[0.05] rounded-lg text-lg font-semibold text-white 
                               placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 
                               focus:border-blue-400 focus:bg-white/[0.08] transition-all duration-200 

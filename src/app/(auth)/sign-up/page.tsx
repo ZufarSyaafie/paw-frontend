@@ -52,6 +52,7 @@ export default function RegisterPage() {
         throw new Error(data.message || "Registrasi gagal. Silakan coba lagi.")
       }
 
+      // LOGIC FALLBACK
       if (data.demoOtp) {
         alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP Anda adalah: ${data.demoOtp}`);
       } else {
@@ -174,7 +175,7 @@ export default function RegisterPage() {
           <Button
             type="submit"
             disabled={isLoading || !isFormValid}
-            className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 hover:from-blue-600 hover:via-cyan-500 text-white font-bold py-3 px-8 text-lg rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full mt-10 bg-gradient-to-r from-blue-500 via-cyan-400 hover:from-blue-600 hover:via-cyan-500 text-white font-bold py-3 px-8 rounded-lg transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed text-base"
           >
             {isLoading ? "Processing..." : "Create Account"}
           </Button>

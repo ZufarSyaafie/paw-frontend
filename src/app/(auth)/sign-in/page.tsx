@@ -37,6 +37,7 @@ export default function LoginPage() {
         throw new Error(data.message || "Login gagal. Periksa email atau password.")
       }
 
+      // LOGIC FALLBACK
       if (data.demoOtp) {
         alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP Anda adalah: ${data.demoOtp}`);
       } else {
