@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getAuthToken } from "@/lib/auth";
 import { Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 
@@ -15,16 +14,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   useEffect(() => {
     const checkAuth = async () => {
-      const token = getAuthToken();
-      if (!token) {
-        router.push("/sign-in"); // ga login, kick
-        return;
-      }
-
       try {
-        const res = await fetch(`${API_URL}/api/users/me`, {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
+        const res = await fetch(`${API_URL}/api/users/me`, { credentials: 'include' });
 
         if (!res.ok) throw new Error("Not authorized");
 
@@ -37,7 +28,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setIsAdmin(true); 
         }
       } catch (err) {
-        router.push("/dashboard");
+        router.push("/sign-in");
       } finally {
         setIsLoading(false);
       }
