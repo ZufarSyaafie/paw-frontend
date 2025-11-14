@@ -1,7 +1,7 @@
 'use client'
 
 import { Booking } from '@/types'
-import { Card } from '@/components/ui/card' // <-- Ganti ke komponen UI Card
+import { Card } from '@/components/ui/card' 
 import Link from 'next/link'
 import { Calendar, Clock, DollarSign, Users, XCircle, CheckCircle, Hourglass } from 'lucide-react'
 

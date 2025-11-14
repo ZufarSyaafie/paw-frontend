@@ -1,7 +1,7 @@
 "use client"
 
 import { Button } from "@/components/ui/button"
-import { colors } from "@/styles/colors"
+// import { colors } from "@/styles/colors"
 
 interface GoogleButtonProps {
   disabled: boolean

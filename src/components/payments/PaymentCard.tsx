@@ -1,7 +1,7 @@
 'use client'
 
 import { Payment } from '@/types'
-import { Card } from '@/components/common/Card'
+import { Card } from '@/components/ui/card'
 import Link from 'next/link'
 
 interface PaymentCardProps {

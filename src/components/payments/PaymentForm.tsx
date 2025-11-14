@@ -1,13 +1,13 @@
-'use client'
+"use client"
 
 import { useState } from 'react'
-import { Button } from '@/components/common/Button'
-import { Input } from '@/components/common/Input'
-import { Error } from '@/components/common/Error'
+import { Button } from '@/components/ui/button' 
+// import { Input } from '@/components/ui/input'
+import { AlertCircle } from 'lucide-react'
 
 interface PaymentFormProps {
   amount: number
-  type: 'booking' | 'fine'
+  type: 'booking' | 'fine' | 'loan_deposit'
   onSubmit: (amount: number) => Promise<void>
 }
 
@@ -23,7 +23,7 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ amount, type, onSubmit
     try {
       await onSubmit(amount)
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Payment failed')
+      setError(err.message || 'Payment failed') 
     } finally {
       setIsLoading(false)
     }
@@ -31,9 +31,14 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ amount, type, onSubmit
 
   return (
     <form onSubmit={handleSubmit} className="bg-white p-6 rounded-lg shadow-md space-y-4">
-      <h2 className="text-xl font-bold">Payment - {type}</h2>
+      <h2 className="text-xl font-bold">Payment - {type.toUpperCase()}</h2>
 
-      {error && <Error message={error} />}
+      {error && ( // FIX: Ganti <Error> dengan alert box
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3">
+            <AlertCircle className="w-5 h-5 text-red-600" />
+            <p className="text-sm text-red-800 font-medium">{error}</p>
+        </div>
+      )}
 
       <div className="bg-gray-50 p-4 rounded-lg">
         <p className="text-gray-600 text-sm">Amount</p>
@@ -44,7 +49,8 @@ export const PaymentForm: React.FC<PaymentFormProps> = ({ amount, type, onSubmit
         You will be redirected to payment gateway (Midtrans)
       </p>
 
-      <Button type="submit" variant="primary" size="lg" isLoading={isLoading}>
+      {/* FIX PROP NAME: loading=isLoading */}
+      <Button type="submit" variant="primary" size="lg" loading={isLoading}> 
         Pay Now
       </Button>
     </form>
