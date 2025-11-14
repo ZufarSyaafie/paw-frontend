@@ -4,7 +4,7 @@ import PublicHeader from "@/components/landing/PublicHeader";
 import HeroSection from "@/components/landing/HeroSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import CTASection from "@/components/landing/CTASection";
-import Footer from "@/components/common/Footer";
+import PublicFooter from "@/components/landing/PublicFooter";
 
 export default function Home() {
   return (
@@ -15,7 +15,7 @@ export default function Home() {
         <FeaturesSection />
         <CTASection />
       </main>
-      <Footer />
+      <PublicFooter />
     </div>
   )
 }
