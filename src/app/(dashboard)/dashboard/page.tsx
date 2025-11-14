@@ -107,16 +107,19 @@ export default function Dashboard() {
             setIsLoading(true)
             setError(null)
             try {
-                const [booksRes, roomsRes, announcementsRes, loansRes] = await Promise.all([
+                const [featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes] = await Promise.all([
                     fetch(`${API_URL}/api/books?limit=3`, { headers: { Authorization: `Bearer ${token}` } }),
+                    fetch(`${API_URL}/api/books?limit=1`, { headers: { Authorization: `Bearer ${token}` } }), // Panggil endpoint /books lagi tapi cuma minta 1
                     fetch(`${API_URL}/api/rooms`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_URL}/api/announcements`, { headers: { Authorization: `Bearer ${token}` } }),
                     fetch(`${API_URL}/api/loans/my`, { headers: { Authorization: `Bearer ${token}` } })
                 ])
 
-                const booksData = await booksRes.json()
-                const featuredBooks = booksData.data || []
-                const totalBooks = booksData.total || featuredBooks.length
+                const featuredBooksData = await featuredBooksRes.json()
+                const featuredBooks = featuredBooksData.data || []
+                
+                const totalBooksData = await totalBooksRes.json()
+                const totalBooks = totalBooksData.total || 0 // Ambil 'total' dari BE yg udah bener
 
                 const roomsData = await roomsRes.json()
                 const featuredRooms = (roomsData || []).slice(0, 3)
@@ -131,10 +134,10 @@ export default function Dashboard() {
                 setLateLoans(late);
 
                 setStats({
-                    totalBooks,
+                    totalBooks, // Pake totalBooks yg udah bener
                     availableRooms,
                     announcementCount,
-                    featuredBooks,
+                    featuredBooks, // Pake featuredBooks yg limit 3
                     featuredRooms,
                     featuredAnnouncements,
                 })
