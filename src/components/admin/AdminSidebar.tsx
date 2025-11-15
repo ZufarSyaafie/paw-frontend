@@ -6,9 +6,10 @@ import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     Users, Book, DoorOpen, Box, Hourglass,
-    Menu, X, UserCog, LayoutDashboard, LucideIcon,
-    LogOutIcon, ChevronRight, ChevronLeft
+    Menu, X, LayoutDashboard, LucideIcon,
+    LogOutIcon
 } from "lucide-react";
+import { colors } from "@/styles/colors";
 
 interface LinkType {
     href: string;
@@ -28,23 +29,23 @@ const adminNavs: LinkType[] = [
 interface NavItemProps {
     link: LinkType;
     isActive: (href: string) => boolean;
-    isCollapsed: boolean;
 }
 
-function NavItem({ link, isActive, isCollapsed }: NavItemProps) {
+function NavItem({ link, isActive }: NavItemProps) {
     const Icon = link.icon;
     return (
         <Link
             href={link.href}
+            style={{
+                backgroundColor: isActive(link.href) ? colors.primary : "transparent",
+                color: isActive(link.href) ? "white" : colors.textSecondary,
+            }}
             className={`flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all ${
-                isActive(link.href) 
-                    ? "bg-[#1a7b93] text-white shadow-lg" 
-                    : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                !isActive(link.href) ? "hover:bg-white/10" : ""
             }`}
-            title={isCollapsed ? link.label : ""}
         >
             <Icon className="w-5 h-5 flex-shrink-0" />
-            {!isCollapsed && <span className="text-sm whitespace-nowrap">{link.label}</span>}
+            <span className="text-sm">{link.label}</span>
         </Link>
     );
 }
@@ -52,121 +53,105 @@ function NavItem({ link, isActive, isCollapsed }: NavItemProps) {
 export default function AdminSidebar() {
     const pathname = usePathname();
     const isActive = useCallback((href: string) => pathname.startsWith(href), [pathname]);
-    const [isCollapsed, setIsCollapsed] = useState(false);
-    const [isMobileOpen, setIsMobileOpen] = useState(false);
+    const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
     return (
         <>
-            {/* Desktop Sidebar - Collapsible */}
-            <div className={`hidden lg:flex fixed left-0 top-0 h-screen bg-white border-r border-slate-200 z-40 flex-col transition-all duration-300 ${
-                isCollapsed ? "w-20" : "w-64"
-            }`}>
-                {/* Header dengan Toggle Button */}
-                <div className="flex items-center justify-between px-4 py-4 border-b border-slate-200">
-                    {!isCollapsed && (
-                        <div className="flex items-center gap-2">
-                            <UserCog className="w-6 h-6 text-[#1a7b93]" />
-                            <span className="text-lg font-bold text-[#1a7b93]">Admin</span>
-                        </div>
-                    )}
+            {/* Fixed Top Header - Glass Effect */}
+            <div 
+                className="fixed top-0 left-0 right-0 z-50 backdrop-blur-md border-b shadow-lg"
+                style={{
+                    backgroundColor: `${colors.primary}15`,
+                    borderColor: `${colors.primary}40`,
+                }}
+            >
+                <div className="flex items-center gap-4 px-4 sm:px-6 lg:px-10 py-4">
+                    {/* Menu Button */}
                     <button
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
-                        title={isCollapsed ? "Expand" : "Collapse"}
+                        onClick={() => setIsOverlayOpen(!isOverlayOpen)}
+                        className="p-2 rounded-lg transition-colors"
+                        style={{
+                            color: colors.primary,
+                        }}
                     >
-                        {isCollapsed ? (
-                            <ChevronRight className="w-5 h-5 text-slate-600" />
-                        ) : (
-                            <ChevronLeft className="w-5 h-5 text-slate-600" />
-                        )}
+                        <Menu className="w-6 h-6" />
                     </button>
-                </div>
 
-                {/* Navigation */}
-                <nav className={`flex-1 px-3 py-6 space-y-2 overflow-y-auto ${
-                    isCollapsed ? "px-2" : ""
-                }`}>
-                    {adminNavs.map((link) => (
-                        <NavItem key={link.href} link={link} isActive={isActive} isCollapsed={isCollapsed} />
-                    ))}
-                </nav>
-
-                {/* Logout Button */}
-                <div className="px-3 py-4 border-t border-slate-200 bg-white">
-                    <Link
-                        href="/dashboard"
-                        className={`flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors font-medium text-sm w-full ${
-                            isCollapsed ? "justify-center" : ""
-                        }`}
-                        title={isCollapsed ? "Logout" : ""}
+                    {/* Title */}
+                    <img src="/logo(min).png" alt="Logo" className="w-8 h-8 object-contain" />
+                    <span 
+                        className="text-xl font-bold"
+                        style={{ color: colors.primaryDark }}
                     >
-                        <LogOutIcon className="w-5 h-5 flex-shrink-0" />
-                        {!isCollapsed && <span>Logout</span>}
-                    </Link>
+                        Admin Dashboard
+                    </span>
                 </div>
             </div>
 
-            {/* Mobile Sidebar Toggle */}
-            <button
-                onClick={() => setIsMobileOpen(!isMobileOpen)}
-                className="lg:hidden fixed top-4 left-4 z-40 p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors"
-            >
-                {isMobileOpen ? (
-                    <X className="w-6 h-6 text-slate-600" />
-                ) : (
-                    <Menu className="w-6 h-6 text-slate-600" />
-                )}
-            </button>
-
-            {/* Mobile Sidebar Overlay */}
+            {/* Sidebar Overlay Backdrop */}
             <AnimatePresence>
-                {isMobileOpen && (
+                {isOverlayOpen && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        onClick={() => setIsMobileOpen(false)}
-                        className="lg:hidden fixed inset-0 bg-black/50 z-30"
+                        onClick={() => setIsOverlayOpen(false)}
+                        className="fixed inset-0 bg-black/50 z-40 top-16"
                     />
                 )}
             </AnimatePresence>
 
-            {/* Mobile Sidebar */}
+            {/* Sidebar Overlay - Half Screen */}
             <AnimatePresence>
-                {isMobileOpen && (
+                {isOverlayOpen && (
                     <motion.div
-                        initial={{ x: -280 }}
+                        initial={{ x: -400 }}
                         animate={{ x: 0 }}
-                        exit={{ x: -280 }}
+                        exit={{ x: -400 }}
                         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                        className="lg:hidden fixed left-0 top-0 w-64 h-screen bg-white z-40 flex flex-col shadow-xl"
+                        className="fixed left-0 top-16 w-1/2 sm:w-80 h-[calc(100vh-64px)] backdrop-blur-md z-40 flex flex-col shadow-2xl"
+                        style={{
+                            backgroundColor: `${colors.bgTertiary}D0`,
+                            borderColor: `${colors.primary}40`,
+                            borderRight: `1px solid ${colors.primary}40`,
+                        }}
                     >
-                        {/* Header */}
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                            <div className="flex items-center gap-2">
-                                <UserCog className="w-6 h-6 text-[#1a7b93]" />
-                                <span className="text-lg font-bold text-[#1a7b93]">Admin</span>
-                            </div>
+                        {/* Close Button */}
+                        <div 
+                            className="flex items-center justify-between px-6 py-4 border-b"
+                            style={{
+                                borderColor: `${colors.primary}40`,
+                            }}
+                        >
+                            <span style={{ color: colors.primaryDark }} className=" font-bold">Menu</span>
                             <button
-                                onClick={() => setIsMobileOpen(false)}
-                                className="p-1.5 hover:bg-slate-100 rounded-lg"
+                                onClick={() => setIsOverlayOpen(false)}
+                                className="p-1.5 rounded-lg transition-colors text-primaryDark hover:text-red-500"
                             >
-                                <X className="w-5 h-5 text-slate-600" />
+                                <X className="w-5 h-5" />
                             </button>
                         </div>
 
                         {/* Navigation */}
-                        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+                        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
                             {adminNavs.map((link) => (
-                                <NavItem key={link.href} link={link} isActive={isActive} isCollapsed={false} />
+                                <NavItem key={link.href} link={link} isActive={isActive} />
                             ))}
                         </nav>
 
                         {/* Logout Button */}
-                        <div className="px-4 py-4 border-t border-slate-200">
+                        <div 
+                            className="px-4 py-4 border-t"
+                            style={{
+                                borderColor: `${colors.primary}40`,
+                            }}
+                        >
                             <Link
                                 href="/dashboard"
-                                className="flex items-center gap-3 px-4 py-3 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors font-medium text-sm"
+                                className="flex items-center justify-center gap-3 px-4 py-3 text-white rounded-lg transition-colors font-medium text-sm w-full hover:opacity-80"
+                                style={{
+                                    backgroundColor: colors.danger,
+                                }}
                             >
                                 <LogOutIcon className="w-5 h-5" />
                                 <span>Logout</span>
@@ -175,6 +160,9 @@ export default function AdminSidebar() {
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* Spacer untuk fixed header */}
+            <div className="h-16" />
         </>
     );
 }
