@@ -499,7 +499,7 @@ export default function ManageRoomsPage() {
                   <td className="p-4 align-top flex gap-3">
                     <button 
                       onClick={() => openEditModal(room)} 
-                      className="p-1.5 rounded-lg transition-colors hover:opacity-80"
+                      className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
                       style={{
                         backgroundColor: `${colors.info}15`,
                         color: colors.info,
@@ -510,7 +510,7 @@ export default function ManageRoomsPage() {
                     </button>
                     <button 
                       onClick={() => handleDelete(room._id || room.id)} 
-                      className="p-1.5 rounded-lg transition-colors hover:opacity-80"
+                      className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
                       style={{
                         backgroundColor: `${colors.danger}15`,
                         color: colors.danger,
