@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { LogOut, Menu, X, Bell, ShieldCheck } from "lucide-react"
+import { LogOut, Menu, X, ShieldCheck } from "lucide-react"
 import React, { useState, useEffect, useCallback } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { getAuthToken, removeAuthToken } from "@/lib/auth"
@@ -26,7 +26,8 @@ const baseNavLinks: { href: string; label: string }[] = [
 
 export default function DashboardHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [hasUnreadNotifs, setHasUnreadNotifs] = useState(false);
+  // const [hasUnreadNotifs, setHasUnreadNotifs] = useState(false);
+  // const [setHasUnreadNotifs] = useState(false);
   const [profilePicUrl, setProfilePicUrl] = useState(() => {
     return localStorage.getItem("userProfilePicture") || DEFAULT_AVATAR;
   });
@@ -67,11 +68,11 @@ export default function DashboardHeader() {
 
   const handleProfileClick = () => router.push("/profile");
   
-  const handleNotificationClick = () => {
-    router.push("/announcements");
-    localStorage.setItem("lastNotifRead", String(Date.now()));
-    setHasUnreadNotifs(false);
-  };
+  // const handleNotificationClick = () => {
+  //   router.push("/announcements");
+  //   localStorage.setItem("lastNotifRead", String(Date.now()));
+  //   setHasUnreadNotifs(false);
+  // };
   
   const fetchUserData = useCallback(async (token: string) => {
     try {
@@ -109,13 +110,13 @@ export default function DashboardHeader() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to fetch announcements");
-      const announcements = await res.json();
+      // const announcements = await res.json();
       
-      if (Array.isArray(announcements) && announcements.length > 0) {
-        const latest = new Date(announcements[0].createdAt).getTime();
-        const lastRead = localStorage.getItem("lastNotifRead");
-        if (!lastRead || latest > Number(lastRead)) setHasUnreadNotifs(true);
-      }
+      // if (Array.isArray(announcements) && announcements.length > 0) {
+      //   const latest = new Date(announcements[0].createdAt).getTime();
+      //   const lastRead = localStorage.getItem("lastNotifRead");
+      //   if (!lastRead || latest > Number(lastRead)) setHasUnreadNotifs(true);
+      // }
     } catch (err) {
       console.error(err);
     }
