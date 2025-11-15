@@ -40,33 +40,11 @@ const STATUS_CONFIG = {
   },
 } as const
 
-// mock fallback kalau fetch gagal
-const MOCK_LOAN: Loan = {
-  id: "MOCK-123",
-  user: { id: "U-001", email: "mock@test.com" },
-  book: {
-    id: "B-MOCK",
-    title: "The Great Gatsby (Mock Detail)",
-    author: "F. Scott Fitzgerald",
-    cover: "https://images.unsplash.com/photo-1543002588-d83cedbc4d60?w=400&h=600&fit=crop",
-    synopsis: "A classic American novel set in the Jazz Age.",
-    image: "https://images.unsplash.com/photo-1543002588-d83cedbc4d60?w=400&h=600&fit=crop",
-  },
-  depositAmount: 25000,
-  midtransOrderId: "MOCK-ORD",
-  paymentStatus: "paid",
-  refundStatus: "pending",
-  // mock punya borrowDate biar tampil
-  borrowDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-  status: "borrowed",
-} as unknown as Loan
-
 // safe formatter: terima string | Date | undefined | null
 const formatDate = (dateString: string | Date | undefined | null) => {
   if (!dateString) return "N/A"
   try {
-    const date = new Date(dateString as any)
+    const date = new Date(dateString)
     if (isNaN(date.getTime())) return "N/A"
     return date.toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })
   } catch {
@@ -78,7 +56,7 @@ const formatDate = (dateString: string | Date | undefined | null) => {
 const calculateBorrowedAt = (dueDateString: string | undefined | null): Date | null => {
   if (!dueDateString) return null
   try {
-    const dueDate = new Date(dueDateString as any)
+    const dueDate = new Date(dueDateString)
     if (isNaN(dueDate.getTime())) return null
     return new Date(dueDate.getTime() - 7 * 24 * 60 * 60 * 1000)
   } catch {
@@ -94,14 +72,13 @@ const ensureBorrowDate = (l: Loan): Loan => {
   try {
     // kalau backend udah ngirim borrowDate yang valid -> keep
     if (l.borrowDate) {
-      const d = new Date(l.borrowDate as any)
+      const d = new Date(l.borrowDate)
       if (!isNaN(d.getTime())) return l
     }
 
     // kalau ga ada, coba hitung dari dueDate - 7 hari
-    const calc = calculateBorrowedAt((l as any).dueDate)
+    const calc = calculateBorrowedAt(l.dueDate)
     if (calc) {
-      // buat salinan objek supaya gak mutasi unexpected
       return { ...l, borrowDate: calc.toISOString() }
     }
   } catch {
@@ -136,26 +113,38 @@ export default function LoanDetailPage() {
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}))
-          throw new Error((errorData && (errorData as any).message) || "loan not found.")
+          throw new Error(errorData?.message || "loan not found.")
         }
 
-        const data = (await response.json()) as Loan
+        const responseData = await response.json()
+        
+        // FIX: Handle both wrapped and flat response
+        let data = responseData.loan || responseData
+        
+        // FIX: Normalize ID field (MongoDB uses _id)
+        if (data._id && !data.id) {
+          data = { ...data, id: data._id }
+        }
+        
+        console.log("Raw API response:", responseData)
+        console.log("Normalized loan data:", data) // Debug log
+        
         const dataWithBorrow = ensureBorrowDate(data)
-        const isOverdue = dataWithBorrow.status === "borrowed" && new Date((dataWithBorrow as any).dueDate) < new Date()
-        // fines blm bnr
+        const isOverdue = dataWithBorrow.status === "borrowed" && new Date(dataWithBorrow.dueDate) < new Date()
         const fines = typeof dataWithBorrow.depositAmount === "number" ? dataWithBorrow.depositAmount * 0.1 : undefined
+        
         setLoan({ ...dataWithBorrow, isOverdue, fines } as FrontendLoanDetail)
       } catch (err: any) {
-        console.error(err)
-        setError(err?.message || "failed to load loan details. using fallback data.")
-        setLoan({ ...(ensureBorrowDate(MOCK_LOAN) as Loan), isOverdue: false, fines: 0 } as FrontendLoanDetail)
+        console.error("Fetch loan error:", err)
+        setError(err?.message || "failed to load loan details.")
       } finally {
         setIsLoading(false)
       }
     }
 
-    if (loanId) fetchLoan()
-    else {
+    if (loanId) {
+      fetchLoan()
+    } else {
       setIsLoading(false)
       setError("invalid loan id.")
     }
@@ -163,25 +152,26 @@ export default function LoanDetailPage() {
 
   const handleReturn = async () => {
     if (!loan) return
+    
     const token = getAuthToken()
     if (!token) {
       alert("authentication required.")
       return
     }
 
-    const displayStatusKey = loan.isOverdue
-      ? "overdue"
-      : loan.status === "returned"
-      ? "returned"
-      : loan.paymentStatus === "unpaid"
-      ? "pending"
-      : "borrowed"
+    // FIX: Simplify status check
+    const isPending = loan.paymentStatus === "unpaid"
+    const isBorrowed = loan.status === "borrowed"
+    const isReturned = loan.status === "returned"
 
-    if (displayStatusKey === "pending") {
-      const confirmCancel = confirm("batalkan pinjaman ini? tindakan ini akan membatalkan order deposit.")
+    // Handle cancel for unpaid loans
+    if (isPending) {
+      const confirmCancel = confirm("Batalkan pinjaman ini? Tindakan ini akan membatalkan order deposit.")
       if (!confirmCancel) return
+      
       setIsReturning(true)
       setError(null)
+      
       try {
         const response = await fetch(`${API_URL}/api/loans/${loan.id}`, {
           method: "DELETE",
@@ -190,20 +180,32 @@ export default function LoanDetailPage() {
             Authorization: `Bearer ${token}`,
           },
         })
-        const data = await response.json().catch(() => ({}))
-        if (!response.ok) throw new Error((data && (data as any).message) || "cancel failed.")
-        alert("pinjaman dibatalkan.")
+        
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData?.message || "cancel failed.")
+        }
+        
+        alert("Pinjaman dibatalkan.")
         router.push("/loans")
       } catch (err: any) {
+        console.error("Cancel error:", err)
         setError(err?.message || "failed to cancel loan.")
-        alert(`cancel failed: ${err?.message || "unknown error"}`)
+        alert(`Cancel failed: ${err?.message || "unknown error"}`)
       } finally {
         setIsReturning(false)
       }
       return
     }
 
-    if (loan.status !== "borrowed") return
+    // Handle return for borrowed books
+    if (!isBorrowed || isReturned) {
+      console.log("Cannot return - Status:", loan.status)
+      return
+    }
+
+    const confirmReturn = confirm("Confirm return book? Deposit akan diproses sesuai kondisi buku.")
+    if (!confirmReturn) return
 
     setIsReturning(true)
     setError(null)
@@ -216,29 +218,49 @@ export default function LoanDetailPage() {
           Authorization: `Bearer ${token}`,
         },
       })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) throw new Error((data && (data as any).message) || "return failed.")
-      const refundStatus = (data && (data as any).loan && (data as any).loan.refundStatus) || loan.refundStatus
-      const message = refundStatus === "refunded" ? "book successfully returned! deposit refunded." : "book returned. deposit forfeited."
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData?.message || "return failed.")
+      }
+
+      const data = await response.json()
+      const returnedLoan = data.loan || data
+      
+      // FIX: Normalize ID field
+      if (returnedLoan._id && !returnedLoan.id) {
+        returnedLoan.id = returnedLoan._id
+      }
+      
+      console.log("Return API response:", data)
+      console.log("Returned loan:", returnedLoan) // Debug log
+      
+      const refundStatus = returnedLoan?.refundStatus || loan.refundStatus
+      const message = refundStatus === "refunded" 
+        ? "Book successfully returned! Deposit refunded." 
+        : "Book returned. Deposit forfeited."
+      
       alert(message)
       router.push("/loans")
     } catch (err: any) {
+      console.error("Return error:", err)
       setError(err?.message || "failed to process return.")
-      alert(`return failed: ${err?.message || "unknown error"}`)
+      alert(`Return failed: ${err?.message || "unknown error"}`)
     } finally {
       setIsReturning(false)
     }
   }
 
-  if (isLoading)
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
         <p className="ml-3 text-gray-600 font-medium">loading loan details...</p>
       </div>
     )
+  }
 
-  if (error && !loan)
+  if (error && !loan) {
     return (
       <div className="p-12 text-center">
         <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
@@ -246,25 +268,36 @@ export default function LoanDetailPage() {
         <p className="text-sm text-red-700">{error || `loan with id ${loanId} not found.`}</p>
       </div>
     )
+  }
 
   if (!loan) return null
 
+  // FIX: Cleaner display status logic
+  const isPending = loan.paymentStatus === "unpaid"
+  const isReturned = loan.status === "returned"
   const displayStatusKey = loan.isOverdue
     ? "overdue"
-    : loan.status === "returned"
+    : isReturned
     ? "returned"
-    : loan.paymentStatus === "unpaid"
+    : isPending
     ? "pending"
     : "borrowed"
 
-  const statusInfo = STATUS_CONFIG[displayStatusKey as keyof typeof STATUS_CONFIG]
+  const statusInfo = STATUS_CONFIG[displayStatusKey]
   const StatusIcon = statusInfo.icon
 
-  const isUnpaidAndActive = displayStatusKey === "pending"
-  const buttonText = isUnpaidAndActive ? "cancel pinjam" : displayStatusKey === "borrowed" ? "confirm return" : statusInfo.label
-  const isButtonEnabled = displayStatusKey === "borrowed" || displayStatusKey === "pending"
-  const actionButtonClass =
-    displayStatusKey === "returned" ? "bg-gray-400 cursor-not-allowed" : displayStatusKey === "pending" ? "bg-amber-500 hover:bg-amber-600" : statusInfo.button
+  const isButtonEnabled = (loan.status === "borrowed" && !isReturned) || isPending
+  const buttonText = isPending 
+    ? "Cancel Pinjam" 
+    : loan.status === "borrowed" 
+    ? "Confirm Return" 
+    : statusInfo.label
+    
+  const actionButtonClass = isReturned
+    ? "bg-gray-400 cursor-not-allowed"
+    : isPending
+    ? "bg-amber-500 hover:bg-amber-600"
+    : statusInfo.button
 
   return (
     <div className="min-h-screen bg-white">
@@ -285,7 +318,11 @@ export default function LoanDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-12">
           <div className="md:col-span-1">
             <div className="sticky top-32">
-              <img src={(loan.book as any)?.cover || "/placeholder.png"} alt={(loan.book as any)?.title || "book cover"} className="w-full rounded-lg shadow-lg object-cover aspect-[2/3]" />
+              <img 
+                src={loan.book?.cover || "/placeholder.png"} 
+                alt={loan.book?.title || "book cover"} 
+                className="w-full rounded-lg shadow-lg object-cover aspect-[2/3]" 
+              />
 
               <div className={`mt-4 px-3 py-2 rounded-lg border flex items-center gap-2 ${statusInfo.color}`}>
                 <StatusIcon className="w-4 h-4" />
@@ -293,26 +330,43 @@ export default function LoanDetailPage() {
               </div>
 
               <div className="mt-3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-sm font-semibold text-slate-700">deposit: {formatRupiah(loan.depositAmount || 0)}</p>
+                <p className="text-sm font-semibold text-slate-700">
+                  Deposit: {formatRupiah(loan.depositAmount || 0)}
+                </p>
               </div>
 
-              <Button onClick={handleReturn} disabled={isReturning || !isButtonEnabled} className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${isReturning ? "opacity-70 pointer-events-none" : actionButtonClass}`}>
-                {isReturning ? "processing..." : buttonText}
+              <Button
+                onClick={handleReturn}
+                disabled={isReturning || !isButtonEnabled}
+                className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${
+                  isReturning ? "opacity-70 pointer-events-none" : actionButtonClass
+                }`}
+              >
+                {isReturning ? "Processing..." : buttonText}
               </Button>
+              
+              {/* Debug info - remove in production */}
+              {/* <div className="mt-2 p-2 bg-gray-100 rounded text-xs space-y-1">
+                <p><strong>ID:</strong> {loan.id || "MISSING!"}</p>
+                <p><strong>_id:</strong> {(loan as any)._id || "N/A"}</p>
+                <p><strong>Status:</strong> {loan.status}</p>
+                <p><strong>Payment:</strong> {loan.paymentStatus}</p>
+                <p><strong>Button Enabled:</strong> {isButtonEnabled ? "Yes" : "No"}</p>
+              </div> */}
             </div>
           </div>
 
           <div className="md:col-span-1">
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">{(loan.book as any)?.title}</h1>
-              <p className="text-lg text-gray-600">by {(loan.book as any)?.author}</p>
+              <h1 className="text-4xl font-bold text-gray-900 mb-3">{loan.book?.title}</h1>
+              <p className="text-lg text-gray-600">by {loan.book?.author}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-6 py-6 border-y border-gray-100">
               <LoanDetailItem label="loan id" value={loan.id} />
               <LoanDetailItem label="loan date" value={formatDate(loan.borrowDate)} />
-              <LoanDetailItem label="due date" value={formatDate((loan as any).dueDate)} />
-              <LoanDetailItem label="return date" value={formatDate((loan as any).returnDate)} />
+              <LoanDetailItem label="due date" value={formatDate(loan.dueDate)} />
+              <LoanDetailItem label="return date" value={formatDate(loan.returnDate)} />
             </div>
 
             {loan.isOverdue && (
@@ -336,8 +390,8 @@ export default function LoanDetailPage() {
             )}
 
             <div className="bg-gray-50 rounded-lg p-6 mt-6">
-              <h3 className="font-semibold text-gray-900 mb-3">{(loan.book as any)?.title} summary</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{(loan.book as any)?.synopsis}</p>
+              <h3 className="font-semibold text-gray-900 mb-3">{loan.book?.title} summary</h3>
+              <p className="text-sm text-gray-600 leading-relaxed">{loan.book?.synopsis}</p>
             </div>
           </div>
         </div>
