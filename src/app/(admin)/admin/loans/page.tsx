@@ -6,13 +6,6 @@ import { Loader2, CheckCircle, Clock, RotateCcw, Search, Filter, X } from "lucid
 import type { Loan } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { colors } from "@/styles/colors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -22,13 +15,6 @@ const statusConfig = {
   returned: { color: colors.success, icon: CheckCircle, label: "Returned" },
   late: { color: colors.danger, icon: CheckCircle, label: "LATE (Fine)" },
 };
-
-const filterOptions = [
-  { label: "All", value: "all" },
-  { label: "Borrowed", value: "borrowed" },
-  { label: "Returned", value: "returned" },
-  { label: "Late", value: "late" },
-];
 
 const calculateBorrowedAt = (dueDateString?: string | null): Date | null => {
   if (!dueDateString) return null;
@@ -69,6 +55,7 @@ export default function ManageLoansPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
+  const [showFilters, setShowFilters] = useState(false);
 
   const token = getAuthToken();
 
@@ -156,7 +143,7 @@ export default function ManageLoansPage() {
         </h1>
       </div>
 
-      {/* Search + Filters */}
+      {/* Filter Bar - Mobile/Tablet Optimized */}
       <div className="py-6 space-y-4 mb-4">
         <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
           {/* Search bar */}
@@ -168,7 +155,7 @@ export default function ManageLoansPage() {
             <Input 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
-              placeholder="Cari buku atau email user..." 
+              placeholder="Cari buku atau email..." 
               className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
               style={{
                 backgroundColor: colors.bgPrimary,
@@ -186,64 +173,21 @@ export default function ManageLoansPage() {
             />
           </div>
 
-          {/* Filter buttons desktop */}
-          <div className="hidden sm:flex gap-2 flex-shrink-0">
-            {filterOptions.map((opt) => (
-              <Button
-                key={opt.value}
-                onClick={() => setFilter(opt.value)}
-                className="px-3 py-1.5 rounded-md text-sm font-semibold transition-colors capitalize"
-                style={{
-                  backgroundColor: filter === opt.value ? colors.primary : colors.bgSecondary,
-                  color: filter === opt.value ? "white" : colors.textPrimary,
-                  borderColor: filter === opt.value ? colors.primary : colors.bgTertiary,
-                  borderWidth: "1px",
-                }}
-              >
-                {opt.label}
-              </Button>
-            ))}
-          </div>
-
-          {/* Filter dropdown mobile */}
-          <div className="sm:hidden w-full">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  className="w-full justify-center px-3 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2 transition-all"
-                  style={{
-                    backgroundColor: colors.bgPrimary,
-                    color: colors.textSecondary,
-                    borderColor: colors.bgTertiary,
-                    borderWidth: "1px",
-                  }}
-                >
-                  <Filter className="w-4 h-4" />
-                  <span>Filter: {filterOptions.find((f) => f.value === filter)?.label || "All"}</span>
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent 
-                className="w-[calc(100vw-2rem)]"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  borderColor: colors.bgTertiary,
-                }}
-              >
-                <DropdownMenuRadioGroup value={filter} onValueChange={(v) => setFilter(v)}>
-                  {filterOptions.map((opt) => (
-                    <DropdownMenuRadioItem 
-                      key={opt.value} 
-                      value={opt.value} 
-                      className="capitalize"
-                      style={{ color: colors.textPrimary }}
-                    >
-                      {opt.label}
-                    </DropdownMenuRadioItem>
-                  ))}
-                </DropdownMenuRadioGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
+          {/* Filter button */}
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
+            style={{
+              backgroundColor: showFilters ? colors.primary : colors.bgPrimary,
+              color: showFilters ? "white" : colors.textSecondary,
+              border: `1px solid ${showFilters ? colors.primary : colors.bgTertiary}`,
+              minHeight: "42px",
+              padding: "10px 12px",
+            }}
+          >
+            <Filter className="w-5 h-5 flex-shrink-0" />
+            <span className="hidden sm:inline">Filters</span>
+          </Button>
 
           {/* Clear button */}
           {hasActiveFilters && (
@@ -254,6 +198,8 @@ export default function ManageLoansPage() {
                 backgroundColor: colors.bgPrimary,
                 color: colors.danger,
                 border: `1px solid ${colors.danger}40`,
+                minHeight: "42px",
+                padding: "10px 12px",
               }}
             >
               <X className="w-5 h-5 flex-shrink-0" />
@@ -261,6 +207,40 @@ export default function ManageLoansPage() {
             </Button>
           )}
         </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div
+            className="rounded-lg p-4 sm:p-6 border space-y-4"
+            style={{
+              backgroundColor: colors.bgPrimary,
+              borderColor: colors.bgTertiary,
+            }}
+          >
+            <div>
+              <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
+                Status
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {['all', 'borrowed', 'returned', 'late'].map(status => ( 
+                  <button
+                    key={status}
+                    onClick={() => setFilter(status)}
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
+                    style={{
+                      backgroundColor: filter === status ? colors.primary : colors.bgSecondary,
+                      color: filter === status ? "white" : colors.textPrimary,
+                      borderColor: filter === status ? colors.primary : colors.bgTertiary,
+                      borderWidth: "1px",
+                    }}
+                  >
+                    {status.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Table */}
@@ -312,7 +292,7 @@ export default function ManageLoansPage() {
                   Status
                 </th>
                 <th 
-                  className="text-left p-4 font-semibold"
+                  className="text-center p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
                   Actions
@@ -364,7 +344,7 @@ export default function ManageLoansPage() {
                       >
                         {formatDate((loan as any).dueDate)}
                         {isLate && (loan as any).fineAmount ? (
-                          <span className="text-xs block" style={{ color: colors.danger }}>
+                          <span className="text-xs block mt-1" style={{ color: colors.danger }}>
                             (Denda: Rp {(loan as any).fineAmount.toLocaleString("id-ID")})
                           </span>
                         ) : null}
@@ -378,11 +358,11 @@ export default function ManageLoansPage() {
                           {statusInfo.label}
                         </span>
                       </td>
-                      <td className="p-4 align-top">
+                      <td className="p-4 align-top text-center">
                         {isCancellable && (
-                          <button 
-                            onClick={() => handleReturn(loan._id || loan.id)} 
-                            className="p-1.5 rounded-lg transition-colors hover:opacity-80"
+                          <button
+                            onClick={() => handleReturn(loan._id || loan.id)}
+                            className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
                             style={{
                               backgroundColor: `${colors.info}15`,
                               color: colors.info,

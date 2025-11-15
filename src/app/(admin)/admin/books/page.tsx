@@ -356,7 +356,7 @@ export default function ManageBooksPage() {
                     <td className="p-4 align-top flex gap-3">
                       <button 
                         onClick={() => openEditModal(book)} 
-                        className="p-1.5 rounded-lg transition-colors hover:opacity-80"
+                        className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
                         style={{
                           backgroundColor: `${colors.info}15`,
                           color: colors.info,
@@ -367,7 +367,7 @@ export default function ManageBooksPage() {
                       </button>
                       <button 
                         onClick={() => handleDelete(book._id || book.id)} 
-                        className="p-1.5 rounded-lg transition-colors hover:opacity-80"
+                        className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
                         style={{
                           backgroundColor: `${colors.danger}15`,
                           color: colors.danger,

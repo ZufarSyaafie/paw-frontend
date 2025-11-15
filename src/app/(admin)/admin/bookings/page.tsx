@@ -114,7 +114,13 @@ export default function ManageBookingsPage() {
     }
   };
 
-  const currentFilterLabel = filterOptions.find(opt => opt.value === filter)?.label || "Filter";
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" style={{ color: colors.primary }} />
+      </div>
+    );
+  }
 
   return (
     <div>
@@ -257,7 +263,7 @@ export default function ManageBookingsPage() {
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Status
                 </th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
+                <th className="text-center p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Actions
                 </th>
               </tr>
@@ -308,16 +314,19 @@ export default function ManageBookingsPage() {
                             </span>
                         )}
                       </td>
-                      <td className="p-4 align-top">
+                      <td className="p-4 align-top text-center">
                         {isCancellable && (
-                          <Button
+                          <button
                             onClick={() => handleCancel(booking._id || booking.id)}
-                            variant="danger"
-                            className="p-1 h-auto"
+                            className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
+                            style={{
+                              backgroundColor: `${colors.danger}15`,
+                              color: colors.danger,
+                            }}
                             title="Cancel Booking"
                           >
                             <XCircle className="w-5 h-5" />
-                          </Button>
+                          </button>
                         )}
                       </td>
                     </tr>
