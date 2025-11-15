@@ -17,6 +17,14 @@ const statusConfig = {
   completed: { color: colors.textSecondary, icon: CheckCircle, label: 'Completed' },
 };
 
+const filterOptions = [
+  { label: "All", value: "all" },
+  { label: "Confirmed", value: "confirmed" },
+  { label: "Pending Payment", value: "pending_payment" },
+  { label: "Cancelled", value: "cancelled" },
+  { label: "Completed", value: "completed" },
+];
+
 const checkIfCompleted = (booking: Booking): boolean => {
     if (booking.status !== 'confirmed') return false;
     
@@ -65,7 +73,7 @@ export default function ManageBookingsPage() {
       method: "PUT",
       headers: { "Authorization": `Bearer ${token}` }
     });
-    fetchBookings(); // Refresh list
+    fetchBookings(); 
   };
 
   const handleClearFilters = () => {
@@ -105,6 +113,8 @@ export default function ManageBookingsPage() {
         return 'Invalid Date';
     }
   };
+
+  const currentFilterLabel = filterOptions.find(opt => opt.value === filter)?.label || "Filter";
 
   return (
     <div>
@@ -300,17 +310,14 @@ export default function ManageBookingsPage() {
                       </td>
                       <td className="p-4 align-top">
                         {isCancellable && (
-                          <button 
+                          <Button
                             onClick={() => handleCancel(booking._id || booking.id)}
-                            className="p-1.5 rounded-lg transition-colors hover:opacity-80"
-                            style={{
-                              backgroundColor: `${colors.danger}15`,
-                              color: colors.danger,
-                            }}
+                            variant="danger"
+                            className="p-1 h-auto"
                             title="Cancel Booking"
                           >
                             <XCircle className="w-5 h-5" />
-                          </button>
+                          </Button>
                         )}
                       </td>
                     </tr>

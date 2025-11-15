@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from "react"
-import { Search, Filter, X, Loader2, AlertCircle } from "lucide-react"
+import { Search, Filter, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import BookCard from "@/components/books/book-card"
 import { typography } from "@/styles/typography"

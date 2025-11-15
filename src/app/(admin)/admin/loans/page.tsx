@@ -1,25 +1,76 @@
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { Loader2, CheckCircle, Clock, RotateCcw, Search, AlertCircle, Filter, X } from "lucide-react";
+import { Loader2, CheckCircle, Clock, RotateCcw, Search, Filter } from "lucide-react";
 import type { Loan } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { colors } from "@/styles/colors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 const statusConfig = {
-  borrowed: { color: colors.warning, icon: Clock, label: 'Borrowed' },
-  returned: { color: colors.success, icon: CheckCircle, label: 'Returned' },
-  late: { color: colors.danger, icon: AlertCircle, label: 'LATE' }
+  borrowed: { color: "text-cyan-800", icon: Clock, label: "Borrowed" },
+  returned: { color: "text-green-800", icon: CheckCircle, label: "Returned" },
+  late: { color: "text-red-800", icon: CheckCircle /* icon fallback */, label: "LATE (Fine)" },
+};
+
+const filterOptions = [
+  { label: "All", value: "all" },
+  { label: "Borrowed", value: "borrowed" },
+  { label: "Returned", value: "returned" },
+  { label: "Late", value: "late" },
+];
+
+const calculateBorrowedAt = (dueDateString?: string | null): Date | null => {
+  if (!dueDateString) return null;
+  try {
+    const due = new Date(dueDateString as any);
+    if (isNaN(due.getTime())) return null;
+    return new Date(due.getTime() - 7 * 24 * 60 * 60 * 1000);
+  } catch {
+    return null;
+  }
+};
+
+// helper: kembalikan date objek yang valid buat sorting/tampilan
+const getBorrowDate = (loan: Loan): Date => {
+  try {
+    if (loan.borrowDate) {
+      const d = new Date(loan.borrowDate as any);
+      if (!isNaN(d.getTime())) return d;
+    }
+    const calc = calculateBorrowedAt((loan as any).dueDate);
+    if (calc) return calc;
+  } catch {}
+  // fallback paling tua supaya muncul paling bawah saat sort desc
+  return new Date(0);
+};
+
+// safe formatter tanggal
+const formatDate = (input?: string | Date | null) => {
+  if (!input) return "N/A";
+  try {
+    const d = new Date(input as any);
+    if (isNaN(d.getTime())) return "N/A";
+    return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+  } catch {
+    return "N/A";
+  }
 };
 
 export default function ManageLoansPage() {
   const [loans, setLoans] = useState<Loan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<string>("all");
   const [search, setSearch] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -27,66 +78,75 @@ export default function ManageLoansPage() {
 
   async function fetchLoans() {
     setIsLoading(true);
-    const res = await fetch(`${API_URL}/api/loans`, {
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-    if (res.ok) {
+    try {
+      const headers: HeadersInit = {};
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_URL}/api/loans`, { headers });
+      if (!res.ok) {
+        setLoans([]);
+        return;
+      }
       const data = await res.json();
-      setLoans(data || []);
-    } else {
+      // accept either array or { data: [] }
+      const arr = Array.isArray(data) ? data : Array.isArray(data?.data) ? data.data : [];
+      setLoans(arr);
+    } catch (err) {
       setLoans([]);
+      console.error("fetchLoans error:", err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }
 
   useEffect(() => {
-    if (token) {
-      fetchLoans();
-    } else {
-      setIsLoading(false);
-    }
+    if (token) fetchLoans();
+    else setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleReturn = async (loanId: string) => {
-    if (!confirm("Yakin mau 'Force Return' buku ini?")) return;
-    
-    await fetch(`${API_URL}/api/loans/${loanId}/return`, {
-      method: "POST",
-      headers: { "Authorization": `Bearer ${token}` }
-    });
-    fetchLoans(); // Refresh list
+    if (!confirm("yakin mau 'force return' buku ini?")) return;
+    try {
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (token) headers["Authorization"] = `Bearer ${token}`;
+      const res = await fetch(`${API_URL}/api/loans/${loanId}/return`, { method: "POST", headers });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j?.message || "return failed");
+      }
+      // refresh
+      await fetchLoans();
+      alert("return processed");
+    } catch (err: any) {
+      console.error("handleReturn error:", err);
+      alert(err?.message || "failed to process return");
+    }
   };
 
-  const handleClearFilters = () => {
-    setSearch("");
-    setFilter("all");
-  };
-
-  const hasActiveFilters = filter !== "all" || search !== "";
-
+  // filtered + sorted (pakai fallback borrowedDate kalau backend ga ngirim borrowDate)
   const filteredLoans = useMemo(() => {
+    const q = search.toLowerCase().trim();
     return loans
-      .filter(l => {
-        if (filter === 'all') return true;
+      .filter((l) => {
+        if (filter === "all") return true;
         return l.status === filter;
       })
-      .filter(l => {
-        const query = search.toLowerCase();
-        if (!query) return true;
+      .filter((l) => {
+        if (!q) return true;
         return (
-          (l.book?.title || '').toLowerCase().includes(query) ||
-          (l.user?.email || '').toLowerCase().includes(query)
+          (l.book?.title || "").toLowerCase().includes(q) ||
+          (l.user?.email || "").toLowerCase().includes(q)
         );
       })
-      .sort((a, b) => new Date(b.borrowDate).getTime() - new Date(a.borrowDate).getTime());
+      .sort((a, b) => getBorrowDate(b).getTime() - getBorrowDate(a).getTime());
   }, [loans, filter, search]);
 
-  const formatDate = (dateString: string) => {
-    if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString('id-ID', {
-      day: 'numeric', month: 'short', year: 'numeric'
-    });
-  };
+  if (isLoading)
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin" />
+      </div>
+    );
 
   return (
     <div>
@@ -96,198 +156,101 @@ export default function ManageLoansPage() {
         </h1>
       </div>
 
-      {/* Filter Bar - Mobile/Tablet Optimized */}
-      <div className="py-6 space-y-4 mb-4">
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
-          {/* Search bar */}
-          <div className="relative flex-1 min-w-0 sm:flex-auto">
-            <Search 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0" 
-              style={{ color: colors.textSecondary }}
-            />
-            <Input 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              placeholder="Cari buku atau email..." 
-              className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.textPrimary,
-                borderColor: colors.bgTertiary,
-              }}
-              onFocus={(e) => {
-                e.currentTarget.style.borderColor = colors.primary;
-                e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
-              }}
-              onBlur={(e) => {
-                e.currentTarget.style.borderColor = colors.bgTertiary;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            />
-          </div>
+      {/* search + filters */}
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-4">
+        <div className="relative flex-1 sm:flex-none sm:w-64">
+          <Search className="absolute z-0 left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari nama buku atau email user..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+          />
+        </div>
 
-          {/* Filter button */}
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
-            style={{
-              backgroundColor: showFilters ? colors.primary : colors.bgPrimary,
-              color: showFilters ? "white" : colors.textSecondary,
-              border: `1px solid ${showFilters ? colors.primary : colors.bgTertiary}`,
-              minHeight: "42px",
-              padding: "10px 12px",
-            }}
-          >
-            <Filter className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden sm:inline">Filters</span>
-          </Button>
-
-          {/* Clear button */}
-          {hasActiveFilters && (
+        {/* pill group desktop */}
+        <div className="hidden sm:flex gap-2 flex-shrink-0">
+          {filterOptions.map((opt) => (
             <Button
-              onClick={handleClearFilters}
-              className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.danger,
-                border: `1px solid ${colors.danger}40`,
-                minHeight: "42px",
-                padding: "10px 12px",
-              }}
+              key={opt.value}
+              variant={filter === opt.value ? "primary" : "secondary"}
+              onClick={() => setFilter(opt.value)}
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                filter === opt.value ? "bg-slate-900 text-white shadow-sm" : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
+              } capitalize`}
             >
-              <X className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Clear</span>
+              {opt.label}
             </Button>
           )}
         </div>
 
-        {/* Filter Panel */}
-        {showFilters && (
-          <div
-            className="rounded-lg p-4 sm:p-6 border space-y-4"
-            style={{
-              backgroundColor: colors.bgPrimary,
-              borderColor: colors.bgTertiary,
-            }}
-          >
-            <div>
-              <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
-                Status
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {['all', 'borrowed', 'returned'].map(status => ( 
-                  <button
-                    key={status}
-                    onClick={() => setFilter(status)}
-                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
-                    style={{
-                      backgroundColor: filter === status ? colors.primary : colors.bgSecondary,
-                      color: filter === status ? "white" : colors.textPrimary,
-                      borderColor: filter === status ? colors.primary : colors.bgTertiary,
-                      borderWidth: "1px",
-                    }}
-                  >
-                    {status.replace('_', ' ')}
-                  </button>
+        {/* dropdown mobile */}
+        <div className="sm:hidden w-full">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="secondary" className="w-full justify-center px-3 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2">
+                <Filter className="w-4 h-4" />
+                <span>Filter: {filterOptions.find((f) => f.value === filter)?.label || "all"}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-[calc(100vw-2rem)]">
+              <DropdownMenuRadioGroup value={filter} onValueChange={(v) => setFilter(v)}>
+                {filterOptions.map((opt) => (
+                  <DropdownMenuRadioItem key={opt.value} value={opt.value} className="capitalize">
+                    {opt.label}
+                  </DropdownMenuRadioItem>
                 ))}
-              </div>
-            </div>
-          </div>
-        )}
+              </DropdownMenuRadioGroup>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Table */}
-      <div 
-        className="rounded-lg border shadow-sm overflow-hidden"
-        style={{
-          backgroundColor: colors.bgPrimary,
-          borderColor: colors.bgTertiary,
-        }}
-      >
+      <div className="bg-white rounded-lg border shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead 
-              className="border-b"
-              style={{
-                backgroundColor: colors.bgSecondary,
-                borderColor: colors.bgTertiary,
-              }}
-            >
+            <thead className="bg-slate-50 border-b">
               <tr>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Buku
-                </th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  User (Email)
-                </th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Tanggal Pinjam
-                </th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Jatuh Tempo
-                </th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Status
-                </th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Actions
-                </th>
+                <th className="text-left p-4 font-semibold">Buku</th>
+                <th className="text-left p-4 font-semibold">User (E-mail)</th>
+                <th className="text-left p-4 font-semibold">Tanggal Pinjam</th>
+                <th className="text-left p-4 font-semibold">Jatuh Tempo</th>
+                <th className="text-left p-4 font-semibold">Status</th>
+                <th className="text-left p-4 font-semibold">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredLoans.length > 0 ? (
                 filteredLoans.map((loan) => {
-                  const statusInfo = statusConfig[loan.status] || statusConfig.borrowed;
-                  const isOverdue = loan.status === 'borrowed' && loan.dueDate && new Date(loan.dueDate) < new Date();
+                  const loanStatus = (loan.status as keyof typeof statusConfig) || "borrowed";
+                  const statusInfo = statusConfig[loanStatus] ?? statusConfig.borrowed;
+                  const StatusIcon = statusInfo.icon;
+                  const isLate = loan.status === "late";
+                  const isReturned = loan.status === "returned";
+                  const isCancellable = !isReturned;
+
+                  const borrowedDate = loan.borrowDate ? new Date(loan.borrowDate as any) : calculateBorrowedAt((loan as any).dueDate);
+
                   return (
-                    <tr 
-                      key={loan._id || loan.id} 
-                      className="border-b transition-colors hover:opacity-80"
-                      style={{
-                        borderColor: colors.bgTertiary,
-                        backgroundColor: colors.bgPrimary,
-                      }}
-                    >
-                      <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
-                        {loan.book?.title || 'Buku Dihapus'}
-                      </td>
-                      <td className="p-4 align-top text-sm" style={{ color: colors.textPrimary }}>
-                        {loan.user?.email || 'User Dihapus'}
-                      </td>
-                      <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
-                        {formatDate(loan.borrowDate)}
-                      </td>
-                      <td 
-                        className="p-4 align-top font-semibold"
-                        style={{ color: isOverdue ? colors.danger : colors.textPrimary }}
-                      >
-                        {formatDate(loan.dueDate)}
-                        {isOverdue && (
-                          <span className="text-xs block" style={{ color: colors.danger }}>
-                            (OVERDUE)
-                          </span>
-                        )}
+                    <tr key={loan._id || loan.id} className="border-b hover:bg-slate-50">
+                      <td className="p-4 align-top">{loan.book?.title || "buku dihapus"}</td>
+                      <td className="p-4 align-top text-sm">{loan.user?.email || "user dihapus"}</td>
+                      <td className="p-4 align-top">{formatDate(borrowedDate)}</td>
+                      <td className={`p-4 align-top ${isLate ? "text-red-600 font-bold" : ""}`}>
+                        {formatDate((loan as any).dueDate)}
+                        {isLate && (loan as any).fineAmount ? (
+                          <span className="text-xs block">(denda: rp {(loan as any).fineAmount.toLocaleString("id-ID")})</span>
+                        ) : null}
                       </td>
                       <td className="p-4 align-top">
-                        <span 
-                          className="flex items-center gap-1.5 text-xs font-semibold"
-                          style={{ color: statusInfo.color }}
-                        >
-                          <statusInfo.icon className="w-4 h-4" />
+                        <span className={`flex items-center gap-1.5 text-xs font-semibold ${statusInfo.color}`}>
+                          <StatusIcon className="w-4 h-4" />
                           {statusInfo.label}
                         </span>
                       </td>
                       <td className="p-4 align-top">
-                        {loan.status === 'borrowed' && (
-                          <button 
-                            onClick={() => handleReturn(loan._id || loan.id)}
-                            className="p-1.5 rounded-lg transition-colors hover:opacity-80"
-                            style={{
-                              backgroundColor: `${colors.info}15`,
-                              color: colors.info,
-                            }}
-                            title="Force Return"
-                          >
+                        {isCancellable && (
+                          <button onClick={() => handleReturn(loan._id || loan.id)} className="text-blue-600 hover:text-blue-800" title="force return">
                             <RotateCcw className="w-5 h-5" />
                           </button>
                         )}
@@ -297,8 +260,8 @@ export default function ManageLoansPage() {
                 })
               ) : (
                 <tr>
-                  <td colSpan={6} className="text-center p-8" style={{ color: colors.textSecondary }}>
-                    Tidak ada data pinjaman yang cocok.
+                  <td colSpan={6} className="text-center p-8 text-slate-500">
+                    tidak ada data pinjaman yang cocok.
                   </td>
                 </tr>
               )}

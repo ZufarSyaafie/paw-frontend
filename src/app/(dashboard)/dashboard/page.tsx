@@ -2,7 +2,8 @@
 
 import Link from "next/link"
 import { ChevronRight, BookOpen, Users, Bell, Loader2, AlertCircle, AlertTriangle } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react" // <-- Tambah Suspense
+import { useRouter, useSearchParams } from "next/navigation" // <-- Tambah useSearchParams
 import BookCard from "@/components/books/book-card"
 import { RoomCard } from "@/components/rooms/room-card"
 import AnnouncementCard from "@/components/announcements/announcement-card"
@@ -10,14 +11,13 @@ import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import { spacing } from "@/styles/spacing"
 import type { Book, Room, Announcement, Loan } from "@/types"
-import { getAuthToken, setAuthToken } from "@/lib/auth"
+import { getAuthToken, setAuthToken, removeAuthToken } from "@/lib/auth" // <-- Tambah removeAuthToken
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 const sampleBooks: Book[] = [
     { id: "1", title: "Mock Book", author: "Mock Author", stock: 5, status: "available", category: "Fiction", year: 2023 },
 ]
-
 const sampleRooms: Room[] = [
     {
         id: "1",
@@ -30,12 +30,29 @@ const sampleRooms: Room[] = [
         price: 0,
     },
 ]
-
 const sampleAnnouncements: Announcement[] = [
     { id: 1, title: "Mock Announcement", snippet: "Mock update.", bookTitle: "", message: "", createdAt: "" },
 ]
 
-export default function Dashboard() {
+// --- WRAP KOMPONEN UTAMA BIAR BISA PAKE useSearchParams ---
+export default function DashboardPageWrapper() {
+    return (
+        <Suspense fallback={<DashboardLoadingSkeleton />}>
+            <Dashboard />
+        </Suspense>
+    )
+}
+
+function DashboardLoadingSkeleton() {
+    return (
+        <div className="flex justify-center items-center h-screen">
+            <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+            <p className="ml-3 text-gray-600 font-medium">Loading Dashboard...</p>
+        </div>
+    )
+}
+
+function Dashboard() {
     const [stats, setStats] = useState({
         totalBooks: 0,
         availableRooms: 0,
@@ -49,15 +66,19 @@ export default function Dashboard() {
     const [username, setUsername] = useState("")
     const [greeting, setGreeting] = useState("")
     const [lateLoans, setLateLoans] = useState<Loan[]>([])
+    const [upcomingLoans, setUpcomingLoans] = useState<Loan[]>([])
+    
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     useEffect(() => {
         // Tangkap token dari query saat redirect OAuth (?token=...)
         try {
-            const url = new URL(window.location.href)
-            const t = url.searchParams.get("token")
-            if (t && typeof t === "string" && t !== "undefined") {
-                setAuthToken(t)
-                // Hapus param token dari URL agar lebih rapi
+            const token = searchParams.get("token");
+            if (token && typeof token === "string" && token !== "undefined") {
+                setAuthToken(token)
+                
+                const url = new URL(window.location.href)
                 url.searchParams.delete("token")
                 window.history.replaceState({}, document.title, url.pathname + url.search)
             }
@@ -68,7 +89,7 @@ export default function Dashboard() {
         else if (hour < 15) setGreeting("Selamat Siang")
         else if (hour < 18) setGreeting("Selamat Sore")
         else setGreeting("Selamat Malam")
-    }, [])
+    }, [searchParams])
 
     useEffect(() => {
         const token = getAuthToken()
@@ -79,14 +100,25 @@ export default function Dashboard() {
 
         ;(async () => {
             try {
-                if (!API_URL) return
+                if (!API_URL || !token) {
+                    if(!token) setIsLoading(false); // Hindarin loading muter terus
+                    return;
+                }
                 const headers: HeadersInit = {}
-                if (token) headers["Authorization"] = `Bearer ${token}`
+                headers["Authorization"] = `Bearer ${token}`
+                
                 const res = await fetch(`${API_URL}/api/users/me`, {
                     headers,
                     credentials: "include",
                 })
-                if (!res.ok) return
+                
+                if (!res.ok) {
+                    if (res.status === 401 || res.status === 403) {
+                         removeAuthToken(); // Token invalid
+                         router.replace("/sign-in");
+                    }
+                    return;
+                }
                 const data = await res.json()
                 if (cancelled) return
                 const name = data?.username || data?.name || data?.email
@@ -102,10 +134,16 @@ export default function Dashboard() {
         return () => {
             cancelled = true
         }
-    }, [])
+    }, [router])
 
     useEffect(() => {
         const token = getAuthToken()
+        if (!token) {
+             setError("Authentication required.");
+             setIsLoading(false);
+             router.replace("/sign-in");
+             return;
+        }
 
         const fetchDashboardData = async () => {
             setIsLoading(true)
@@ -118,21 +156,29 @@ export default function Dashboard() {
                 if (token) headers["Authorization"] = `Bearer ${token}`
 
                 const [featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes] = await Promise.all([
-                    fetch(`${API_URL}/api/books?limit=3`, { ...common, headers }),
-                    fetch(`${API_URL}/api/books?limit=1`, { ...common, headers }),
+                    fetch(`${API_URL}/api/books?limit=4&sortBy=createdAt&order=desc`, { ...common, headers }), // Ambil 4 buku
+                    fetch(`${API_URL}/api/books?limit=1`, { ...common, headers }), 
                     fetch(`${API_URL}/api/rooms`, { ...common, headers }),
                     fetch(`${API_URL}/api/announcements`, { ...common, headers }),
                     fetch(`${API_URL}/api/loans/my`, { ...common, headers })
                 ])
+                
+                if ([featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes].some(res => res.status === 401)) {
+                    throw new Error("Invalid token. Please log in again.");
+                }
 
                 const featuredBooksData = await featuredBooksRes.json()
                 const featuredBooks = featuredBooksData.data || []
                 
                 const totalBooksData = await totalBooksRes.json()
-                const totalBooks = totalBooksData.total || 0 // Ambil 'total' dari BE yg udah bener
+                const totalBooks = totalBooksData.total || 0 
 
-                const roomsData = await roomsRes.json()
-                const featuredRooms = (roomsData || []).slice(0, 3)
+                const roomsData: Room[] = await roomsRes.json();
+                
+                const featuredRooms = (roomsData || [])
+                    .sort((a, b) => new Date((b as any).createdAt).getTime() - new Date((a as any).createdAt).getTime()) // Urutin dari yg terbaru
+                    .slice(0, 3); // Ambil 3 teratas
+                
                 const availableRooms = (roomsData || []).filter((r: any) => r.status === "available").length
 
                 const announcementsData = await announcementsRes.json()
@@ -140,18 +186,38 @@ export default function Dashboard() {
                 const announcementCount = (announcementsData || []).length
 
                 const loansData: Loan[] = await loansRes.json();
+                
+                const now = new Date();
+                const sevenDaysFromNow = new Date();
+                sevenDaysFromNow.setDate(now.getDate() + 7);
+                now.setHours(0, 0, 0, 0); 
+
                 const late = loansData.filter(loan => loan.status === 'late');
+                
+                const upcoming = loansData.filter(loan => {
+                    if (!loan.dueDate || isNaN(new Date(loan.dueDate).getTime())) return false; 
+                    const dueDate = new Date(loan.dueDate);
+                    return loan.status === 'borrowed' && 
+                           dueDate >= now && 
+                           dueDate <= sevenDaysFromNow;
+                });
+                
                 setLateLoans(late);
+                setUpcomingLoans(upcoming); 
 
                 setStats({
-                    totalBooks, // Pake totalBooks yg udah bener
+                    totalBooks,
                     availableRooms,
                     announcementCount,
-                    featuredBooks, // Pake featuredBooks yg limit 3
+                    featuredBooks,
                     featuredRooms,
                     featuredAnnouncements,
                 })
             } catch (err: any) {
+                if (err.message.includes("Invalid token")) {
+                    removeAuthToken();
+                    router.replace("/sign-in");
+                }
                 setError("Failed to load dashboard data. Check backend.")
                 setStats({
                     totalBooks: 0,
@@ -167,15 +233,9 @@ export default function Dashboard() {
         }
 
         fetchDashboardData()
-    }, [])
+    }, [router])
 
-    if (isLoading)
-        return (
-            <div className="flex justify-center items-center h-screen">
-                <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
-                <p className="ml-3 text-gray-600 font-medium">Loading Dashboard...</p>
-            </div>
-        )
+    if (isLoading) return <DashboardLoadingSkeleton />; // Pake skeleton
 
     if (error)
         return (
@@ -210,6 +270,20 @@ export default function Dashboard() {
               </div>
             )}
 
+            {upcomingLoans.length > 0 && lateLoans.length === 0 && ( 
+              <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 mb-10">
+                <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-3">
+                  <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+                  <div>
+                    <h3 className="font-semibold text-yellow-800">Peringatan Jatuh Tempo</h3>
+                    <p className="text-sm text-yellow-700">
+                      Lu punya {upcomingLoans.length} buku yang akan jatuh tempo dalam 7 hari ke depan.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <StatCard
@@ -235,7 +309,8 @@ export default function Dashboard() {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 pb-16">
                 <Section title="Featured Books" description="Latest additions to our collection" viewAllHref="/books">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+                    {/* --- FIX DI SINI: grid-cols-2 --- */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {stats.featuredBooks.map((book: any) => (
                             <BookCard key={book.id || book._id} id={book.id || book._id} title={book.title} author={book.author} cover={book.cover} stock={book.stock} />
                         ))}
@@ -243,7 +318,8 @@ export default function Dashboard() {
                 </Section>
 
                 <Section title="Available Rooms" description="Book a space for your group" viewAllHref="/rooms">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    {/* --- FIX DI SINI: grid-cols-2 --- */}
+                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
                         {stats.featuredRooms.map((room: any) => (
                             <RoomCard key={room.id || room._id} {...room} />
                         ))}
@@ -251,7 +327,7 @@ export default function Dashboard() {
                 </Section>
 
                 <Section title="Latest Announcements" description="Stay updated with library news" viewAllHref="/announcements">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {stats.featuredAnnouncements.map((announcement: any) => (
                             <AnnouncementCard
                                 key={announcement.id || announcement._id}
