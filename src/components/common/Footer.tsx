@@ -1,6 +1,6 @@
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
-import { Facebook, Twitter, Instagram } from "lucide-react"
+// import { Facebook, Twitter, Instagram } from "lucide-react"
 
 export default function Footer() {
   return (
@@ -14,7 +14,7 @@ export default function Footer() {
           {/* DIV 1: Logo & Deskripsi (Kiri) */}
           <div className="space-y-4 md:w-1/3 lg:w-2/5">
             <div className="flex items-center gap-3">
-              <img src="/logo.png" alt="Naratama" className="h-10 w-auto bg-white rounded-md p-1" />
+              <img src="/logo-warna.png" alt="Naratama" className="h-10 w-auto bg-white rounded-md p-1" />
               <span className={`${typography.h4} font-bold`} style={{ color: "white" }}>
                 Digital Library
               </span>
@@ -42,7 +42,7 @@ export default function Footer() {
             </div>
 
             {/* Follow Us */}
-            <div className="space-y-3 min-w-[120px]">
+            {/* <div className="space-y-3 min-w-[120px]">
               <h4 className="font-semibold text-white uppercase tracking-wider text-sm mb-4">Follow Us</h4>
               <div className="flex space-x-4">
                 <a href="#" aria-label="Facebook" className="w-8 h-8 bg-slate-700 hover:bg-slate-600 rounded-full flex items-center justify-center transition-colors">
@@ -55,7 +55,7 @@ export default function Footer() {
                   <Instagram className="w-4 h-4 text-white" />
                 </a>
               </div>
-            </div>
+            </div> */}
           </div>
           
         </div>
