@@ -14,7 +14,7 @@ export default function Footer() {
           {/* DIV 1: Logo & Deskripsi (Kiri) */}
           <div className="space-y-4 md:w-1/3 lg:w-2/5">
             <div className="flex items-center gap-3">
-              <img src="/logo-warna.png" alt="Naratama" className="h-10 w-auto bg-white rounded-md p-1" />
+              <img src="/logo-warna.png" alt="Naratama" className="h-10 w-auto" />
               <span className={`${typography.h4} font-bold`} style={{ color: "white" }}>
                 Digital Library
               </span>
@@ -32,12 +32,13 @@ export default function Footer() {
             
             {/* Navigasi  */}
             <div className="space-y-3 min-w-[120px]">
-              <h4 className="font-semibold text-white uppercase tracking-wider text-sm mb-4">Navigasi</h4>
+              <h4 className="font-semibold text-white uppercase tracking-wider text-sm mb-4">Quick Navigation</h4>
               <ul className="space-y-2">
                 <li><a href="/books" className="hover:text-white transition-colors text-sm">Books</a></li>
                 <li><a href="/rooms" className="hover:text-white transition-colors text-sm">Rooms</a></li>
                 <li><a href="/announcements" className="hover:text-white transition-colors text-sm">Announcements</a></li>
                 <li><a href="/loans" className="hover:text-white transition-colors text-sm">My Loans</a></li>
+                <li><a href="/bookings" className="hover:text-white transition-colors text-sm">My Bookings</a></li>
               </ul>
             </div>
 
