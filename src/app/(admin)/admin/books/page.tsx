@@ -146,22 +146,124 @@ export default function ManageBooksPage() {
             
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
               <div>
-                <label className="text-sm font-medium">Judul</label>
-                <Input name="title" value={formData.title || ""} onChange={handleFormChange} required />
+                <label 
+                  className="text-sm font-medium block mb-2"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Judul
+                </label>
+                <Input 
+                  name="title" 
+                  value={formData.title || ""} 
+                  onChange={handleFormChange} 
+                  required 
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: colors.bgTertiary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.bgTertiary;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
               <div>
-                <label className="text-sm font-medium">Author</label>
-                <Input name="author" value={formData.author || ""} onChange={handleFormChange} required />
+                <label 
+                  className="text-sm font-medium block mb-2"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Author
+                </label>
+                <Input 
+                  name="author" 
+                  value={formData.author || ""} 
+                  onChange={handleFormChange} 
+                  required 
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: colors.bgTertiary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.bgTertiary;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
               
               <div className="flex gap-4">
                 <div className="w-1/3">
-                  <label className="text-sm font-medium">Stock</label>
-                  <Input name="stock" type="number" value={formData.stock || 0} onChange={handleFormChange} required />
+                  <label 
+                    className="text-sm font-medium block mb-2"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    Stock
+                  </label>
+                  <Input 
+                    name="stock" 
+                    type="number" 
+                    value={formData.stock || 0} 
+                    onChange={handleFormChange} 
+                    required 
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                    style={{
+                      backgroundColor: colors.bgSecondary,
+                      color: colors.textPrimary,
+                      borderColor: colors.bgTertiary,
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.bgTertiary;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
+                  {(formData.stock as number) === 0 && (
+                    <p className="text-xs mt-1" style={{ color: colors.warning }}>
+                      Stock 0 akan otomatis jadi Unavailable
+                    </p>
+                  )}
                 </div>
                 <div className="w-1/3">
-                  <label className="text-sm font-medium">Tahun</label>
-                  <Input name="year" type="number" value={formData.year || new Date().getFullYear()} onChange={handleFormChange} />
+                  <label 
+                    className="text-sm font-medium block mb-2"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    Tahun
+                  </label>
+                  <Input 
+                    name="year" 
+                    type="number" 
+                    value={formData.year || new Date().getFullYear()} 
+                    onChange={handleFormChange} 
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                    style={{
+                      backgroundColor: colors.bgSecondary,
+                      color: colors.textPrimary,
+                      borderColor: colors.bgTertiary,
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.bgTertiary;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
                 </div>
                 <div className="w-1/3">
                   <label 
@@ -197,33 +299,175 @@ export default function ManageBooksPage() {
               </div>
               
               <div>
-                <label className="text-sm font-medium">Kategori</label>
-                <Input name="category" value={formData.category || ""} onChange={handleFormChange} />
+                <label 
+                  className="text-sm font-medium block mb-2"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Kategori
+                </label>
+                <Input 
+                  name="category" 
+                  value={formData.category || ""} 
+                  onChange={handleFormChange} 
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: colors.bgTertiary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.bgTertiary;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
 
               <div>
-                <label className="text-sm font-medium">Publisher</label>
-                <Input name="publisher" value={formData.publisher || ""} onChange={handleFormChange} placeholder="Penerbit..." />
+                <label 
+                  className="text-sm font-medium block mb-2"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Publisher
+                </label>
+                <Input 
+                  name="publisher" 
+                  value={formData.publisher || ""} 
+                  onChange={handleFormChange} 
+                  placeholder="Penerbit..." 
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: colors.bgTertiary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.bgTertiary;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
               
               <div className="flex gap-4">
                 <div className="flex-1">
-                  <label className="text-sm font-medium">ISBN</label>
-                  <Input name="isbn" value={formData.isbn || ""} onChange={handleFormChange} placeholder="978-..." />
+                  <label 
+                    className="text-sm font-medium block mb-2"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    ISBN
+                  </label>
+                  <Input 
+                    name="isbn" 
+                    value={formData.isbn || ""} 
+                    onChange={handleFormChange} 
+                    placeholder="978-..." 
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                    style={{
+                      backgroundColor: colors.bgSecondary,
+                      color: colors.textPrimary,
+                      borderColor: colors.bgTertiary,
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.bgTertiary;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
                 </div>
                 <div className="flex-1">
-                  <label className="text-sm font-medium">Lokasi Rak</label>
-                  <Input name="location" value={formData.location || ""} onChange={handleFormChange} placeholder="Contoh: Rak A-1" />
+                  <label 
+                    className="text-sm font-medium block mb-2"
+                    style={{ color: colors.textPrimary }}
+                  >
+                    Lokasi Rak
+                  </label>
+                  <Input 
+                    name="location" 
+                    value={formData.location || ""} 
+                    onChange={handleFormChange} 
+                    placeholder="Contoh: Rak A-1" 
+                    className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                    style={{
+                      backgroundColor: colors.bgSecondary,
+                      color: colors.textPrimary,
+                      borderColor: colors.bgTertiary,
+                    }}
+                    onFocus={(e) => {
+                      e.currentTarget.style.borderColor = colors.primary;
+                      e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = colors.bgTertiary;
+                      e.currentTarget.style.boxShadow = "none";
+                    }}
+                  />
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium">Cover URL</label>
-                <Input name="cover" value={formData.cover || ""} onChange={handleFormChange} placeholder="https://..." />
+                <label 
+                  className="text-sm font-medium block mb-2"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Cover URL
+                </label>
+                <Input 
+                  name="cover" 
+                  value={formData.cover || ""} 
+                  onChange={handleFormChange} 
+                  placeholder="https://..." 
+                  className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: colors.bgTertiary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.bgTertiary;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
               <div>
-                <label className="text-sm font-medium">Sinopsis</label>
-                <textarea name="synopsis" value={formData.synopsis || ""} onChange={handleFormChange} className="w-full h-24 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <label 
+                  className="text-sm font-medium block mb-2"
+                  style={{ color: colors.textPrimary }}
+                >
+                  Sinopsis
+                </label>
+                <textarea 
+                  name="synopsis" 
+                  value={formData.synopsis || ""} 
+                  onChange={handleFormChange} 
+                  className="w-full h-24 px-4 py-2 rounded-lg border transition-all focus:outline-none"
+                  style={{
+                    backgroundColor: colors.bgSecondary,
+                    color: colors.textPrimary,
+                    borderColor: colors.bgTertiary,
+                  }}
+                  onFocus={(e) => {
+                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = colors.bgTertiary;
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                />
               </div>
               
               <Button 
@@ -269,7 +513,7 @@ export default function ManageBooksPage() {
         }}
       >
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[700px]">
+          <table className="w-full min-w-[900px]">
             <thead 
               className="border-b"
               style={{
@@ -303,7 +547,7 @@ export default function ManageBooksPage() {
                   Status
                 </th>
                 <th 
-                  className="text-left p-4 font-semibold"
+                  className="text-center p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
                   Actions
@@ -337,45 +581,47 @@ export default function ManageBooksPage() {
                       {book.author}
                     </td>
                     <td 
-                      className="p-4 align-top"
-                      style={{ color: colors.textPrimary }}
+                      className="p-4 align-top font-semibold"
+                      style={{ color: (book.stock as number) === 0 ? colors.danger : colors.textPrimary }}
                     >
                       {book.stock}
                     </td>
                     <td className="p-4 align-top">
                       <span 
-                        className="px-3 py-1 rounded-full text-xs font-semibold"
+                        className="px-3 py-1.5 rounded-full text-xs font-semibold inline-block"
                         style={{
-                          backgroundColor: displayStatus === 'available' ? `${colors.success}15` : `${colors.danger}15`,
+                          backgroundColor: displayStatus === 'available' ? `${colors.success}20` : `${colors.danger}20`,
                           color: displayStatus === 'available' ? colors.success : colors.danger,
                         }}
                       >
                         {displayStatus}
                       </span>
                     </td>
-                    <td className="p-4 align-top flex gap-3">
-                      <button 
-                        onClick={() => openEditModal(book)} 
-                        className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
-                        style={{
-                          backgroundColor: `${colors.info}15`,
-                          color: colors.info,
-                        }}
-                        title="Edit"
-                      >
-                        <Edit className="w-5 h-5" />
-                      </button>
-                      <button 
-                        onClick={() => handleDelete(book._id || book.id)} 
-                        className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
-                        style={{
-                          backgroundColor: `${colors.danger}15`,
-                          color: colors.danger,
-                        }}
-                        title="Delete"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
+                    <td className="p-4 align-top text-center">
+                      <div className="flex gap-2 justify-center">
+                        <button 
+                          onClick={() => openEditModal(book)} 
+                          className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
+                          style={{
+                            backgroundColor: `${colors.info}15`,
+                            color: colors.info,
+                          }}
+                          title="Edit"
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(book._id || book.id)} 
+                          className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
+                          style={{
+                            backgroundColor: `${colors.danger}15`,
+                            color: colors.danger,
+                          }}
+                          title="Delete"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
