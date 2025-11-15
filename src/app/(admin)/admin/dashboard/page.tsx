@@ -84,7 +84,8 @@ export default function AdminDashboardPage() {
   }, []);
 
   return (
-    <div>
+    <div className="max-w-7xl mx-auto w-full">
+      {/* Header
       <div className="flex items-center gap-3 mb-8">
         <Image
           src="/logo(min).png"
@@ -94,15 +95,16 @@ export default function AdminDashboardPage() {
           className="object-contain"
         />
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-      </div>
+      </div> */}
       
+      {/* Stats Grid */}
       {isLoading ? (
         <div className="flex items-center">
             <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
             <p className="ml-3 font-medium text-slate-700">Loading stats...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
           <Link href="/admin/users">
             <StatCard 
               title="Total Users" 
@@ -141,7 +143,8 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+      {/* Panels */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <UpcomingDueDatesPanel loans={allLoans} />
         </div>

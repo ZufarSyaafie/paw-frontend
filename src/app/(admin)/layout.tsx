@@ -51,16 +51,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50">
-      {/* Sidebar Fixed */}
-      <div className="fixed left-0 top-0 h-screen">
-        <AdminSidebar /> 
-      </div>
+    <div className="flex flex-col h-screen overflow-hidden bg-slate-50">
+      {/* Sidebar di Top Right */}
+      <AdminSidebar /> 
 
-      {/* Main Content - Offset by sidebar */}
-      <main className="flex-1 lg:ml-20 overflow-y-auto">
-        <div className="min-h-screen flex flex-col">
-          <div className="flex-1 px-6 sm:px-8 lg:px-12 py-8 max-w-7xl w-full mx-auto">
+      {/* Main Content - Centered */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="flex justify-center min-h-full">
+          <div className="w-full max-w-7xl px-4 sm:px-6 md:px-8 lg:px-10 py-6 sm:py-8">
             {children}
           </div>
         </div>
