@@ -157,7 +157,7 @@ export default function DashboardHeader() {
             <Link
               href="/dashboard"
               className={`flex items-center gap-3 p-2 rounded-md transition-all motion-reduce:transition-none ${
-                isActive("/dashboard") ? "opacity-100" : "opacity-70 hover:opacity-30"
+                isActive("/dashboard") ? "opacity-100" : "opacity-100 hover:opacity-80"
               }`}
             >
               <img src="/logo-warna.png" alt="Naratama" className="h-10 w-auto" />
@@ -182,7 +182,7 @@ export default function DashboardHeader() {
           </nav>
 
           <div className="flex items-center gap-3 sm:gap-4">
-            <button
+            {/* <button
               onClick={handleNotificationClick}
               className="relative group p-2 rounded-full transition-all transform hover:-translate-y-0.5"
               style={{ color: colors.textSecondary }}
@@ -196,7 +196,7 @@ export default function DashboardHeader() {
                   style={{ backgroundColor: colors.danger }}
                 />
               )}
-            </button>
+            </button> */}
 
             <button
               onClick={handleProfileClick}
@@ -215,14 +215,16 @@ export default function DashboardHeader() {
                 }}              />
             </button>
 
+            {/* LOGOUT BUTTON - Desktop only */}
             <button
               onClick={handleLogout}
-              className="hidden md:flex items-center gap-2 px-4 py-2 font-semibold rounded-lg border border-red-600 text-red-600 transition-all hover:bg-red-600 hover:text-white transform hover:shadow-md hover:-translate-y-0.5"
+              className="hidden lg:flex items-center gap-2 px-4 py-2 font-semibold rounded-lg border border-red-600 text-red-600 transition-all hover:bg-red-600 hover:text-white transform hover:shadow-md hover:-translate-y-0.5"
             >
               <LogOut className="w-4 h-4" />
               <span className="text-sm">Logout</span>
             </button>
 
+            {/* MENU BUTTON - Mobile & Tablet only */}
             <button
               onClick={() => setIsMenuOpen((s) => !s)}
               className="lg:hidden p-2 rounded-lg transition-colors"
@@ -267,7 +269,7 @@ export default function DashboardHeader() {
 
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 mt-2 font-semibold rounded-lg border border-red-600 text-red-600 transition-all hover:bg-red-600 hover:text-white sm:hidden"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 mt-2 font-semibold rounded-lg border border-red-600 text-red-600 transition-all hover:bg-red-600 hover:text-white"
           >
             <LogOut className="w-4 h-4" />
             Logout
