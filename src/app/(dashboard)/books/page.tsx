@@ -170,8 +170,10 @@ export default function BooksPage() {
     const hasActiveFilters = selectedCategory !== "All" || selectedStatus !== "All" || activeSearch !== ""
 
     return (
-        <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-6">
+          <div className="space-y-6">
+            {/* Header & Search */}
+            <div className="space-y-4">
                 <div className="py-8 border-b" style={{ borderBottomColor: "#e2e8f0" }}>
                     <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
                         Books
@@ -322,43 +324,32 @@ export default function BooksPage() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {isLoading ? (
-                    <div className="flex justify-center items-center h-48">
-                        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
-                        <p className="ml-3 text-gray-600 font-medium">Loading books...</p>
-                    </div>
-                ) : error ? (
-                    <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center flex flex-col items-center">
-                        <AlertCircle className="w-8 h-8 text-red-600 mb-3" />
-                        <h3 className="font-semibold text-red-800 mb-1">Error Loading Data</h3>
-                        <p className="text-sm text-red-700">{error}</p>
-                    </div>
-                ) : sortedBooks.length > 0 ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {sortedBooks.map((book) => (
-                            <BookCard
-                                key={(book.id || book._id) as string}
-                                id={(book.id || book._id) as string}
-                                title={book.title}
-                                author={book.author}
-                                cover={book.cover}
-                                stock={book.stock}
-                            />
-                        ))}
-                    </div>
-                ) : (
-                    <div className="text-center py-16">
-                        <Filter className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textTertiary }} />
-                        <h3 className={`${typography.h3} mb-2`} style={{ color: colors.textSecondary }}>
-                            No books found
-                        </h3>
-                        <p className={typography.bodySmall} style={{ color: colors.textTertiary }}>
-                            Try adjusting your search or filter options
-                        </p>
-                    </div>
-                )}
-            </div>
+            {/* Books Grid - Responsive Columns */}
+            {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <p className="text-slate-600">Loading books...</p>
+                </div>
+              ) : error ? (
+                <div className="text-red-600 text-center py-12">{error}</div>
+              ) : books.length === 0 ? (
+                <div className="text-slate-600 text-center py-12">
+                  No books found
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5 md:gap-6">
+                  {books.map((book) => (
+                    <BookCard
+                      key={book._id || book.id}
+                      id={book._id || book.id}
+                      title={book.title}
+                      author={book.author}
+                      cover={book.cover}
+                      stock={book.stock}
+                    />
+                  ))}
+                </div>
+              )}
+          </div>
         </div>
     )
 }
