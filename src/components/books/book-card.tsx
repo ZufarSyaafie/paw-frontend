@@ -62,54 +62,59 @@ export default function BookCard({
 
         {/* Konten Buku */}
         <div className="p-3 flex flex-col flex-grow">
-          {/* Judul */}
-          <Link
-            href={`/books/${id}`}
-            className="hover:transition-colors line-clamp-2"
-            style={{ color: colors.primary }}
-          >
-            <h3 className={`${typography.bodySmall} font-bold`}>
-              {title}
-            </h3>
-          </Link>
+          {/* Area teks (tetap fleksibel, diberi min-h agar tinggi stabil) */}
+          <div className="flex-grow min-h-[60px]">
+            <Link
+              href={`/books/${id}`}
+              className="hover:transition-colors line-clamp-2"
+              style={{ color: colors.primary }}
+            >
+              <h3 className={`${typography.bodySmall} font-bold`}>
+                {title}
+              </h3>
+            </Link>
+            <p
+              className={`${typography.labelSmall} mt-1 mb-1 line-clamp-1`}
+              style={{ color: colors.textSecondary }}
+            >
+              {author}
+            </p>
+          </div>
 
-          {/* Penulis */}
-          <p className={`${typography.labelSmall} mt-1 line-clamp-1`} style={{ color: colors.textSecondary }}>
-            {author}
-          </p>
-
-          {/* Status stok */}
-          <div className="mt-2 mb-2">
+          {/* Cluster badge + tombol (selalu di bawah) */}
+          <div className="mt-auto flex flex-col gap-2 pt-1">
             {isInStock ? (
               <Badge
                 variant="outline"
-                className="text-emerald-600 border-emerald-200 bg-emerald-50 text-xs py-0.5"
+                className="inline-flex self-start rounded-md border px-2 py-0.5 text-xs font-semibold
+                           text-emerald-600 border-emerald-200 bg-emerald-50"
               >
                 ✓ {stock}
               </Badge>
             ) : (
               <Badge
                 variant="destructive"
-                className="bg-red-100 text-red-600 border-red-200 text-xs py-0.5"
+                className="inline-flex self-start rounded-md border px-2 py-0.5 text-xs font-semibold
+                           bg-red-100 text-red-600 border-red-200"
               >
                 Out of Stock
               </Badge>
             )}
-          </div>
 
-          {/* Button View Details */}
-          <Link
-            href={`/books/${id}`}
-            className="mt-auto w-full text-center font-bold py-1.5 rounded-md transition-all transform hover:shadow-md hover:-translate-y-0.5 text-sm"
-            style={{
-              backgroundColor: isInStock ? colors.primary : "#d1d5db",
-              color: isInStock ? "white" : "#6b7280",
-              cursor: isInStock ? "pointer" : "not-allowed",
-              pointerEvents: isInStock ? "auto" : "none",
-            }}
-          >
-            View Details
-          </Link>
+            <Link
+              href={`/books/${id}`}
+              className="w-full text-center font-bold py-1.5 rounded-md transition-all transform
+                         hover:shadow-md hover:-translate-y-0.5 text-sm"
+              style={{
+                backgroundColor: isInStock ? colors.primary : "#d1d5db",
+                color: isInStock ? "white" : "#6b7280",
+                cursor: isInStock ? "pointer" : "not-allowed",
+                pointerEvents: isInStock ? "auto" : "none",
+              }}
+            >
+              View Details
+            </Link>
+          </div>
         </div>
       </div>
 
