@@ -1,17 +1,17 @@
-"use client"
+"use client";
 
-import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Check, X, Clock, Loader2, AlertCircle, TrendingDown } from "lucide-react"
-import { useState, useEffect } from "react"
-import type { Loan } from "@/types"
-import { getAuthToken } from "@/lib/auth"
-import { Button } from "@/components/ui/button"
+import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Check, X, Clock, Loader2, AlertCircle, TrendingDown } from "lucide-react";
+import { useState, useEffect } from "react";
+import type { Loan } from "@/types";
+import { getAuthToken } from "@/lib/auth";
+import { Button } from "@/components/ui/button";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
 // format rupiah
 const formatRupiah = (amount: number) =>
-  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount)
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
 const STATUS_CONFIG = {
   borrowed: {
@@ -38,140 +38,146 @@ const STATUS_CONFIG = {
     color: "text-red-700 border-red-200",
     button: "bg-red-500 hover:bg-red-600",
   },
-} as const
+} as const;
 
 // safe formatter: terima string | Date | undefined | null
 const formatDate = (dateString: string | Date | undefined | null) => {
-  if (!dateString) return "N/A"
+  if (!dateString) return "N/A";
   try {
-    const date = new Date(dateString)
-    if (isNaN(date.getTime())) return "N/A"
-    return date.toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" })
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "N/A";
+    return date.toLocaleDateString("id-ID", { year: "numeric", month: "long", day: "numeric" });
   } catch {
-    return "N/A"
+    return "N/A";
   }
-}
+};
 
 // helper: kalau dueDate valid, return dueDate - 7 hari sebagai Date, else null
 const calculateBorrowedAt = (dueDateString: string | undefined | null): Date | null => {
-  if (!dueDateString) return null
+  if (!dueDateString) return null;
   try {
-    const dueDate = new Date(dueDateString)
-    if (isNaN(dueDate.getTime())) return null
-    return new Date(dueDate.getTime() - 7 * 24 * 60 * 60 * 1000)
+    const dueDate = new Date(dueDateString);
+    if (isNaN(dueDate.getTime())) return null;
+    return new Date(dueDate.getTime() - 7 * 24 * 60 * 60 * 1000);
   } catch {
-    return null
+    return null;
   }
-}
+};
 
 // frontend detail type: tambahin isOverdue + optional fines
-type FrontendLoanDetail = Loan & { isOverdue: boolean; fines?: number }
+type FrontendLoanDetail = Loan & { isOverdue: boolean; fines?: number; returnDate?: string | null };
 
-// ensure loan object punya borrowDate (string iso) kalau dueDate ada
-const ensureBorrowDate = (l: Loan): Loan => {
-  try {
-    // kalau backend udah ngirim borrowDate yang valid -> keep
-    if (l.borrowDate) {
-      const d = new Date(l.borrowDate)
-      if (!isNaN(d.getTime())) return l
-    }
+// Normalize loan object: id, borrowDate, returnDate (cover common variants)
+const normalizeLoan = (raw: any): any => {
+  if (!raw) return raw;
+  const data = { ...raw };
 
-    // kalau ga ada, coba hitung dari dueDate - 7 hari
-    const calc = calculateBorrowedAt(l.dueDate)
-    if (calc) {
-      return { ...l, borrowDate: calc.toISOString() }
-    }
-  } catch {
-    // ignore
+  // normalize id
+  if (data._id && !data.id) data.id = data._id;
+
+  // normalize borrowDate (keep existing or compute from dueDate)
+  if (!data.borrowDate && data.dueDate) {
+    const calc = calculateBorrowedAt(data.dueDate);
+    if (calc) data.borrowDate = calc.toISOString();
   }
-  return l
-}
+
+  // normalize return date: accept multiple field names
+  const possibleReturnFields = ["returnDate", "returnedAt", "returned_at", "return_date", "returned_at_iso"];
+  for (const f of possibleReturnFields) {
+    if (data[f]) {
+      data.returnDate = data[f];
+      break;
+    }
+  }
+  if (!data.returnDate && data.loan && typeof data.loan === "object") {
+    for (const f of possibleReturnFields) {
+      if (data.loan[f]) {
+        data.returnDate = data.loan[f];
+        break;
+      }
+    }
+  }
+
+  // coerce empty string -> null
+  if (data.returnDate === "") data.returnDate = null;
+
+  return data;
+};
 
 export default function LoanDetailPage() {
-  const router = useRouter()
-  const params = useParams()
-  const loanId = params?.id as string
+  const router = useRouter();
+  const params = useParams();
+  const loanId = params?.id as string;
 
-  const [loan, setLoan] = useState<FrontendLoanDetail | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [isReturning, setIsReturning] = useState(false)
+  const [loan, setLoan] = useState<FrontendLoanDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [isReturning, setIsReturning] = useState(false);
 
   useEffect(() => {
     const fetchLoan = async () => {
-      const token = getAuthToken()
+      const token = getAuthToken();
       if (!token) {
-        setError("authentication required.")
-        setIsLoading(false)
-        return
+        setError("authentication required.");
+        setIsLoading(false);
+        return;
       }
 
       try {
         const response = await fetch(`${API_URL}/api/loans/${loanId}`, {
           headers: { Authorization: `Bearer ${token}` },
-        })
+        });
 
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData?.message || "loan not found.")
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData?.message || "loan not found.");
         }
 
-        const responseData = await response.json()
-        
-        // FIX: Handle both wrapped and flat response
-        let data = responseData.loan || responseData
-        
-        // FIX: Normalize ID field (MongoDB uses _id)
-        if (data._id && !data.id) {
-          data = { ...data, id: data._id }
-        }
-        
-        console.log("Raw API response:", responseData)
-        console.log("Normalized loan data:", data) // Debug log
-        
-        const dataWithBorrow = ensureBorrowDate(data)
-        const isOverdue = dataWithBorrow.status === "borrowed" && new Date(dataWithBorrow.dueDate) < new Date()
-        const fines = typeof dataWithBorrow.depositAmount === "number" ? dataWithBorrow.depositAmount * 0.1 : undefined
-        
-        setLoan({ ...dataWithBorrow, isOverdue, fines } as FrontendLoanDetail)
+        const responseData = await response.json();
+
+        // Handle wrapped and flat response, then normalize
+        let data = responseData.loan || responseData || {};
+        data = normalizeLoan(data);
+
+        const isOverdue = data.status === "borrowed" && data.dueDate && new Date(data.dueDate) < new Date();
+        const fines = typeof data.depositAmount === "number" ? data.depositAmount * 0.1 : undefined;
+
+        setLoan({ ...data, isOverdue, fines } as FrontendLoanDetail);
       } catch (err: any) {
-        console.error("Fetch loan error:", err)
-        setError(err?.message || "failed to load loan details.")
+        console.error("Fetch loan error:", err);
+        setError(err?.message || "failed to load loan details.");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    if (loanId) {
-      fetchLoan()
-    } else {
-      setIsLoading(false)
-      setError("invalid loan id.")
+    if (loanId) fetchLoan();
+    else {
+      setIsLoading(false);
+      setError("invalid loan id.");
     }
-  }, [loanId])
+  }, [loanId]);
 
   const handleReturn = async () => {
-    if (!loan) return
-    
-    const token = getAuthToken()
+    if (!loan) return;
+
+    const token = getAuthToken();
     if (!token) {
-      alert("authentication required.")
-      return
+      alert("authentication required.");
+      return;
     }
 
-    // FIX: Simplify status check
-    const isPending = loan.paymentStatus === "unpaid"
-    const isBorrowed = loan.status === "borrowed"
-    const isReturned = loan.status === "returned"
+    const isPending = loan.paymentStatus === "unpaid";
+    const isBorrowed = loan.status === "borrowed";
+    const isReturned = loan.status === "returned";
 
-    // Handle cancel for unpaid loans
     if (isPending) {
-      const confirmCancel = confirm("Batalkan pinjaman ini? Tindakan ini akan membatalkan order deposit.")
-      if (!confirmCancel) return
-      
-      setIsReturning(true)
-      setError(null)
-      
+      const confirmCancel = confirm("Batalkan pinjaman ini? Tindakan ini akan membatalkan order deposit.");
+      if (!confirmCancel) return;
+
+      setIsReturning(true);
+      setError(null);
+
       try {
         const response = await fetch(`${API_URL}/api/loans/${loan.id}`, {
           method: "DELETE",
@@ -179,36 +185,35 @@ export default function LoanDetailPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-        })
-        
+        });
+
         if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData?.message || "cancel failed.")
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData?.message || "cancel failed.");
         }
-        
-        alert("Pinjaman dibatalkan.")
-        router.push("/loans")
+
+        alert("Pinjaman dibatalkan.");
+        router.push("/loans");
       } catch (err: any) {
-        console.error("Cancel error:", err)
-        setError(err?.message || "failed to cancel loan.")
-        alert(`Cancel failed: ${err?.message || "unknown error"}`)
+        console.error("Cancel error:", err);
+        setError(err?.message || "failed to cancel loan.");
+        alert(`Cancel failed: ${err?.message || "unknown error"}`);
       } finally {
-        setIsReturning(false)
+        setIsReturning(false);
       }
-      return
+      return;
     }
 
-    // Handle return for borrowed books
     if (!isBorrowed || isReturned) {
-      console.log("Cannot return - Status:", loan.status)
-      return
+      console.log("Cannot return - Status:", loan.status);
+      return;
     }
 
-    const confirmReturn = confirm("Confirm return book? Deposit akan diproses sesuai kondisi buku.")
-    if (!confirmReturn) return
+    const confirmReturn = confirm("Confirm return book? Deposit akan diproses sesuai kondisi buku.");
+    if (!confirmReturn) return;
 
-    setIsReturning(true)
-    setError(null)
+    setIsReturning(true);
+    setError(null);
 
     try {
       // 1. Return loan
@@ -218,70 +223,45 @@ export default function LoanDetailPage() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-      })
+      });
 
+      // get payload (may contain loan)
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData?.message || "return failed.")
+        throw new Error(data?.message || "return failed.");
       }
 
-      const data = await response.json()
-      const returnedLoan = data.loan || data
-      
-      // FIX: Normalize ID field
-      if (returnedLoan._id && !returnedLoan.id) {
-        returnedLoan.id = returnedLoan._id
+      let returnedLoan = data.loan || data || {};
+      returnedLoan = normalizeLoan(returnedLoan);
+
+      // If backend didn't provide returnDate, set local returned time so UI shows it immediately
+      if (!returnedLoan.returnDate) {
+        returnedLoan.returnDate = new Date().toISOString();
       }
-      
-      console.log("Return API response:", data)
-      console.log("Returned loan:", returnedLoan) // Debug log
-      
-      const bookId = loan.book?.id || (loan.book as any)?._id
-      if (bookId) {
-        try {
-          const bookResponse = await fetch(`${API_URL}/api/books/${bookId}`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
-          
-          if (bookResponse.ok) {
-            const bookData = await bookResponse.json()
-            const currentBook = bookData.data || bookData
-            const currentStock = currentBook.stock || 0
-            
-            await fetch(`${API_URL}/api/books/${bookId}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                ...currentBook,
-                stock: currentStock + 1
-              })
-            })
-            
-            console.log(`✅ Stock updated: ${currentStock} → ${currentStock + 1}`)
-          }
-        } catch (stockErr) {
-          console.error("⚠️ Failed to update stock:", stockErr)
-        }
-      }
-      
-      const refundStatus = returnedLoan?.refundStatus || loan.refundStatus
-      const message = refundStatus === "refunded" 
-        ? "Book successfully returned! Deposit refunded." 
-        : "Book returned. Deposit forfeited."
-      
-      alert(message)
-      router.push("/loans")
+
+      // normalize id
+      if (returnedLoan._id && !returnedLoan.id) returnedLoan.id = returnedLoan._id;
+
+      console.log("Return API response:", data);
+      console.log("Returned loan (normalized):", returnedLoan);
+
+      // update UI with returnedLoan
+      const isOverdue = returnedLoan.status === "borrowed" && returnedLoan.dueDate && new Date(returnedLoan.dueDate) < new Date();
+      setLoan({ ...returnedLoan, isOverdue, fines: loan.fines } as FrontendLoanDetail);
+
+      const refundStatus = returnedLoan?.refundStatus || loan.refundStatus;
+      const message = refundStatus === "refunded" ? "Book successfully returned! Deposit refunded." : "Book returned. Deposit processed.";
+
+      alert(message);
+      router.push("/loans");
     } catch (err: any) {
-      console.error("Return error:", err)
-      setError(err?.message || "failed to process return.")
-      alert(`Return failed: ${err?.message || "unknown error"}`)
+      console.error("Return error:", err);
+      setError(err?.message || "failed to process return.");
+      alert(`Return failed: ${err?.message || "unknown error"}`);
     } finally {
-      setIsReturning(false)
+      setIsReturning(false);
     }
-  }
+  };
 
   if (isLoading) {
     return (
@@ -289,7 +269,7 @@ export default function LoanDetailPage() {
         <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
         <p className="ml-3 text-gray-600 font-medium">loading loan details...</p>
       </div>
-    )
+    );
   }
 
   if (error && !loan) {
@@ -299,37 +279,23 @@ export default function LoanDetailPage() {
         <h3 className="font-semibold text-red-800 mb-1">error</h3>
         <p className="text-sm text-red-700">{error || `loan with id ${loanId} not found.`}</p>
       </div>
-    )
+    );
   }
 
-  if (!loan) return null
+  if (!loan) return null;
 
   // FIX: Cleaner display status logic
-  const isPending = loan.paymentStatus === "unpaid"
-  const isReturned = loan.status === "returned"
-  const displayStatusKey = loan.isOverdue
-    ? "overdue"
-    : isReturned
-    ? "returned"
-    : isPending
-    ? "pending"
-    : "borrowed"
+  const isPending = loan.paymentStatus === "unpaid";
+  const isReturned = loan.status === "returned";
+  const displayStatusKey = loan.isOverdue ? "overdue" : isReturned ? "returned" : isPending ? "pending" : "borrowed";
 
-  const statusInfo = STATUS_CONFIG[displayStatusKey]
-  const StatusIcon = statusInfo.icon
+  const statusInfo = STATUS_CONFIG[displayStatusKey];
+  const StatusIcon = statusInfo.icon;
 
-  const isButtonEnabled = (loan.status === "borrowed" && !isReturned) || isPending
-  const buttonText = isPending 
-    ? "Cancel Pinjam" 
-    : loan.status === "borrowed" 
-    ? "Confirm Return" 
-    : statusInfo.label
-    
-  const actionButtonClass = isReturned
-    ? "bg-gray-400 cursor-not-allowed"
-    : isPending
-    ? "bg-amber-500 hover:bg-amber-600"
-    : statusInfo.button
+  const isButtonEnabled = (loan.status === "borrowed" && !isReturned) || isPending;
+  const buttonText = isPending ? "Cancel Pinjam" : loan.status === "borrowed" ? "Confirm Return" : statusInfo.label;
+
+  const actionButtonClass = isReturned ? "bg-gray-400 cursor-not-allowed" : isPending ? "bg-amber-500 hover:bg-amber-600" : statusInfo.button;
 
   return (
     <div className="min-h-screen bg-white">
@@ -350,11 +316,7 @@ export default function LoanDetailPage() {
         <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-12">
           <div className="md:col-span-1">
             <div className="sticky top-32">
-              <img 
-                src={loan.book?.cover || "/placeholder.png"} 
-                alt={loan.book?.title || "book cover"} 
-                className="w-full rounded-lg shadow-lg object-cover aspect-[2/3]" 
-              />
+              <img src={loan.book?.cover || "/placeholder.png"} alt={loan.book?.title || "book cover"} className="w-full rounded-lg shadow-lg object-cover aspect-[2/3]" />
 
               <div className={`mt-4 px-3 py-2 rounded-lg border flex items-center gap-2 ${statusInfo.color}`}>
                 <StatusIcon className="w-4 h-4" />
@@ -362,21 +324,14 @@ export default function LoanDetailPage() {
               </div>
 
               <div className="mt-3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-sm font-semibold text-slate-700">
-                  Deposit: {formatRupiah(loan.depositAmount || 0)}
-                </p>
+                <p className="text-sm font-semibold text-slate-700">Deposit: {formatRupiah(loan.depositAmount || 0)}</p>
               </div>
 
-              {/* harusnya kan admin doang ya yang bisa confirm return, ya kali user bisa */}
-              <Button
-                onClick={handleReturn}
-                disabled={isReturning || !isButtonEnabled}
-                className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all hidden ${
-                  isReturning ? "opacity-70 pointer-events-none" : actionButtonClass
-                }`}
-              >
-                {isReturning ? "Processing..." : buttonText}
-              </Button>
+              {isButtonEnabled && (
+                <Button onClick={handleReturn} disabled={isReturning || !isButtonEnabled} className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${isReturning ? "opacity-70 pointer-events-none" : actionButtonClass}`}>
+                  {isReturning ? "Processing..." : buttonText}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -390,7 +345,8 @@ export default function LoanDetailPage() {
               <LoanDetailItem label="loan id" value={loan.id} />
               <LoanDetailItem label="loan date" value={formatDate(loan.borrowDate)} />
               <LoanDetailItem label="due date" value={formatDate(loan.dueDate)} />
-              <LoanDetailItem label="return date" value={formatDate(loan.returnDate)} />
+              {/* <-- return date now reads loan.returnDate (normalized) */}
+              <LoanDetailItem label="return date" value={formatDate((loan as any).returnDate)} />
             </div>
 
             {loan.isOverdue && (
@@ -421,19 +377,19 @@ export default function LoanDetailPage() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 interface LoanDetailItemProps {
-  label: string
-  value: string | number
+  label: string;
+  value: string | number | null | undefined;
 }
 
 function LoanDetailItem({ label, value }: LoanDetailItemProps) {
   return (
     <div>
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
-      <p className="text-gray-900 font-medium text-sm">{value}</p>
+      <p className="text-gray-900 font-medium text-sm">{value ?? "N/A"}</p>
     </div>
-  )
+  );
 }

@@ -262,7 +262,7 @@ function Dashboard() {
                   <div>
                     <h3 className="font-semibold text-red-800">Peringatan Keterlambatan!</h3>
                     <p className="text-sm text-red-700">
-                      Lu punya {lateLoans.length} buku yang telat dibalikin. 
+                      Ada {lateLoans.length} buku yang telat dibalikin. 
                       Cek <Link href="/loans" className="font-bold underline">Halaman Pinjaman</Link> buat liat denda.
                     </p>
                   </div>
@@ -277,7 +277,7 @@ function Dashboard() {
                   <div>
                     <h3 className="font-semibold text-yellow-800">Peringatan Jatuh Tempo</h3>
                     <p className="text-sm text-yellow-700">
-                      Lu punya {upcomingLoans.length} buku yang akan jatuh tempo dalam 7 hari ke depan.
+                      Ada {upcomingLoans.length} buku yang akan jatuh tempo dalam 7 hari ke depan.
                     </p>
                   </div>
                 </div>
@@ -309,7 +309,7 @@ function Dashboard() {
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 pb-16">
                 <Section title="Featured Books" description="Latest additions to our collection" viewAllHref="/books">
-                    {/* --- FIX DI SINI: grid-cols-2 --- */}
+                    {/* grid-cols-2 */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {stats.featuredBooks.map((book: any) => (
                             <BookCard key={book.id || book._id} id={book.id || book._id} title={book.title} author={book.author} cover={book.cover} stock={book.stock} />
@@ -318,7 +318,7 @@ function Dashboard() {
                 </Section>
 
                 <Section title="Available Rooms" description="Book a space for your group" viewAllHref="/rooms">
-                    {/* --- FIX DI SINI: grid-cols-2 --- */}
+                    {/* grid-cols-2 */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
                         {stats.featuredRooms.map((room: any) => (
                             <RoomCard key={room.id || room._id} {...room} />
