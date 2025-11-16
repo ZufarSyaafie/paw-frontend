@@ -1,20 +1,8 @@
-// import {
-//   DropdownMenu,
-//   DropdownMenuContent,
-//   DropdownMenuRadioGroup,
-//   DropdownMenuRadioItem,
-//   DropdownMenuTrigger,
-// } from "@/components/ui/dropdown-menu";const filterOptions = [
-//   { label: "All", value: "all" },
-//   { label: "Borrowed", value: "borrowed" },
-//   { label: "Returned", value: "returned" },
-//   { label: "Late", value: "late" },
-// ];
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { Loader2, CheckCircle, Clock, RotateCcw, Search, Filter, X } from "lucide-react";
+import { Loader2, CheckCircle, Clock, RotateCcw, Search, Filter} from "lucide-react";
 import type { Loan } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -95,81 +83,170 @@ export default function ManageLoansPage() {
   useEffect(() => {
     if (token) fetchLoans();
     else setIsLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleReturn = async (loanId: string) => {
     if (!confirm("Yakin mau 'Force Return' buku ini?")) return;
-    
-    // Cari loan data dulu untuk dapetin book ID
-    const loan = loans.find(l => (l._id || l.id) === loanId);
+
+    const loan = loans.find((l) => (l._id || (l as any).id) === loanId);
     if (!loan) {
       alert("Loan data tidak ditemukan");
       return;
     }
 
+    const bookId = loan.book?.id || (loan.book as any)?._id;
+    let prevStock: number | null = null;
+    const tokenLocal = token;
+
+    // try fetch prev stock (best-effort)
+    if (bookId) {
+      try {
+        const bRes = await fetch(`${API_URL}/api/books/${bookId}`, {
+          headers: { ...(tokenLocal ? { Authorization: `Bearer ${tokenLocal}` } : {}) },
+        });
+        if (bRes.ok) {
+          const bJson = await bRes.json().catch(() => ({}));
+          const bObj = bJson.data || bJson;
+          prevStock = typeof bObj?.stock === "number" ? bObj.stock : 0;
+          console.log("[admin] prevStock:", prevStock);
+        } else {
+          console.warn("[admin] gagal fetch prevStock (non-fatal)");
+        }
+      } catch (err) {
+        console.warn("[admin] error fetch prevStock:", err);
+      }
+    }
+
     try {
       const headers: HeadersInit = { "Content-Type": "application/json" };
-      if (token) headers["Authorization"] = `Bearer ${token}`;
-      
-      // 1. Process return
-      const res = await fetch(`${API_URL}/api/loans/${loanId}/return`, { 
-        method: "POST", 
-        headers 
-      });
-      
-      if (!res.ok) {
-        const j = await res.json().catch(() => ({}));
-        throw new Error(j?.message || "return failed");
-      }
+      if (tokenLocal) headers["Authorization"] = `Bearer ${tokenLocal}`;
 
-      const bookId = loan.book?.id || (loan.book as any)?._id;
+      // call return endpoint
+      const res = await fetch(`${API_URL}/api/loans/${loanId}/return`, {
+        method: "POST",
+        headers,
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.message || "return failed");
+
+      // after return, verify latest book stock
       if (bookId) {
         try {
-          // Ambil data buku dulu
-          const bookResponse = await fetch(`${API_URL}/api/books/${bookId}`, {
-            headers: { Authorization: `Bearer ${token}` }
+          const latestRes = await fetch(`${API_URL}/api/books/${bookId}`, {
+            headers: { ...(tokenLocal ? { Authorization: `Bearer ${tokenLocal}` } : {}) },
           });
-          
-          if (bookResponse.ok) {
-            const bookData = await bookResponse.json();
-            const currentBook = bookData.data || bookData;
-            const currentStock = currentBook.stock || 0;
-            
-            // Update stock +1
-            await fetch(`${API_URL}/api/books/${bookId}`, {
-              method: "PUT",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-              body: JSON.stringify({
-                ...currentBook,
-                stock: currentStock + 1
-              })
-            });
-            
-            console.log(`✅ Stock updated: ${currentStock} → ${currentStock + 1}`);
+
+          if (!latestRes.ok) {
+            console.warn("[admin] gagal fetch latest book after return");
+            // fallback: if we know prevStock ask admin
+            if (prevStock !== null) {
+              const doInc = confirm(
+                `Gagal verifikasi stok otomatis. Kalau server belum nambah, stok seharusnya ${prevStock + 1}. Mau increment manual?`
+              );
+              if (doInc) await incrementBookStock(bookId, prevStock);
+            } else {
+              const doInc = confirm("Gagal verifikasi stok otomatis. Mau coba increment stok manual +1? (No = skip)");
+              if (doInc) await incrementBookStock(bookId, null);
+            }
+          } else {
+            const latestJson = await latestRes.json().catch(() => ({}));
+            const latestBook = latestJson.data || latestJson;
+            const latestStock = typeof latestBook?.stock === "number" ? latestBook.stock : null;
+            console.log("[admin] latestStock:", latestStock, "prevStock:", prevStock);
+
+            if (prevStock !== null && latestStock !== null) {
+              if (latestStock === prevStock) {
+                // server belum increment -> do increment once
+                await incrementBookStock(bookId, prevStock);
+              } else {
+                // server udah increment -> skip
+                console.log("[admin] server already incremented stock, skip increment");
+              }
+            } else if (prevStock === null && latestStock !== null) {
+              const doInc = confirm(
+                `Tidak dapat verifikasi stok sebelumnya. Stok sekarang: ${latestStock}. Mau increment stok manual +1?`
+              );
+              if (doInc) await incrementBookStock(bookId, latestStock);
+            } else {
+              const doInc = confirm(
+                "Tidak dapat memverifikasi stok buku secara otomatis. Mau increment stok manual +1? (No = skip)"
+              );
+              if (doInc) await incrementBookStock(bookId, null);
+            }
           }
-        } catch (stockErr) {
-          console.error("⚠️ Failed to update stock:", stockErr);
-          // Jangan throw error, biar return tetap sukses
+        } catch (err) {
+          console.warn("[admin] error verifying latest book:", err);
+          if (prevStock !== null) {
+            const doInc = confirm(
+              `Terjadi error saat verifikasi. Kalau server belum nambah, stok seharusnya ${prevStock + 1}. Mau increment manual?`
+            );
+            if (doInc) await incrementBookStock(bookId, prevStock);
+          } else {
+            const doInc = confirm(
+              "Terjadi error saat verifikasi stok. Mau coba increment stok manual +1? (No = skip)"
+            );
+            if (doInc) await incrementBookStock(bookId, null);
+          }
         }
       }
 
       await fetchLoans();
-      alert("Return berhasil diproses");
+      alert(payload?.message || "Return berhasil diproses (admin).");
     } catch (err: any) {
-      console.error("handleReturn error:", err);
+      console.error("admin handleReturn error:", err);
       alert(err?.message || "Gagal memproses return");
     }
   };
 
-  const handleClearFilters = () => {
-    setSearch("");
-    setFilter("all");
+  // helper: incrementBookStock(bookId, prevStock)
+  const incrementBookStock = async (bookId: string, prevStock: number | null) => {
+    try {
+      let currentBook: any = null;
+      if (prevStock === null) {
+        const r = await fetch(`${API_URL}/api/books/${bookId}`, {
+          headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        });
+        if (r.ok) {
+          const d = await r.json().catch(() => ({}));
+          currentBook = d.data || d;
+        }
+      }
+
+      const baseStock = prevStock !== null ? prevStock : (currentBook?.stock ?? 0);
+      const newStock = baseStock + 1;
+
+      const putRes = await fetch(`${API_URL}/api/books/${bookId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          ...(currentBook || {}),
+          stock: newStock,
+        }),
+      });
+
+      if (!putRes.ok) {
+        const errData = await putRes.json().catch(() => ({}));
+        throw new Error(errData?.message || "Failed to update book stock");
+      }
+
+      console.log(`[admin] stock updated: ${baseStock} → ${newStock}`);
+    } catch (err) {
+      console.error("[admin] incrementBookStock failed:", err);
+      alert("Gagal meng-update stok buku secara otomatis. Cek DB atau coba manual.");
+    }
   };
 
-  const hasActiveFilters = filter !== "all" || search !== "";
+  // const handleClearFilters = () => {
+  //   setSearch("");
+  //   setFilter("all");
+  // };
+
+  // const hasActiveFilters = filter !== "all" || search !== "";
 
   const filteredLoans = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -180,9 +257,7 @@ export default function ManageLoansPage() {
       })
       .filter((l) => {
         if (!q) return true;
-        // const currentFilterLabel = filterOptions.find(opt => opt.value === filter)?.label || "Filter";
-
-  return (
+        return (
           (l.book?.title || "").toLowerCase().includes(q) ||
           (l.user?.email || "").toLowerCase().includes(q)
         );
@@ -198,8 +273,6 @@ export default function ManageLoansPage() {
     );
   }
 
-  // const currentFilterLabel = filterOptions.find(opt => opt.value === filter)?.label || "Filter";
-
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -208,157 +281,108 @@ export default function ManageLoansPage() {
         </h1>
       </div>
 
-      {/* Filter Bar - Mobile/Tablet Optimized */}
-      <div className="py-6 space-y-4 mb-4">
-        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
-          {/* Search bar */}
-          <div className="relative flex-1 min-w-0 sm:flex-auto">
-            <Search 
-              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0" 
-              style={{ color: colors.textSecondary }}
-            />
-            <Input 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              placeholder="Cari buku atau email..." 
-              className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.textPrimary,
-                borderColor: colors.bgTertiary,
-              }}
-              onFocus={(e: any) => {
-                e.currentTarget.style.borderColor = colors.primary;
-                e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
-              }}
-              onBlur={(e: any) => {
-                e.currentTarget.style.borderColor = colors.bgTertiary;
-                e.currentTarget.style.boxShadow = "none";
-              }}
-            />
-          </div>
-
-          {/* Filter button */}
-          <Button
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
-            style={{
-              backgroundColor: showFilters ? colors.primary : colors.bgPrimary,
-              color: showFilters ? "white" : colors.textSecondary,
-              border: `1px solid ${showFilters ? colors.primary : colors.bgTertiary}`,
-              minHeight: "42px",
-              padding: "10px 12px",
-            }}
-          >
-            <Filter className="w-5 h-5 flex-shrink-0" />
-            <span className="hidden sm:inline">Filters</span>
-          </Button>
-
-          {/* Clear button */}
-          {hasActiveFilters && (
-            <Button
-              onClick={handleClearFilters}
-              className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                color: colors.danger,
-                border: `1px solid ${colors.danger}40`,
-                minHeight: "42px",
-                padding: "10px 12px",
-              }}
-            >
-              <X className="w-5 h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Clear</span>
-            </Button>
-          )}
-        </div>
-
-        {/* Filter Panel */}
-        {showFilters && (
-          <div
-            className="rounded-lg p-4 sm:p-6 border space-y-4"
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-4">
+        <div className="relative flex-1 sm:flex-none sm:w-64">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+            style={{ color: colors.textSecondary }}
+          />
+          <Input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Cari buku atau email..."
+            className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
             style={{
               backgroundColor: colors.bgPrimary,
+              color: colors.textPrimary,
               borderColor: colors.bgTertiary,
             }}
+            onFocus={(e: any) => {
+              e.currentTarget.style.borderColor = colors.primary;
+              e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+            }}
+            onBlur={(e: any) => {
+              e.currentTarget.style.borderColor = colors.bgTertiary;
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
+        </div>
+
+        <div className="hidden sm:flex gap-2 flex-shrink-0">
+          {["all", "borrowed", "returned", "late"].map((option) => (
+            <Button
+              key={option}
+              variant={filter === option ? "primary" : "secondary"}
+              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
+                filter === option ? "bg-slate-900 text-white shadow-sm" : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
+              } capitalize`}
+              onClick={() => setFilter(option)}
+            >
+              {option}
+            </Button>
+          ))}
+        </div>
+
+        <div className="sm:hidden w-full">
+          <Button
+            variant="secondary"
+            className="w-full justify-center px-3 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2"
+            onClick={() => setShowFilters(!showFilters)}
           >
-            <div>
-              <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
-                Status
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {['all', 'borrowed', 'returned', 'late'].map(status => ( 
-                  <button
-                    key={status}
-                    onClick={() => setFilter(status)}
-                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
-                    style={{
-                      backgroundColor: filter === status ? colors.primary : colors.bgSecondary,
-                      color: filter === status ? "white" : colors.textPrimary,
-                      borderColor: filter === status ? colors.primary : colors.bgTertiary,
-                      borderWidth: "1px",
-                    }}
-                  >
-                    {status.replace('_', ' ')}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
+            <Filter className="w-4 h-4" />
+            <span>Filters</span>
+          </Button>
+        </div>
       </div>
 
-      <div 
-        className="rounded-lg border shadow-sm overflow-hidden"
-        style={{
-          backgroundColor: colors.bgPrimary,
-          borderColor: colors.bgTertiary,
-        }}
-      >
+      {showFilters && (
+        <div className="rounded-lg p-4 sm:p-6 border space-y-4" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
+          <div>
+            <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
+              Status
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {["all", "borrowed", "returned", "late"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
+                  style={{
+                    backgroundColor: filter === status ? colors.primary : colors.bgSecondary,
+                    color: filter === status ? "white" : colors.textPrimary,
+                    borderColor: filter === status ? colors.primary : colors.bgTertiary,
+                    borderWidth: "1px",
+                  }}
+                >
+                  {status.replace("_", " ")}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead 
-              className="border-b"
-              style={{
-                backgroundColor: colors.bgSecondary,
-                borderColor: colors.bgTertiary,
-              }}
-            >
+            <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
               <tr>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Buku
                 </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   User (Email)
                 </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Tanggal Pinjam
                 </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Jatuh Tempo
                 </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Status
                 </th>
-                <th 
-                  className="text-center p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
+                <th className="text-center p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Actions
                 </th>
               </tr>
@@ -376,36 +400,17 @@ export default function ManageLoansPage() {
                   const borrowedDate = loan.borrowDate ? new Date(loan.borrowDate as any) : calculateBorrowedAt((loan as any).dueDate);
 
                   return (
-                    <tr 
-                      key={loan._id || loan.id} 
-                      className="border-b transition-colors hover:opacity-80"
-                      style={{
-                        borderColor: colors.bgTertiary,
-                        backgroundColor: colors.bgPrimary,
-                      }}
-                    >
-                      <td 
-                        className="p-4 align-top"
-                        style={{ color: colors.textPrimary }}
-                      >
+                    <tr key={loan._id || (loan as any).id} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
+                      <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
                         {loan.book?.title || "Buku dihapus"}
                       </td>
-                      <td 
-                        className="p-4 align-top text-sm"
-                        style={{ color: colors.textPrimary }}
-                      >
+                      <td className="p-4 align-top text-sm" style={{ color: colors.textPrimary }}>
                         {loan.user?.email || "User dihapus"}
                       </td>
-                      <td 
-                        className="p-4 align-top"
-                        style={{ color: colors.textPrimary }}
-                      >
+                      <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
                         {formatDate(borrowedDate)}
                       </td>
-                      <td 
-                        className="p-4 align-top"
-                        style={{ color: isLate ? colors.danger : colors.textPrimary, fontWeight: isLate ? "bold" : "normal" }}
-                      >
+                      <td className="p-4 align-top" style={{ color: isLate ? colors.danger : colors.textPrimary, fontWeight: isLate ? "bold" : "normal" }}>
                         {formatDate((loan as any).dueDate)}
                         {isLate && (loan as any).fineAmount ? (
                           <span className="text-xs block mt-1" style={{ color: colors.danger }}>
@@ -414,10 +419,7 @@ export default function ManageLoansPage() {
                         ) : null}
                       </td>
                       <td className="p-4 align-top">
-                        <span 
-                          className="flex items-center gap-1.5 text-xs font-semibold"
-                          style={{ color: statusInfo.color }}
-                        >
+                        <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: statusInfo.color }}>
                           <StatusIcon className="w-4 h-4" />
                           {statusInfo.label}
                         </span>
@@ -425,13 +427,13 @@ export default function ManageLoansPage() {
                       <td className="p-4 align-top text-center">
                         {isCancellable && (
                           <button
-                            onClick={() => handleReturn(loan._id || loan.id)}
+                            onClick={() => handleReturn(loan._id || (loan as any).id)}
                             className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
                             style={{
                               backgroundColor: `${colors.info}15`,
                               color: colors.info,
                             }}
-                            title="Force Return"
+                            title="Verify Return (Admin)"
                           >
                             <RotateCcw className="w-5 h-5" />
                           </button>
@@ -442,11 +444,7 @@ export default function ManageLoansPage() {
                 })
               ) : (
                 <tr>
-                  <td 
-                    colSpan={6} 
-                    className="text-center p-8"
-                    style={{ color: colors.textSecondary }}
-                  >
+                  <td colSpan={6} className="text-center p-8" style={{ color: colors.textSecondary }}>
                     Tidak ada data pinjaman yang cocok.
                   </td>
                 </tr>
