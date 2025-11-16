@@ -23,7 +23,7 @@ export default function PublicFooter() {
               className={`${typography.bodySmall} mt-2`}
               style={{ color: colors.textTertiary }}
             >
-              Sistem Perpustakaan Digital Modern. Pinjam buku, booking ruangan, dan dapatkan notifikasi.
+              Discover, borrow, and learn—anytime, anywhere. Our digital library gives you quick access to ebooks, journals, and multimedia. Find what you need fast with smart search and curated collections. Sign in to save favorites and continue reading across devices.
             </p>
           </div>
 

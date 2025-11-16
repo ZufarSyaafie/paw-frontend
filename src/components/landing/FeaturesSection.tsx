@@ -32,10 +32,10 @@ export default function FeaturesSection() {
         {/* Header */}
         <div className="text-center mb-12 sm:mb-16 md:mb-20">
           <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-slate-900 mb-4">
-            Fitur Unggulan Kami
+            Our Key Features
           </h2>
           <p className="text-sm sm:text-base text-slate-600 max-w-2xl mx-auto px-2">
-            Dibangun dengan teknologi modern untuk pengalaman perpustakaan yang seamless.
+            Discover a smarter library experience with a digital book catalog, real-time room booking, instant notifications, and seamless member management.
           </p>
         </div>
 
