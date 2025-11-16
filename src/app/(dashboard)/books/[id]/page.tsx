@@ -212,9 +212,16 @@ export default function BookDetailPage() {
 
             <BookInfoGrid book={book} />
 
-            <div className="bg-gray-50 rounded-lg p-6">
-              <h3 className="font-semibold text-gray-900 mb-3">Loan Policy</h3>
-              <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+            <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
+              <h3 className="font-semibold text-gray-900 text-[15px] sm:text-base mb-2 sm:mb-3">
+                Loan Policy
+              </h3>
+              <ul
+                className="list-disc list-outside pl-5 sm:pl-6
+                           text-[13px] sm:text-sm text-gray-700
+                           space-y-1.5 leading-relaxed
+                           marker:text-slate-400 break-words"
+              >
                 <li>A refundable deposit of Rp 25,000 is required for borrowing.</li>
                 <li>The loan duration is 7 days from the date of borrowing.</li>
                 <li>Late returns may result in the forfeiture of the deposit.</li>
