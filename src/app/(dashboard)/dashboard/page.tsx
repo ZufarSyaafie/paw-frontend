@@ -275,9 +275,9 @@ function Dashboard() {
                 <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-3">
                   <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
                   <div>
-                    <h3 className="font-semibold text-yellow-800">Peringatan Jatuh Tempo</h3>
+                    <h3 className="font-semibold text-yellow-800">Upcoming Due Date Notice</h3>
                     <p className="text-sm text-yellow-700">
-                      Lu punya {upcomingLoans.length} buku yang akan jatuh tempo dalam 7 hari ke depan.
+                      You have {upcomingLoans.length} books that are scheduled to be due within the next 7 days.
                     </p>
                   </div>
                 </div>
