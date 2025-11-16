@@ -65,7 +65,7 @@ export default function OtpClient() {
       if (!response.ok) throw new Error(data.message || "Kode OTP tidak valid")
 
   // Cookie has been set by server; just clear temp email
-  localStorage.removeItem(emailStorageKey)
+      localStorage.removeItem(emailStorageKey)
       // Simpan token ke localStorage untuk header Authorization pada halaman yang memerlukannya
       if (data?.token && typeof data.token === "string") {
         setAuthToken(data.token)
@@ -145,15 +145,18 @@ export default function OtpClient() {
         <div className="space-y-6">
           <div className="flex justify-center">
             <InputOTP maxLength={6} value={otp} onChange={setOtp}>
-              <InputOTPGroup className="gap-3">
+              <InputOTPGroup className="flex-nowrap justify-center gap-1 sm:gap-3 max-w-[220px] sm:max-w-none">
                 {Array.from({ length: 6 }).map((_, index) => (
                   <InputOTPSlot
                     key={index}
                     index={index}
-                    className="h-12 w-12 border border-white/20 bg-white/[0.05] rounded-lg text-lg font-semibold text-white 
-                              placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50 
-                              focus:border-blue-400 focus:bg-white/[0.08] transition-all duration-200 
-                              backdrop-blur-sm text-center"
+                    className="h-8 w-8 sm:h-12 sm:w-12
+                               rounded-md sm:rounded-lg
+                               border border-white/20 bg-white/[0.05]
+                               text-[13px] sm:text-lg font-semibold text-white text-center
+                               placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-blue-400/50
+                               focus:border-blue-400 focus:bg-white/[0.08]
+                               transition-all duration-200 backdrop-blur-sm"
                   />
                 ))}
               </InputOTPGroup>
