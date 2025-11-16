@@ -3,7 +3,6 @@
 import { Button } from "@/components/ui/button"
 import { Plus, Search, Loader2, Calendar, AlertCircle, Filter, X } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
-import { typography } from "@/styles/typography"
 import { BookingCard } from "@/components/bookings/BookingCard"
 import type { Booking } from "@/types"
 import { getAuthToken } from "@/lib/auth"
@@ -132,14 +131,33 @@ export default function BookingsPage() {
 
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <header className="flex justify-between items-center">
-        <h1 className={`${typography.h1} text-gray-900`}>My Bookings</h1>
+      <header className="flex items-start sm:items-center justify-between gap-3 sm:gap-2">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <h1
+              className="text-[18px] sm:text-[30px] font-bold leading-tight tracking-tight text-gray-900
+                         whitespace-nowrap overflow-hidden max-w-[65%] sm:max-w-none"
+            >
+              My Room Bookings
+            </h1>
+            <span className="hidden sm:inline px-2 py-1 text-[11px] font-medium rounded-md
+                             bg-cyan-50 text-cyan-700 border border-cyan-200">
+              Room Reservations
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] sm:text-sm text-gray-600 leading-snug">
+            Kelola dan pantau riwayat pemesanan ruang belajar kamu.
+          </p>
+        </div>
         <Button
           onClick={() => router.push("/rooms")}
-          className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
+          className="flex-shrink-0 h-9 sm:h-10 px-3 sm:px-4 rounded-md sm:rounded-lg
+                     bg-cyan-500 hover:bg-cyan-600 text-white text-xs sm:text-sm font-semibold
+                     flex items-center gap-1 sm:gap-2"
         >
-          <Plus className="w-5 h-5" />
-          Book Room
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="hidden xs:inline">Book</span>
+          <span className="hidden sm:inline">Room</span>
         </Button>
       </header>
 
