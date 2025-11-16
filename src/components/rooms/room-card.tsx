@@ -128,11 +128,12 @@ export function RoomCard({
             </span>
           </div>
           <Button 
-            className={`w-full font-bold transition-all mt-2 ${currentStatus.buttonClass}`}
+            className="font-semibold rounded-lg transition-all duration-200 bg-cyan-600 text-white hover:bg-cyan-700 px-4 py-2 text-sm w-full"
             variant="primary"
             disabled={!currentStatus.buttonEnabled}
           >
             {currentStatus.buttonLabel}
+            <span className="hidden sm:inline"> &amp; Book</span>
           </Button>
         </div>
       </div>
