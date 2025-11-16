@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Plus, Search, Filter, Loader2, BookOpen, AlertCircle, X } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
-import { typography } from "@/styles/typography"
+// import { typography } from "@/styles/typography" // removed, pakai custom responsive classes
 import { LoanCard } from "@/components/loans/LoanCard"
 import type { Loan } from "@/types"
 import { getAuthToken } from "@/lib/auth"
@@ -149,73 +149,95 @@ export default function LoansPage() {
 
   return (
     <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-      <header className="flex justify-between items-center">
-        <h1 className={typography.h1}>My Loans</h1>
+      {/* HEADER MIRROR BOOKING STYLE */}
+      <header className="flex items-start sm:items-center justify-between gap-3 sm:gap-2">
+        <div className="flex flex-col">
+          <div className="flex items-center gap-2">
+            <h1
+              className="text-[18px] sm:text-[30px] font-bold leading-tight tracking-tight text-gray-900
+                         whitespace-nowrap overflow-hidden max-w-[65%] sm:max-w-none"
+            >
+              My Book Loans
+            </h1>
+            <span className="hidden sm:inline px-2 py-1 text-[11px] font-medium rounded-md
+                             bg-cyan-50 text-cyan-700 border border-cyan-200">
+              Loan History
+            </span>
+          </div>
+          <p className="mt-1 text-[11px] sm:text-sm text-gray-600 leading-snug">
+            Kelola dan pantau riwayat peminjaman buku kamu.
+          </p>
+        </div>
         <Button
           onClick={() => router.push("/books")}
-          className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2 transition-colors"
+          className="flex-shrink-0 h-9 sm:h-10 px-3 sm:px-4 rounded-md sm:rounded-lg
+                     bg-cyan-500 hover:bg-cyan-600 text-white text-xs sm:text-sm font-semibold
+                     flex items-center gap-1 sm:gap-2 transition-colors"
         >
-          <Plus className="w-5 h-5" />
-          Borrow Book
+          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+          <span className="hidden xs:inline">Borrow</span>
+          <span className="hidden sm:inline">Book</span>
         </Button>
       </header>
 
-        <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
-            <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
-                {/* Search bar */}
-                <div className="relative flex-1 min-w-0 sm:flex-auto">
-                    <Search
-                        className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
-                        style={{ color: colors.textTertiary }}
-                    />
-                    <input
-                        type="text"
-                        placeholder="Search..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
-                        style={{
-                            backgroundColor: colors.bgPrimary,
-                            borderColor: "#cbd5e1",
-                            color: colors.textPrimary,
-                        }}
-                    />
-                </div>
+      {/* SEARCH / FILTER BAR - TIGHTER MOBILE */}
+      <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-3 sm:gap-4 w-full">
+        <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
+          {/* Search bar */}
+          <div className="relative flex-1 min-w-0 sm:flex-auto">
+            <Search
+              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex-shrink-0"
+              style={{ color: colors.textTertiary }}
+            />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64 pl-10 pr-3 py-2 rounded-md sm:rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                borderColor: "#cbd5e1",
+                color: colors.textPrimary,
+              }}
+            />
+          </div>
 
-                {/* Filter button */}
-                <Button
-                    onClick={() => setShowFilters(!showFilters)}
-                    className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
-                    style={{
-                        backgroundColor: showFilters ? colors.info : colors.bgPrimary,
-                        color: showFilters ? "white" : colors.textSecondary,
-                        border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
-                        minHeight: "42px",
-                        padding: "10px 12px",
-                    }}
-                >
-                    <Filter className="w-5 h-5 flex-shrink-0" />
-                    <span className="hidden sm:inline">Filters</span>
-                </Button>
+          {/* Filter button */}
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-3 sm:px-4 py-2 rounded-md sm:rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-xs sm:text-sm transition-all"
+            style={{
+              backgroundColor: showFilters ? colors.info : colors.bgPrimary,
+              color: showFilters ? "white" : colors.textSecondary,
+              border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
+              minHeight: "38px",
+              padding: "8px 12px",
+            }}
+          >
+            <Filter className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            <span className="hidden sm:inline">Filters</span>
+          </Button>
 
-                {/* Clear button */}
-                {hasActiveFilters && (
-                    <Button
-                        onClick={handleClearFilters}
-                        className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
-                        style={{
-                            backgroundColor: colors.bgPrimary,
-                            color: colors.danger,
-                            border: "1px solid #fecaca",
-                            minHeight: "42px",
-                            padding: "10px 12px",
-                        }}
-                    >
-                        <X className="w-5 h-5 flex-shrink-0" />                            <span className="hidden sm:inline">Clear</span>
-                    </Button>
-                )}
-                </div>
+          {/* Clear button */}
+          {hasActiveFilters && (
+            <Button
+              onClick={handleClearFilters}
+              className="px-3 py-2 rounded-md sm:rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-xs sm:text-sm transition-all"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                color: colors.danger,
+                border: "1px solid #fecaca",
+                minHeight: "38px",
+                padding: "8px 12px",
+              }}
+            >
+              <X className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Clear</span>
+            </Button>
+          )}
         </div>
+      </div>
 
       {showFilters && (
         <div className="p-4 sm:p-6 rounded-lg border border-gray-200 bg-gray-50 space-y-4">
