@@ -342,22 +342,10 @@ export default function LoanDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6 py-4 sm:py-6 border-y border-gray-100 px-4 sm:px-0">
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">loan id</p>
-                <p className="text-gray-900 font-medium text-sm break-all sm:break-normal">{loan.id}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">loan date</p>
-                <p className="text-gray-900 font-medium text-sm">{formatDate(loan.borrowDate)}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">due date</p>
-                <p className="text-gray-900 font-medium text-sm">{formatDate(loan.dueDate)}</p>
-              </div>
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">return date</p>
-                <p className="text-gray-900 font-medium text-sm">{formatDate((loan as any).returnDate)}</p>
-              </div>
+              <LoanDetailItem label="loan id" value={loan.id} />
+              <LoanDetailItem label="loan date" value={formatDate(loan.borrowDate)} />
+              <LoanDetailItem label="due date" value={formatDate(loan.dueDate)} />
+              <LoanDetailItem label="return date" value={formatDate((loan as any).returnDate)} />
             </div>
 
             {loan.isOverdue && (
@@ -400,7 +388,7 @@ function LoanDetailItem({ label, value }: LoanDetailItemProps) {
   return (
     <div>
       <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
-      <p className="text-gray-900 font-medium text-sm">{value ?? "N/A"}</p>
+      <p className="text-gray-900 font-medium text-sm break-all">{value ?? "N/A"}</p>
     </div>
   );
 }
