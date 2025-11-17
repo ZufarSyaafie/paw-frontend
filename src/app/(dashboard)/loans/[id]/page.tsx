@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
 
-// format rupiah
 const formatRupiah = (amount: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount);
 
@@ -40,7 +39,6 @@ const STATUS_CONFIG = {
   },
 } as const;
 
-// safe formatter: terima string | Date | undefined | null
 const formatDate = (dateString: string | Date | undefined | null) => {
   if (!dateString) return "N/A";
   try {
@@ -52,7 +50,6 @@ const formatDate = (dateString: string | Date | undefined | null) => {
   }
 };
 
-// helper: kalau dueDate valid, return dueDate - 7 hari sebagai Date, else null
 const calculateBorrowedAt = (dueDateString: string | undefined | null): Date | null => {
   if (!dueDateString) return null;
   try {
@@ -64,24 +61,19 @@ const calculateBorrowedAt = (dueDateString: string | undefined | null): Date | n
   }
 };
 
-// frontend detail type: tambahin isOverdue + optional fines
 type FrontendLoanDetail = Loan & { isOverdue: boolean; fines?: number; returnDate?: string | null };
 
-// Normalize loan object: id, borrowDate, returnDate (cover common variants)
 const normalizeLoan = (raw: any): any => {
   if (!raw) return raw;
   const data = { ...raw };
 
-  // normalize id
   if (data._id && !data.id) data.id = data._id;
 
-  // normalize borrowDate (keep existing or compute from dueDate)
   if (!data.borrowDate && data.dueDate) {
     const calc = calculateBorrowedAt(data.dueDate);
     if (calc) data.borrowDate = calc.toISOString();
   }
 
-  // normalize return date: accept multiple field names
   const possibleReturnFields = ["returnDate", "returnedAt", "returned_at", "return_date", "returned_at_iso"];
   for (const f of possibleReturnFields) {
     if (data[f]) {
@@ -98,7 +90,6 @@ const normalizeLoan = (raw: any): any => {
     }
   }
 
-  // coerce empty string -> null
   if (data.returnDate === "") data.returnDate = null;
 
   return data;
@@ -112,7 +103,7 @@ export default function LoanDetailPage() {
   const [loan, setLoan] = useState<FrontendLoanDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isReturning, setIsReturning] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     const fetchLoan = async () => {
@@ -135,7 +126,6 @@ export default function LoanDetailPage() {
 
         const responseData = await response.json();
 
-        // Handle wrapped and flat response, then normalize
         let data = responseData.loan || responseData || {};
         data = normalizeLoan(data);
 
@@ -158,7 +148,7 @@ export default function LoanDetailPage() {
     }
   }, [loanId]);
 
-  const handleReturn = async () => {
+  const handleCancelLoan = async () => {
     if (!loan) return;
 
     const token = getAuthToken();
@@ -168,98 +158,40 @@ export default function LoanDetailPage() {
     }
 
     const isPending = loan.paymentStatus === "unpaid";
-    const isBorrowed = loan.status === "borrowed";
-    const isReturned = loan.status === "returned";
 
-    if (isPending) {
-      const confirmCancel = confirm("Batalkan pinjaman ini? Tindakan ini akan membatalkan order deposit.");
-      if (!confirmCancel) return;
-
-      setIsReturning(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`${API_URL}/api/loans/${loan.id}`, {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData?.message || "cancel failed.");
-        }
-
-        alert("Pinjaman dibatalkan.");
-        router.push("/loans");
-      } catch (err: any) {
-        console.error("Cancel error:", err);
-        setError(err?.message || "failed to cancel loan.");
-        alert(`Cancel failed: ${err?.message || "unknown error"}`);
-      } finally {
-        setIsReturning(false);
-      }
+    if (!isPending) {
+      alert("Only pending loans can be cancelled.");
       return;
     }
 
-    if (!isBorrowed || isReturned) {
-      console.log("Cannot return - Status:", loan.status);
-      return;
-    }
+    const confirmCancel = confirm("Cancel this loan? This will cancel your deposit order.");
+    if (!confirmCancel) return;
 
-    const confirmReturn = confirm("Confirm return book? Deposit akan diproses sesuai kondisi buku.");
-    if (!confirmReturn) return;
-
-    setIsReturning(true);
+    setIsCancelling(true);
     setError(null);
 
     try {
-      // 1. Return loan
-      const response = await fetch(`${API_URL}/api/loans/${loan.id}/return`, {
-        method: "POST",
+      const response = await fetch(`${API_URL}/api/loans/${loan.id}/cancel`, {
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
       });
 
-      // get payload (may contain loan)
-      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        throw new Error(data?.message || "return failed.");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData?.message || "cancel failed.");
       }
 
-      let returnedLoan = data.loan || data || {};
-      returnedLoan = normalizeLoan(returnedLoan);
-
-      // If backend didn't provide returnDate, set local returned time so UI shows it immediately
-      if (!returnedLoan.returnDate) {
-        returnedLoan.returnDate = new Date().toISOString();
-      }
-
-      // normalize id
-      if (returnedLoan._id && !returnedLoan.id) returnedLoan.id = returnedLoan._id;
-
-      console.log("Return API response:", data);
-      console.log("Returned loan (normalized):", returnedLoan);
-
-      // update UI with returnedLoan
-      const isOverdue = returnedLoan.status === "borrowed" && returnedLoan.dueDate && new Date(returnedLoan.dueDate) < new Date();
-      setLoan({ ...returnedLoan, isOverdue, fines: loan.fines } as FrontendLoanDetail);
-
-      const refundStatus = returnedLoan?.refundStatus || loan.refundStatus;
-      const message = refundStatus === "refunded" ? "Book successfully returned! Deposit refunded." : "Book returned. Deposit processed.";
-
-      alert(message);
+      alert("Loan cancelled successfully.");
       router.push("/loans");
     } catch (err: any) {
-      console.error("Return error:", err);
-      setError(err?.message || "failed to process return.");
-      alert(`Return failed: ${err?.message || "unknown error"}`);
+      console.error("Cancel error:", err);
+      setError(err?.message || "failed to cancel loan.");
+      alert(`Cancel failed: ${err?.message || "unknown error"}`);
     } finally {
-      setIsReturning(false);
+      setIsCancelling(false);
     }
   };
 
@@ -284,7 +216,6 @@ export default function LoanDetailPage() {
 
   if (!loan) return null;
 
-  // FIX: Cleaner display status logic
   const isPending = loan.paymentStatus === "unpaid";
   const isReturned = loan.status === "returned";
   const displayStatusKey = loan.isOverdue ? "overdue" : isReturned ? "returned" : isPending ? "pending" : "borrowed";
@@ -292,10 +223,7 @@ export default function LoanDetailPage() {
   const statusInfo = STATUS_CONFIG[displayStatusKey];
   const StatusIcon = statusInfo.icon;
 
-  const isButtonEnabled = (loan.status === "borrowed" && !isReturned) || isPending;
-  const buttonText = isPending ? "Cancel borrowing" : loan.status === "borrowed" ? "Confirm Return" : statusInfo.label;
-
-  const actionButtonClass = isReturned ? "bg-gray-400 cursor-not-allowed" : isPending ? "bg-amber-500 hover:bg-amber-600" : statusInfo.button;
+  const showCancelButton = isPending;
 
   return (
     <div className="min-h-screen bg-white">
@@ -327,10 +255,22 @@ export default function LoanDetailPage() {
                 <p className="text-sm font-semibold text-slate-700">Deposit: {formatRupiah(loan.depositAmount || 0)}</p>
               </div>
 
-              {isButtonEnabled && (
-                <Button onClick={handleReturn} disabled={isReturning || !isButtonEnabled} className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${isReturning ? "opacity-70 pointer-events-none" : actionButtonClass}`}>
-                  {isReturning ? "Processing..." : buttonText}
+              {showCancelButton && (
+                <Button 
+                  onClick={handleCancelLoan} 
+                  disabled={isCancelling} 
+                  className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${isCancelling ? "opacity-70 pointer-events-none" : "bg-red-500 hover:bg-red-600"}`}
+                >
+                  {isCancelling ? "Cancelling..." : "Cancel Loan"}
                 </Button>
+              )}
+
+              {!isPending && !isReturned && (
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-xs text-blue-700 font-medium">
+                    To return this book, please visit the library. The librarian will verify and process your return.
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -353,7 +293,7 @@ export default function LoanDetailPage() {
                 <TrendingDown className="w-6 h-6 text-red-600 flex-shrink-0" />
                 <div>
                   <h3 className="font-semibold text-red-800">overdue!</h3>
-                  <p className="text-sm text-red-700">please return the book immediately to avoid further fines.</p>
+                  <p className="text-sm text-red-700">please return the book immediately to avoid deposit forfeiture.</p>
                 </div>
               </div>
             )}
