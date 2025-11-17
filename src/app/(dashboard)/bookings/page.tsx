@@ -140,13 +140,13 @@ export default function BookingsPage() {
             >
               My Room Bookings
             </h1>
-            <span className="hidden sm:inline px-2 py-1 text-[11px] font-medium rounded-md
+            <span className="hidden sm:inline px-2 py-1 text-[12px] font-medium rounded-md
                              bg-cyan-50 text-cyan-700 border border-cyan-200">
               Room Reservations
             </span>
           </div>
-          <p className="mt-1 text-[11px] sm:text-sm text-gray-600 leading-snug">
-            Kelola dan pantau riwayat pemesanan ruang belajar kamu.
+          <p className="mt-1 text-[12px] sm:text-sm text-gray-600 leading-snug">
+            Manage and monitor your room booking history.
           </p>
         </div>
         <Button

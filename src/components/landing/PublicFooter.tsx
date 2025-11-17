@@ -23,7 +23,7 @@ export default function PublicFooter() {
               className={`${typography.bodySmall} mt-2`}
               style={{ color: colors.textTertiary }}
             >
-              Discover, borrow, and learn—anytime, anywhere. Our digital library gives you quick access to ebooks, journals, and multimedia. Find what you need fast with smart search and curated collections. Sign in to save favorites and continue reading across devices.
+              Naratama Digital Library provides a reliable platform for physical book lending and study room reservations. View real time availability, request and manage loans, and track due dates with clear status updates. Find book titles and room names quickly with search and curated categories. Sign in to save favorites and manage your activity across devices.
             </p>
           </div>
 
@@ -32,7 +32,7 @@ export default function PublicFooter() {
             
             {/* Navigasi */}
             <div className="space-y-3">
-              <h4 className="font-semibold text-white uppercase tracking-wider text-sm mb-4">Mulai Akses</h4>
+              <h4 className="font-semibold text-white uppercase tracking-wider text-sm mb-4">Start Access</h4>
               <ul className="space-y-2">
                 <li><a href="/sign-in" className="hover:text-white transition-colors text-sm">Sign In</a></li>
                 <li><a href="/sign-up" className="hover:text-white transition-colors text-sm">Create Account</a></li>

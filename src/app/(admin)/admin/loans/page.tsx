@@ -86,11 +86,11 @@ export default function ManageLoansPage() {
   }, [token]);
 
   const handleReturn = async (loanId: string) => {
-    if (!confirm("Yakin mau 'Force Return' buku ini?")) return;
+    if (!confirm("Are you sure you want to 'Force Return' this book?")) return;
 
     const loan = loans.find((l) => (l._id || (l as any).id) === loanId);
     if (!loan) {
-      alert("Loan data tidak ditemukan");
+      alert("Loan data not found");
       return;
     }
 
@@ -159,12 +159,12 @@ export default function ManageLoansPage() {
               }
             } else if (prevStock === null && latestStock !== null) {
               const doInc = confirm(
-                `Tidak dapat verifikasi stok sebelumnya. Stok sekarang: ${latestStock}. Mau increment stok manual +1?`
+                `Unable to verify previous stock. Current stock: ${latestStock}. Do you want to manually increment the stock by +1?`
               );
               if (doInc) await incrementBookStock(bookId, latestStock);
             } else {
               const doInc = confirm(
-                "Tidak dapat memverifikasi stok buku secara otomatis. Mau increment stok manual +1? (No = skip)"
+                "Unable to automatically verify book stock. Do you want to manually increment the stock by +1? (No = skip)"
               );
               if (doInc) await incrementBookStock(bookId, null);
             }
@@ -173,12 +173,12 @@ export default function ManageLoansPage() {
           console.warn("[admin] error verifying latest book:", err);
           if (prevStock !== null) {
             const doInc = confirm(
-              `Terjadi error saat verifikasi. Kalau server belum nambah, stok seharusnya ${prevStock + 1}. Mau increment manual?`
+              `An error occurred during verification. If the server hasn't incremented yet, the stock should be ${prevStock + 1}. Do you want to manually increment?`
             );
             if (doInc) await incrementBookStock(bookId, prevStock);
           } else {
             const doInc = confirm(
-              "Terjadi error saat verifikasi stok. Mau coba increment stok manual +1? (No = skip)"
+              "An error occurred during stock verification. Do you want to try manually incrementing the stock by +1? (No = skip)"
             );
             if (doInc) await incrementBookStock(bookId, null);
           }
@@ -229,7 +229,7 @@ export default function ManageLoansPage() {
       console.log(`[admin] stock updated: ${baseStock} → ${newStock}`);
     } catch (err) {
       console.error("[admin] incrementBookStock failed:", err);
-      alert("Gagal meng-update stok buku secara otomatis. Cek DB atau coba manual.");
+      alert("Failed to automatically update book stock. Check DB or try manual.");
     }
   };
 
@@ -299,7 +299,7 @@ export default function ManageLoansPage() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Cari buku atau email..."
+            placeholder="Search by book title or user email..."
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
             style={{
               backgroundColor: colors.bgPrimary,
@@ -377,16 +377,16 @@ export default function ManageLoansPage() {
             <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
               <tr>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Buku
+                  Book Title
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   User (Email)
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Tanggal Pinjam
+                  Borrow Date
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Jatuh Tempo
+                  Due Date
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Status
@@ -411,10 +411,10 @@ export default function ManageLoansPage() {
                   return (
                     <tr key={loan._id || (loan as any).id} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
                       <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
-                        {loan.book?.title || "Buku dihapus"}
+                        {loan.book?.title || "Book Deleted"}
                       </td>
                       <td className="p-4 align-top text-sm" style={{ color: colors.textPrimary }}>
-                        {loan.user?.email || "User dihapus"}
+                        {loan.user?.email || "User Deleted"}
                       </td>
                       <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
                         {formatDate(borrowedDate)}
@@ -423,7 +423,7 @@ export default function ManageLoansPage() {
                         {formatDate((loan as any).dueDate)}
                         {isLate && (loan as any).fineAmount ? (
                           <span className="text-xs block mt-1" style={{ color: colors.danger }}>
-                            (Denda: Rp {(loan as any).fineAmount.toLocaleString("id-ID")})
+                            (Penalty: Rp {(loan as any).fineAmount.toLocaleString("id-ID")})
                           </span>
                         ) : null}
                       </td>
@@ -472,7 +472,7 @@ export default function ManageLoansPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="text-center p-8" style={{ color: colors.textSecondary }}>
-                    Tidak ada data pinjaman yang cocok.
+                    No matching loan data found.
                   </td>
                 </tr>
               )}

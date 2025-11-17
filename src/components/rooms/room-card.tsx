@@ -34,7 +34,7 @@ export function RoomCard({
       label: "✓ Available",
       color: colors.success,
       buttonEnabled: true,
-      buttonLabel: "View Details & Book",
+      buttonLabel: "View Details",
       buttonClass: "bg-cyan-500 hover:bg-cyan-600",
     },
     booked: {
@@ -45,7 +45,7 @@ export function RoomCard({
       buttonClass: "bg-gray-400 cursor-not-allowed",
     },
     maintenance: {
-      label: "✗ Maintenance",
+      label: "⏱︎ Maintenance",
       color: colors.warning, 
       buttonEnabled: false,
       buttonLabel: "Under Maintenance",
@@ -133,7 +133,7 @@ export function RoomCard({
             disabled={!currentStatus.buttonEnabled}
           >
             {currentStatus.buttonLabel}
-            <span className="hidden sm:inline"> &amp; Book</span>
+            <span className="hidden sm:inline">  </span>
           </Button>
         </div>
       </div>
