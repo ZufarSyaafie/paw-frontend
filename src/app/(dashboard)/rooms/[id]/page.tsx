@@ -2,185 +2,188 @@
 
 import { Button } from "@/components/ui/button"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Check, X, Clock, Loader2, AlertCircle } from "lucide-react"
-import { useState, useEffect, useCallback } from "react"
+import {
+  ArrowLeft,
+  Users,
+  AlertCircle,
+  Phone,
+  User as UserIcon,
+  Loader2,
+  Calendar,
+  Clock,
+  Pencil,
+  AlertTriangle,
+  CreditCard,
+  X,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react"
+import { useState, useEffect } from "react"
 import { getAuthToken } from "@/lib/auth"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselPrevious,
+  CarouselNext,
+} from "@/components/ui/carousel"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 
-const STATUS_CONFIG_LOAN = {
-  available: { label: "Available", icon: Check, color: "text-green-700 border-green-200", buttonColor: "bg-cyan-500 hover:bg-cyan-600" },
-  unavailable: { label: "Unavailable", icon: X, color: "text-red-700 border-red-200", buttonColor: "bg-gray-400 cursor-not-allowed" },
-  pending: { label: "Pending Payment", icon: Clock, color: "text-amber-700 border-amber-200", buttonColor: "bg-gray-400 cursor-not-allowed" },
-  borrowed: { label: "Rented (Active)", icon: Clock, color: "text-cyan-700 border-cyan-200", buttonColor: "bg-gray-400 cursor-not-allowed" },
-  overdue: { label: "Overdue", icon: X, color: "text-red-700 border-red-200", buttonColor: "bg-gray-400 cursor-not-allowed" },
-} as const
-
-const MOCK_BOOK: any = {
-  id: "MOCK-123",
-  title: "The Great Gatsby (Mock Fallback)",
-  author: "F. Scott Fitzgerald",
-  cover: "https://images.unsplash.com/photo-1543002588-d83cedbc4d60?w=400&h=600&fit=crop",
-  category: "Fiction",
-  year: 1925,
-  synopsis: "A classic American novel set in the Jazz Age.",
-  publisher: "Scribner",
-  location: "Rak A-1",
-  isbn: "978-0123456789",
-  status: "available",
-  stock: 5,
+const timeToMinutes = (timeString: string) => {
+  if (!timeString) return 0
+  const [h, m] = timeString.split(":").map(Number)
+  return h * 60 + m
 }
+const calculateDurationHours = (start: string, end: string) => {
+  if (!start || !end) return 0
+  const s = timeToMinutes(start)
+  const e = timeToMinutes(end)
+  if (e <= s) return 0
+  return (e - s) / 60
+}
+const formatRupiah = (amount: number) => {
+  if (typeof amount !== "number" || isNaN(amount)) return "Rp 0"
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(amount)
+}
+const formatDate = (date: Date) => {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, "0")
+  const d = String(date.getDate()).padStart(2, "0")
+  return `${y}-${m}-${d}`
+}
+const getMinDate = () => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return formatDate(today)
+}
+const MOCK_ROOM: any = {
+  id: "R-MOCK",
+  name: "Discussion Room A (Fallback)",
+  description: "Deskripsi fallback jika API gagal.",
+  capacity: 6,
+  photos: ["https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop"],
+  facilities: ["Whiteboard", "Projector", "WiFi"],
+  status: "available",
+  price: 50000,
+}
+const startTimeOptions = Array.from({ length: 18 }, (_, i) => {
+  const hour = Math.floor(i / 2) + 8
+  const minute = (i % 2) * 30
+  if (hour === 17 && minute === 0) return null
+  if (hour === 16 && minute === 30) return null
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+}).filter(Boolean) as string[]
+const endTimeOptions = Array.from({ length: 17 }, (_, i) => {
+  const hour = Math.floor(i / 2) + 9
+  const minute = (i % 2) * 30
+  if (hour === 17 && minute === 30) return null
+  return `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`
+}).filter(Boolean) as string[]
 
-type DisplayStatusKey = keyof typeof STATUS_CONFIG_LOAN
-
-export default function BookDetailPage() {
+export default function RoomDetailPage() {
   const router = useRouter()
   const params = useParams()
-  const bookId = params?.id as string
+  const roomId = params?.id as string
 
-  const [book, setBook] = useState<any | null>(null)
+  const [room, setRoom] = useState<any | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [isBorrowing, setIsBorrowing] = useState(false)
-  const [displayStatusKey, setDisplayStatusKey] = useState<DisplayStatusKey>("unavailable")
-  const [pendingLoanId, setPendingLoanId] = useState<string | null>(null)
-  const [isCancelling, setIsCancelling] = useState(false)
+  const [apiError, setApiError] = useState<string | null>(null)
+  const [isBooking, setIsBooking] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(getMinDate())
+  const [borrowerName, setBorrowerName] = useState("")
+  const [phoneNumber, setPhoneNumber] = useState("")
+  const [startTimeInput, setStartTimeInput] = useState("08:00")
+  const [endTimeInput, setEndTimeInput] = useState("09:00")
+  const [isNameLocked, setIsNameLocked] = useState(true)
+  const [isPhoneLocked, setIsPhoneLocked] = useState(true)
 
-  const fetchBookAndLoanStatus = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    setPendingLoanId(null)
-    const token = getAuthToken()
-    if (!token) {
-      setError("Authentication required.")
-      setBook(MOCK_BOOK)
-      setDisplayStatusKey("unavailable")
-      setIsLoading(false)
-      return
-    }
-
-    try {
-      if (!bookId) throw new Error("Book ID is required.")
-      const bookRes = await fetch(`${API_URL}/api/books/${bookId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (!bookRes.ok) {
-        throw new Error("Book not found.")
-      }
-      const bookData = await bookRes.json()
-      let finalStatusKey: DisplayStatusKey
-      const loanRes = await fetch(`${API_URL}/api/loans/status?bookId=${bookId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      if (loanRes.ok) {
-        const loanData = await loanRes.json()
-        if (loanData.status === "late") {
-          finalStatusKey = "overdue"
-        } else if (loanData.paymentStatus === "unpaid") {
-          finalStatusKey = "pending"
-          setPendingLoanId(loanData.loanId || null)
-        } else {
-          finalStatusKey = "borrowed"
-        }
-      } else {
-        finalStatusKey = bookData.stock > 0 ? "available" : "unavailable"
-      }
-      bookData.status = bookData.stock > 0 ? "available" : "unavailable"
-      setBook(bookData)
-      setDisplayStatusKey(finalStatusKey)
-    } catch (err: any) {
-      console.error(err)
-      setError(err?.message || "Failed to load book details.")
-      setBook(MOCK_BOOK)
-      setPendingLoanId(null)
-      setDisplayStatusKey(MOCK_BOOK.stock > 0 ? "available" : "unavailable")
-    } finally {
-      setIsLoading(false)
-    }
-  }, [bookId])
+  // State untuk modal payment
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
 
   useEffect(() => {
-    if (bookId) fetchBookAndLoanStatus()
-    else {
-      setError("Invalid book ID.")
-      setIsLoading(false)
-    }
-  }, [bookId, fetchBookAndLoanStatus])
+    const fetchRoom = async () => {
+      const token = getAuthToken()
+      setIsLoading(true)
+      setError(null)
+      try {
+        const roomResponse = await fetch(`${API_URL}/api/rooms/${roomId}`, { headers: { Authorization: `Bearer ${token}` } })
+        const userResponse = await fetch(`${API_URL}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } })
 
-  const handleBorrow = async () => {
-    if (displayStatusKey !== "available") return
-    setIsBorrowing(true)
-    setError(null)
-    const token = getAuthToken()
-    if (!token) {
-      alert("Authentication required.")
-      setIsBorrowing(false)
+        if (!roomResponse.ok) {
+          const errorData = await roomResponse.json().catch(() => ({}))
+          throw new Error((errorData as any).message || "Room not found.")
+        }
+
+        const roomData = await roomResponse.json()
+        const userData = await userResponse.json().catch(() => ({}))
+
+        setBorrowerName(userData.name || userData.email || "")
+        setPhoneNumber(userData.phone || "")
+        setRoom(roomData)
+        setSelectedDate(getMinDate())
+      } catch (err: any) {
+        setError(err?.message || "Failed to load room details.")
+        setRoom(MOCK_ROOM)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    if (roomId) fetchRoom()
+  }, [roomId])
+
+  const totalHours = calculateDurationHours(startTimeInput, endTimeInput)
+  const totalPrice = room ? totalHours * room.price : 0
+
+  const handleBook = async () => {
+    if (!room || !borrowerName.trim() || !phoneNumber.trim()) {
+      setApiError("Please fill required fields")
       return
     }
+    if (totalHours < 1) {
+      setApiError("Durasi minimal 1 jam")
+      return
+    }
+    if (calculateDurationHours(startTimeInput, endTimeInput) <= 0) {
+      setApiError("Waktu selesai harus setelah waktu mulai")
+      return
+    }
+
+    setIsBooking(true)
+    setApiError(null)
+    const token = getAuthToken()
     try {
-      const response = await fetch(`${API_URL}/api/books/${bookId}/borrow`, {
+      const response = await fetch(`${API_URL}/api/rooms/${roomId}/book`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
+        body: JSON.stringify({
+          date: selectedDate,
+          startTime: startTimeInput,
+          endTime: endTimeInput,
+          phone: phoneNumber,
+        }),
       })
       const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        throw new Error(data?.message || "Borrowing failed.")
-      }
-      if (data?.payment_url) {
-        alert("Borrow request created. Redirecting to payment.")
-        window.open(data.payment_url, '_blank')
+      if (!response.ok) throw new Error(data.message || "Booking failed.")
+
+      // Cek apakah ada payment_url
+      if (data.payment_url) {
+        setPaymentUrl(data.payment_url)
+        setShowPaymentModal(true) // Tampilkan modal
       } else {
-        alert("Borrow request successful. Checking loans page.")
-        router.push("/loans")
+        // Booking gratis (ga ada payment)
+        alert("Booking berhasil!")
+        router.push("/bookings")
       }
     } catch (err: any) {
-      console.error(err)
-      setError(err?.message || "Failed to process borrowing.")
-      alert(`Borrow failed: ${err?.message || "Unknown error"}`)
+      setApiError(err.message || "Failed to process booking")
     } finally {
-      setIsBorrowing(false)
-      fetchBookAndLoanStatus()
-    }
-  }
-  
-  const handleCancelLoan = async () => {
-    if (!pendingLoanId) {
-      alert("Error: Loan ID not found to cancel.")
-      return
-    }
-    if (!confirm("Are you sure you want to cancel this pending loan?")) return
-
-    setIsCancelling(true)
-    setError(null)
-    const token = getAuthToken()
-    if (!token) {
-      alert("Authentication required.")
-      setIsCancelling(false)
-      return
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/api/loans/${pendingLoanId}/cancel`, {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      })
-      const data = await response.json().catch(() => ({}))
-      if (!response.ok) {
-        throw new Error(data?.message || "Failed to cancel loan.")
-      }
-      alert("Loan cancelled successfully.")
-      fetchBookAndLoanStatus()
-    } catch (err: any) {
-      console.error(err)
-      setError(err?.message || "Failed to process cancellation.")
-      alert(`Cancel failed: ${err?.message || "Unknown error"}`)
-    } finally {
-      setIsCancelling(false)
+      setIsBooking(false)
     }
   }
 
@@ -188,126 +191,257 @@ export default function BookDetailPage() {
     return (
       <div className="flex justify-center items-center h-screen">
         <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
-        <p className="ml-3 text-gray-600 font-medium">Loading book details...</p>
+        <p className="ml-3 text-gray-600 font-medium">Loading room details...</p>
       </div>
     )
 
-  if (error || !book)
+  if (error || !room)
     return (
       <div className="p-12 text-center">
         <AlertCircle className="w-12 h-12 text-red-600 mx-auto mb-4" />
         <h3 className="font-semibold text-red-800 mb-1">Error</h3>
-        <p className="text-sm text-red-700">{error || `Book with ID ${bookId} not found.`}</p>
+        <p className="text-sm text-red-700">{error || `Room with ID ${roomId} not found.`}</p>
       </div>
     )
 
-  const statusInfo = STATUS_CONFIG_LOAN[displayStatusKey] || STATUS_CONFIG_LOAN.unavailable
-  const StatusIcon = statusInfo.icon || X
+  const isRoomInMaintenance = room.status === "maintenance"
+  const hasPhotos = room.photos && room.photos.length > 0
 
   return (
     <div className="min-h-screen bg-white">
+      <button
+        onClick={() => router.back()}
+        className="fixed top-24 left-[calc(theme(spacing.4)+1rem)] sm:left-[calc(theme(spacing.6)+1.5rem)] lg:left-[calc(theme(spacing.7)+1rem)] z-40 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg border border-gray-100 bg-white/80 backdrop-blur-md text-gray-600 hover:text-gray-900 hover:bg-slate-100/80 transition-all font-medium text-sm ring-1 ring-black/5"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
+
+      {/* Modal Payment Confirmation */}
+      {showPaymentModal && paymentUrl && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 relative">
             <button
-                onClick={() => router.back()}
-                className="fixed top-24 left-[calc(theme(spacing.4)+1rem)] sm:left-[calc(theme(spacing.6)+1.5rem)] lg:left-[calc(theme(spacing.7)+1rem)] z-40 flex items-center gap-2 px-4 py-2 rounded-xl shadow-lg border border-gray-100 bg-white/80 backdrop-blur-md text-gray-600 hover:text-gray-900 hover:bg-slate-100/80 transition-all font-medium text-sm ring-1 ring-black/5"
+              onClick={() => setShowPaymentModal(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
             >
-                <ArrowLeft className="w-4 h-4" /> 
+              <X className="w-5 h-5" />
             </button>
 
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard className="w-8 h-8 text-green-600" />
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Booking Berhasil!</h3>
+              <p className="text-gray-600">Ruangan berhasil di-booking. Silakan lanjutkan ke pembayaran.</p>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Ruangan:</span>
+                <span className="font-semibold text-gray-900">{room.name}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Tanggal:</span>
+                <span className="font-semibold text-gray-900">{selectedDate}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Waktu:</span>
+                <span className="font-semibold text-gray-900">{startTimeInput} - {endTimeInput}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-600">Durasi:</span>
+                <span className="font-semibold text-gray-900">{totalHours.toFixed(2)} jam</span>
+              </div>
+              <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
+                <span className="text-gray-900 font-semibold">Total Harga:</span>
+                <span className="text-cyan-600 font-bold text-lg">{formatRupiah(totalPrice)}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => window.open(paymentUrl, "_blank")}
+                className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2"
+              >
+                <CreditCard className="w-5 h-5" />
+                Bayar Sekarang
+              </button>
+              <button
+                onClick={() => {
+                  setShowPaymentModal(false)
+                  router.push("/bookings")
+                }}
+                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-all"
+              >
+                Bayar Nanti (Lihat Booking)
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        {error && (
+        {(error || apiError) && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-6">
-            <p className="text-sm text-red-700 font-medium">{error}</p>
+            <p className="text-sm text-red-700 font-medium">{error || apiError}</p>
           </div>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-[320px_1fr] gap-12">
-          <div>
-            <div className="sticky top-32">
-              <img src={book.cover || "https://via.placeholder.com/400x600?text=No+Cover+Available"} alt={book.title} className="w-full rounded-lg shadow-lg object-cover aspect-[2/3]" />
+        {isRoomInMaintenance && (
+          <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-3 mb-6">
+            <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
+            <div>
+              <h3 className="font-semibold text-yellow-800">Ruangan Dalam Perbaikan</h3>
+              <p className="text-sm text-yellow-700">Ruangan ini tidak tersedia untuk dibooking karena sedang dalam maintenance.</p>
+            </div>
+          </div>
+        )}
 
-              <div className={`mt-4 px-3 py-2 rounded-lg border flex items-center gap-2 ${statusInfo.color}`}>
-                <StatusIcon className="w-4 h-4" />
-                <span className="font-semibold text-sm">{statusInfo.label}</span>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          <div className="lg:col-span-2 space-y-8">
+            <div>
+              <h1 className="text-4xl font-bold text-gray-900 mb-2">{room.name}</h1>
+              <p className="text-lg text-gray-600">{room.description || "Deskripsi ruangan tidak tersedia."}</p>
+              <div className="flex items-center gap-4 mt-3">
+                <span className="flex items-center gap-1 text-gray-700">
+                  <Users className="w-4 h-4" />
+                  {room.capacity} people
+                </span>
               </div>
+            </div>
 
-              <div className="mt-3 px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg">
-                <p className="text-sm font-semibold text-slate-700">Stock: {book.stock}</p>
+            <div className="relative w-full rounded-xl shadow-xl overflow-hidden aspect-[16/9] bg-gray-200">
+              <Carousel className="w-full h-full" opts={{ loop: true }}>
+                <CarouselContent>
+                  {hasPhotos ? (
+                    room.photos.map((photo: string, index: number) => (
+                      <CarouselItem key={index}>
+                        <img src={photo} alt={`${room.name} photo ${index + 1}`} className="w-full h-full object-cover" />
+                      </CarouselItem>
+                    ))
+                  ) : (
+                    <CarouselItem>
+                      <img src={MOCK_ROOM.photos[0]} alt={room.name} className="w-full h-full object-cover" />
+                    </CarouselItem>
+                  )}
+                </CarouselContent>
+
+                {hasPhotos && room.photos.length > 1 && (
+                  <>
+                    <CarouselPrevious
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 h-12 w-12 p-0 rounded-full flex items-center justify-center bg-white/90 backdrop-blur-lg text-slate-900 border-none hover:scale-105 transition-transform shadow-md"
+                      aria-label="previous"
+                    >
+                      <ChevronLeft className="w-6 h-6" />
+                    </CarouselPrevious>
+                    <CarouselNext
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 h-12 w-12 p-0 rounded-full flex items-center justify-center bg-white/90 backdrop-blur-lg text-slate-900 border-none hover:scale-105 transition-transform shadow-md"
+                      aria-label="next"
+                    >
+                      <ChevronRight className="w-6 h-6" />
+                    </CarouselNext>
+                  </>
+                )}
+              </Carousel>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-6">
+              <h3 className="font-semibold text-gray-900 mb-3">Room Features</h3>
+              <div className="flex flex-wrap gap-2">
+                {(room.facilities || []).map((feature: string, index: number) => (
+                  <span key={index} className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm font-medium">{feature}</span>
+                ))}
               </div>
+            </div>
 
-              <Button 
-                onClick={handleBorrow} 
-                disabled={isBorrowing || displayStatusKey !== "available"} 
-                className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${displayStatusKey === "available" ? statusInfo.buttonColor : "bg-gray-400 cursor-not-allowed"}`}
-                style={{ display: displayStatusKey === "pending" ? 'none' : 'block' }}
-              >
-                {isBorrowing ? "Processing..." : displayStatusKey === "available" ? "Borrow Now (Deposit Rp 25k)" : statusInfo.label}
-              </Button>
-
-              {displayStatusKey === "pending" && (
-                <Button 
-                  onClick={handleCancelLoan} 
-                  disabled={isCancelling || !pendingLoanId} 
-                  className="w-full mt-4 py-3 text-white font-bold rounded-lg transition-all bg-red-600 hover:bg-red-700 disabled:bg-gray-400"
-                >
-                  {isCancelling ? "Cancelling..." : "Cancel Loan"}
-                </Button>
-              )}
+            <div>
+              <h3 className="font-semibold text-gray-900 text-xl mb-3">About the Room</h3>
+              <p className="text-gray-700 leading-relaxed">{room.description || "Deskripsi detail tidak tersedia untuk ruangan ini."}</p>
             </div>
           </div>
 
-          <div className="space-y-8">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-semibold">{book.category}</span>
+          <div className="lg:col-span-1">
+            <div className="sticky top-32 space-y-8">
+              <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
+                <h3 className="font-semibold text-gray-900 text-lg">Book this Room</h3>
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <Calendar className="w-4 h-4" />
+                    Select Date <span className="text-red-500">*</span>
+                  </label>
+                  <input type="date" value={selectedDate} min={getMinDate()} onChange={(e) => setSelectedDate(e.target.value)} className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> Start Time
+                    </label>
+                    <select value={startTimeInput} onChange={(e) => setStartTimeInput(e.target.value)} className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white">
+                      {startTimeOptions.map((time) => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                      <Clock className="w-4 h-4" /> End Time
+                    </label>
+                    <select value={endTimeInput} onChange={(e) => setEndTimeInput(e.target.value)} className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white">
+                      {endTimeOptions.map((time) => (
+                        <option key={time} value={time}>{time}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className={`p-3 rounded-lg border text-center ${totalHours < 1 || totalHours > 8 ? "bg-red-50 border-red-300" : "bg-gray-50 border-gray-300"}`}>
+                  <p className="text-sm font-semibold text-gray-800">
+                    {totalHours < 1 ? "❌ Minimal durasi peminjaman adalah 1 jam." : totalHours > 8 ? "❌ Maksimal durasi peminjaman adalah 8 jam." : `Durasi yang dipilih: ${Number(totalHours.toFixed(2))} jam`}
+                  </p>
+                </div>
               </div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">{book.title}</h1>
-              <p className="text-lg text-gray-600">{book.author}</p>
-            </div>
 
-            <div>
-              <p className="text-gray-700 leading-relaxed text-base">{book.synopsis || book.description || "No synopsis available for this book."}</p>
-            </div>
-
-            <BookInfoGrid book={book} />
-
-            <div className="bg-gray-50 rounded-lg p-4 sm:p-6">
-              <h3 className="font-semibold text-gray-900 text-[15px] sm:text-base mb-2 sm:mb-3">
-                Loan Policy
-              </h3>
-              <ul className="list-disc list-outside pl-5 sm:pl-6 text-[13px] sm:text-sm text-gray-700 space-y-1.5 leading-relaxed">
-                <li>A refundable deposit of Rp 25,000 is required for borrowing.</li>
-                <li>Books can be borrowed for up to 7 days.</li>
-                <li>Late returns may result in the forfeiture of the deposit.</li>
-                <li>Books must be returned in good condition.</li>
-              </ul>
+              <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
+                <h3 className="font-semibold text-gray-900 text-lg">Borrower Information</h3>
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <UserIcon className="w-4 h-4" />
+                    Borrower Name <span className="text-red-500">*</span>
+                    <Pencil className="w-4 h-4 ml-auto text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => setIsNameLocked(false)} style={{ display: isNameLocked ? "block" : "none" }} />
+                  </label>
+                  <input type="text" value={borrowerName} onChange={(e) => setBorrowerName(e.target.value)} placeholder="Enter your full name" readOnly={isNameLocked} className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all ${isNameLocked ? "bg-gray-100 border-slate-300" : "bg-white border-slate-500"}`} />
+                </div>
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Phone Number <span className="text-red-500">*</span>
+                    <Pencil className="w-4 h-4 ml-auto text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => setIsPhoneLocked(false)} style={{ display: isPhoneLocked ? "block" : "none" }} />
+                  </label>
+                  <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Enter your phone number (e.g., 08123456789)" readOnly={isPhoneLocked} className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all ${isPhoneLocked ? "bg-gray-100 border-slate-300" : "bg-white border-slate-500"}`} />
+                </div>
+                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                  <p className="text-sm text-gray-600 mb-1">Total Estimated Price ({Number(totalHours.toFixed(2))} hours)</p>
+                  <p className="text-2xl font-bold text-blue-600">{formatRupiah(totalPrice)}</p>
+                  <p className="text-xs text-gray-500 mt-2">Price per Hour: {formatRupiah(room.price)}</p>
+                </div>
+                <Button
+                  onClick={handleBook}
+                  disabled={
+                    isBooking ||
+                    isRoomInMaintenance ||
+                    totalHours < 1 ||
+                    calculateDurationHours(startTimeInput, endTimeInput) <= 0 ||
+                    !borrowerName.trim() ||
+                    !phoneNumber.trim()
+                  }
+                  className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-400 text-white font-bold py-3 rounded-lg disabled:cursor-not-allowed transition-all"
+                >
+                  {isBooking ? "Processing..." : isRoomInMaintenance ? "Sedang Maintenance" : totalHours < 1 ? "Minimum 1 Hour Required" : `Complete Booking (${Number(totalHours.toFixed(2))} hours)`}
+                </Button>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  )
-}
-
-interface BookInfoGridProps {
-  book: any
-}
-
-function BookInfoGrid({ book }: BookInfoGridProps) {
-  const info = [
-    { label: "Publisher", value: book.publisher || "N/A" },
-    { label: "Year Published", value: book.year || "N/A" },
-    { label: "Location", value: book.location || "N/A" },
-    { label: "ISBN", value: book.isbn || "N/A" },
-  ]
-
-  return (
-    <div className="grid grid-cols-2 gap-6 py-6 border-y border-gray-100">
-      {info.map(({ label, value }) => (
-        <div key={label}>
-          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{label}</p>
-          <p className="text-gray-900 font-medium text-sm">{value}</p>
-        </div>
-      ))}
     </div>
   )
 }
