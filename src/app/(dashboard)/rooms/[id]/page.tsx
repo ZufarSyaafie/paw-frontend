@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { useRouter, useParams } from "next/navigation"
-import { ArrowLeft, Users, AlertCircle, Phone, User as UserIcon, Loader2, Calendar, Clock, Pencil, AlertTriangle } from "lucide-react"
+import { ArrowLeft, Users, AlertCircle, Phone, User as UserIcon, Loader2, Calendar, Clock, Pencil, AlertTriangle, ChevronDown } from "lucide-react"
 import { useState, useEffect } from "react"
 import { getAuthToken } from "@/lib/auth"
 import { 
@@ -112,6 +112,49 @@ export default function RoomDetailPage() {
     }
     if (roomId) fetchRoom()
   }, [roomId])
+
+  // Tambahan: fungsi dapatkan daftar jam yang masih valid untuk "hari ini"
+  const todayStr = getMinDate()
+  const now = new Date()
+  const nowMinutes = now.getHours() * 60 + now.getMinutes()
+
+  // Utility: ambil menit dari string HH:MM
+  const toMinutes = (t: string) => {
+    const [h, m] = t.split(":").map(Number)
+    return h * 60 + m
+  }
+
+  // Filter start times jika tanggal sama dengan hari ini
+  const filteredStartTimes = selectedDate === todayStr
+    ? startTimeOptions.filter(t => toMinutes(t) > nowMinutes)
+    : startTimeOptions
+
+  // Pastikan start time terpilih masih valid; jika tidak, set ke slot pertama yang valid
+  useEffect(() => {
+    if (filteredStartTimes.length === 0 && selectedDate === todayStr) {
+      // Semua jam sudah lewat; user harus pilih tanggal lain
+      setStartTimeInput("")
+      setEndTimeInput("")
+      return
+    }
+    if (startTimeInput && !filteredStartTimes.includes(startTimeInput)) {
+      setStartTimeInput(filteredStartTimes[0] || "")
+      // Atur end minimal +1 slot
+      const nextEnd = endTimeOptions.find(e => toMinutes(e) > toMinutes(filteredStartTimes[0]))
+      setEndTimeInput(nextEnd || "")
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, filteredStartTimes])
+
+  // Filter end times: tetap hanya yang > start selected
+  const filteredEndTimes = endTimeOptions.filter(e => {
+    if (!startTimeInput) return false
+    return toMinutes(e) > toMinutes(startTimeInput)
+  }).filter(e => {
+    // Jika hari ini, juga pastikan end lebih besar dari waktu sekarang
+    if (selectedDate !== todayStr) return true
+    return toMinutes(e) > nowMinutes
+  })
 
   const totalHours = calculateDurationHours(startTimeInput, endTimeInput)
   const totalPrice = room ? totalHours * room.price : 0
@@ -245,8 +288,30 @@ export default function RoomDetailPage() {
                 
                 {hasPhotos && room.photos.length > 1 && (
                   <>
-                    <CarouselPrevious className="absolute left-4 opacity-70 hover:opacity-100" />
-                    <CarouselNext className="absolute right-4 opacity-70 hover:opacity-100" />
+                    <CarouselPrevious
+      className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2
+                 inline-flex items-center justify-center
+                 h-7 w-7 sm:h-8 sm:w-8 aspect-square rounded-full
+                 p-0 leading-none
+                 border border-cyan-500 text-cyan-600
+                 bg-white/70 backdrop-blur-sm shadow
+                 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-600
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500
+                 transition-all duration-200
+                 [&>svg]:m-0 [&>svg]:h-3 [&>svg]:w-3 sm:[&>svg]:h-4 sm:[&>svg]:w-4 [&>svg]:shrink-0"
+    />
+    <CarouselNext
+      className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2
+                 inline-flex items-center justify-center
+                 h-7 w-7 sm:h-8 sm:w-8 aspect-square rounded-full
+                 p-0 leading-none
+                 border border-cyan-500 text-cyan-600
+                 bg-white/70 backdrop-blur-sm shadow
+                 hover:bg-cyan-50 hover:text-cyan-700 hover:border-cyan-600
+                 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500
+                 transition-all duration-200
+                 [&>svg]:m-0 [&>svg]:h-3 [&>svg]:w-3 sm:[&>svg]:h-4 sm:[&>svg]:w-4 [&>svg]:shrink-0"
+    />
                   </>
                 )}
 
@@ -285,25 +350,45 @@ export default function RoomDetailPage() {
                     <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                        <Clock className="w-4 h-4" /> Start Time
                     </label>
-                    <select
-                      value={startTimeInput}
-                      onChange={(e) => setStartTimeInput(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
-                    >
-                      {startTimeOptions.map(time => <option key={time} value={time}>{time}</option>)}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={startTimeInput}
+                        onChange={(e) => setStartTimeInput(e.target.value)}
+                        className="w-full px-4 pr-10 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white appearance-none"
+                        disabled={filteredStartTimes.length === 0}
+                      >
+                        {filteredStartTimes.length === 0 ? (
+                          <option value="">No time slots left today</option>
+                        ) : (
+                          filteredStartTimes.map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))
+                        )}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    </div>
                   </div>
                   <div>
                     <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                       <Clock className="w-4 h-4" /> End Time
                     </label>
-                    <select
-                      value={endTimeInput}
-                      onChange={(e) => setEndTimeInput(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
-                    >
-                      {endTimeOptions.map(time => <option key={time} value={time}>{time}</option>)}
-                    </select>
+                    <div className="relative">
+                      <select
+                        value={endTimeInput}
+                        onChange={(e) => setEndTimeInput(e.target.value)}
+                        className="w-full px-4 pr-10 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white appearance-none"
+                        disabled={!startTimeInput || filteredEndTimes.length === 0}
+                      >
+                        {!startTimeInput || filteredEndTimes.length === 0 ? (
+                          <option value="">Select start first</option>
+                        ) : (
+                          filteredEndTimes.map(time => (
+                            <option key={time} value={time}>{time}</option>
+                          ))
+                        )}
+                      </select>
+                      <ChevronDown className="pointer-events-none absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                    </div>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg border text-center ${totalHours < 1 || totalHours > 8 ?

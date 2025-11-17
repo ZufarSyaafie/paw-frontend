@@ -133,7 +133,7 @@ export function RoomCard({
             disabled={!currentStatus.buttonEnabled}
           >
             {currentStatus.buttonLabel}
-            <span className="hidden sm:inline"> &amp; </span>
+            <span className="hidden sm:inline">  </span>
           </Button>
         </div>
       </div>
