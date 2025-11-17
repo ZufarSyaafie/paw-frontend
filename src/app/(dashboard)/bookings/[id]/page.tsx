@@ -13,6 +13,7 @@ import {
   CheckCircle,
   ChevronLeft,
   ChevronRight,
+  // CreditCard, 
 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
@@ -221,9 +222,12 @@ export default function BookingDetailPage() {
 
   const isCancellable = booking.status === "confirmed" || booking.status === "pending_payment"
   const isFinished = statusKey === "completed" // Tambah flag finished
+  const isPending = booking.status === 'pending_payment'
+  const isCancelled = statusKey === 'cancelled'
 
   // Buat variabel hasPhotos
   const hasPhotos = booking.room.photos && booking.room.photos.length > 0
+  const paymentUrl = (booking as any).paymentUrl || null
 
   return (
     <div className="min-h-screen bg-white">
@@ -300,22 +304,54 @@ export default function BookingDetailPage() {
                 <p className="text-sm font-semibold text-slate-700">Payment Status: {booking.paymentStatus.toUpperCase()}</p>
               </div>
 
-              {/* Cancel Button */}
-              <Button
-                onClick={handleCancel}
-                disabled={isCancelling || !isCancellable || isFinished} // Disable jika sudah selesai
-                className={`w-full mt-4 py-3 text-white font-bold rounded-lg transition-all ${
-                  isCancellable && !isFinished ? "bg-red-500 hover:bg-red-600" : "bg-gray-400 cursor-not-allowed"
-                }`}
-              >
-                {isFinished
-                  ? "Session Completed"
-                  : isCancelling
-                  ? "Processing Cancellation..."
-                  : !isCancellable
-                  ? "Cannot Cancel"
-                  : "Cancel Booking"}
-              </Button>
+            {/* continue payment */}
+              <div className="mt-5 space-y-3">
+                {isPending && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      onClick={() => {
+                        if (paymentUrl) {
+                          window.open(paymentUrl, '_blank')
+                        } else {
+                          alert('Error: Payment URL not found. Please try re-booking.')
+                        }
+                      }
+                    }
+                    disabled={isCancelling||!paymentUrl}
+                    className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold text-sm py-3 rounded-lg flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {/* <CreditCard className="w-5 h-5" /> */}
+                    {paymentUrl ? "Continue Payment" : "Payment URL Missing"}
+                    </Button>
+                    <Button
+                      onClick={handleCancel}
+                      disabled={isCancelling}
+                      className="w-full bg-red-500 hover:bg-red-600 text-white font-bold text-sm py-3 rounded-lg disabled:opacity-50"
+                    >
+                      {isCancelling ? "Cancelling..." : "Cancel Booking"}
+                    </Button>
+                    </div>
+                  )}
+
+                  {!isPending && isCancellable && !isFinished && (
+                    <Button
+                      onClick={handleCancel}
+                      disabled={isCancelling}
+                      className="w-full py-3 text-white font-bold rounded-lg bg-red-500 hover:bg-red-600 disabled:opacity-50"
+                    >
+                      {isCancelling ? "Processing Cancellation..." : "Cancel Booking (Confirmed)"}
+                    </Button>
+                  )}
+
+                  {(isFinished || isCancelled) && (
+                    <Button
+                      disabled={true}
+                      className="w-full py-3 text-white font-bold rounded-lg bg-gray-400 cursor-not-allowed"
+                    >
+                      {isFinished ? "Session Completed" : "Booking Cancelled"}
+                    </Button>
+                  )}
+                  </div>
             </div>
           </div>
 
@@ -323,7 +359,9 @@ export default function BookingDetailPage() {
           <div className="md:col-span-2 space-y-8">
             {/* Title Section */}
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-3">{booking.room.name}</h1>
+              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3">
+                {booking.room.name}
+              </h1>              
               <p className="text-lg text-gray-600">Capacity: {booking.room.capacity} people</p>
             </div>
 
@@ -339,17 +377,17 @@ export default function BookingDetailPage() {
             <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
               <h3 className="font-semibold text-blue-800 mb-2">Booking Rules</h3>
               <ul className="list-disc list-inside text-sm text-blue-700 space-y-1">
-                <li>Cancellation requires a minimum of 2 hours notice (handled by backend logic).</li>
-                <li>If cancellation is successful, refund depends on payment status.</li>
+                <li>Cancellation requires a minimum of 2 hours notice.</li>
+                {/* <li>If cancellation is successful, refund depends on payment status.</li> */}
                 <li>Phone number used: {booking.phone}</li>
               </ul>
             </div>
 
-            {/* Room Features (FIXED) */}
+            {/* Room Features */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 mb-3">Room Features</h3>
               <div className="flex flex-wrap gap-2">
-                {((booking.room as any).facilities as string[] || []).map((feature: string, index: number) => (
+                {(booking.room.facilities || []).map((feature: string, index: number) => (
                   <span key={index} className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm font-medium">
                     {feature}
                   </span>
