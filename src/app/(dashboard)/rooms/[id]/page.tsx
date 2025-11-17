@@ -103,6 +103,24 @@ export default function RoomDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
 
+  const todayString = getMinDate()
+  const isToday = selectedDate === todayString
+  
+  const now = new Date()
+  const currentHour = now.getHours()
+  const currentMinutes = now.getMinutes()
+  const currentTimeInMinutes = currentHour * 60 + currentMinutes
+
+  const isTimeSlotDisabled = (time: string) => {
+    if (!isToday) return false // Kalo bukan hari ini, semua slot bisa
+
+    const [optionHour, optionMinute] = time.split(':').map(Number)
+    const optionTimeInMinutes = optionHour * 60 + optionMinute
+    
+    // Disable kalo jam slot-nya udah kelewat
+    return optionTimeInMinutes < currentTimeInMinutes
+  }
+
   useEffect(() => {
     const fetchRoom = async () => {
       const token = getAuthToken()
@@ -177,7 +195,7 @@ export default function RoomDetailPage() {
         setShowPaymentModal(true) // Tampilkan modal
       } else {
         // Booking gratis (ga ada payment)
-        alert("Booking berhasil!")
+        alert("Booking successful!")
         router.push("/bookings")
       }
     } catch (err: any) {
@@ -231,25 +249,25 @@ export default function RoomDetailPage() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CreditCard className="w-8 h-8 text-green-600" />
               </div>
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">Booking Berhasil!</h3>
-              <p className="text-gray-600">Ruangan berhasil di-booking. Silakan lanjutkan ke pembayaran.</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">Booking Successful!</h3>
+              <p className="text-gray-600">Room booked successfully. Please proceed to payment.</p>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
               <div className="flex justify-between">
-                <span className="text-gray-600">Ruangan:</span>
+                <span className="text-gray-600">Room:</span>
                 <span className="font-semibold text-gray-900">{room.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Tanggal:</span>
+                <span className="text-gray-600">Date:</span>
                 <span className="font-semibold text-gray-900">{selectedDate}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Waktu:</span>
+                <span className="text-gray-600">Time:</span>
                 <span className="font-semibold text-gray-900">{startTimeInput} - {endTimeInput}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-600">Durasi:</span>
+                <span className="text-gray-600">Duration:</span>
                 <span className="font-semibold text-gray-900">{totalHours.toFixed(2)} jam</span>
               </div>
               <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
@@ -264,7 +282,7 @@ export default function RoomDetailPage() {
                 className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2"
               >
                 <CreditCard className="w-5 h-5" />
-                Bayar Sekarang
+                Pay Now
               </button>
               <button
                 onClick={() => {
@@ -273,7 +291,7 @@ export default function RoomDetailPage() {
                 }}
                 className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-3 rounded-lg transition-all"
               >
-                Bayar Nanti (Lihat Booking)
+                Pay Later (View Bookings)
               </button>
             </div>
           </div>
@@ -291,8 +309,8 @@ export default function RoomDetailPage() {
           <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-3 mb-6">
             <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-yellow-800">Ruangan Dalam Perbaikan</h3>
-              <p className="text-sm text-yellow-700">Ruangan ini tidak tersedia untuk dibooking karena sedang dalam maintenance.</p>
+              <h3 className="font-semibold text-yellow-800">Room Under Maintenance</h3>
+              <p className="text-sm text-yellow-700">This room is unavailable for booking due to maintenance.</p>
             </div>
           </div>
         )}
@@ -376,26 +394,44 @@ export default function RoomDetailPage() {
                     <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                       <Clock className="w-4 h-4" /> Start Time
                     </label>
-                    <select value={startTimeInput} onChange={(e) => setStartTimeInput(e.target.value)} className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white">
-                      {startTimeOptions.map((time) => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
+                    <select 
+                      value={startTimeInput} 
+                      onChange={(e) => setStartTimeInput(e.target.value)} 
+                      className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+                    >
+                     {startTimeOptions.map(time => {
+                        const disabled = isTimeSlotDisabled(time);
+                        return (
+                          <option key={time} value={time} disabled={disabled} className={disabled ? 'text-gray-400' : ''}>
+                            {time}
+                          </option>
+                        );
+                      })}          
                     </select>
                   </div>
                   <div>
                     <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                       <Clock className="w-4 h-4" /> End Time
                     </label>
-                    <select value={endTimeInput} onChange={(e) => setEndTimeInput(e.target.value)} className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white">
-                      {endTimeOptions.map((time) => (
-                        <option key={time} value={time}>{time}</option>
-                      ))}
+                    <select 
+                      value={endTimeInput}
+                      onChange={(e) => setEndTimeInput(e.target.value)}
+                      className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+                    >
+                      {endTimeOptions.map(time => {
+                        const disabled = isTimeSlotDisabled(time);
+                        return (
+                          <option key={time} value={time} disabled={disabled} className={disabled ? 'text-gray-400' : ''}>
+                            {time}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
                 </div>
                 <div className={`p-3 rounded-lg border text-center ${totalHours < 1 || totalHours > 8 ? "bg-red-50 border-red-300" : "bg-gray-50 border-gray-300"}`}>
                   <p className="text-sm font-semibold text-gray-800">
-                    {totalHours < 1 ? "❌ Minimal durasi peminjaman adalah 1 jam." : totalHours > 8 ? "❌ Maksimal durasi peminjaman adalah 8 jam." : `Durasi yang dipilih: ${Number(totalHours.toFixed(2))} jam`}
+                    {totalHours < 1 ? "❌ Minimum booking duration is 1 hour." : totalHours > 8 ? "❌ Maximum booking duration is 8 hours." : `Selected duration: ${Number(totalHours.toFixed(2))} hours`}
                   </p>
                 </div>
               </div>
@@ -435,7 +471,7 @@ export default function RoomDetailPage() {
                   }
                   className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-400 text-white font-bold py-3 rounded-lg disabled:cursor-not-allowed transition-all"
                 >
-                  {isBooking ? "Processing..." : isRoomInMaintenance ? "Sedang Maintenance" : totalHours < 1 ? "Minimum 1 Hour Required" : `Complete Booking (${Number(totalHours.toFixed(2))} hours)`}
+                  {isBooking ? "Processing..." : isRoomInMaintenance ? "Under Maintenance" : totalHours < 1 ? "Minimum 1 Hour Required" : `Complete Booking (${Number(totalHours.toFixed(2))} hours)`}
                 </Button>
               </div>
             </div>

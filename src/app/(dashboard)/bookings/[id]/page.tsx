@@ -277,16 +277,16 @@ export default function BookingDetailPage() {
                   {hasPhotos && booking.room.photos.length > 1 && (
                     <>
                       <CarouselPrevious
-                        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 p-0 rounded-full flex items-center justify-center bg-white/90 backdrop-blur-lg text-slate-900 border-none hover:scale-105 transition-transform shadow-md"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 h-12 w-12 p-0 rounded-full flex items-center justify-center bg-white/90 backdrop-blur-lg text-slate-900 border-none hover:scale-105 transition-transform shadow-md"
                         aria-label="previous"
                       >
-                        <ChevronLeft className="w-5 h-5" />
+                        <ChevronLeft className="w-6 h-6" />
                       </CarouselPrevious>
                       <CarouselNext
-                        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 h-9 w-9 p-0 rounded-full flex items-center justify-center bg-white/90 backdrop-blur-lg text-slate-900 border-none hover:scale-105 transition-transform shadow-md"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 h-12 w-12 p-0 rounded-full flex items-center justify-center bg-white/90 backdrop-blur-lg text-slate-900 border-none hover:scale-105 transition-transform shadow-md"
                         aria-label="next"
                       >
-                        <ChevronRight className="w-5 h-5" />
+                        <ChevronRight className="w-6 h-6" />
                       </CarouselNext>
                     </>
                   )}
