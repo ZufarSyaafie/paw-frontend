@@ -61,7 +61,7 @@ export interface Booking {
     id: string
     _id?: string
     user: { id: string, name: string, email: string }
-    room: { id: string, name: string, capacity: number, image: string }
+    room: { id: string, name: string, capacity: number, image: string, photos: [] }
     date: string
     features?: string[] 
     startTime: string
@@ -76,6 +76,7 @@ export interface Booking {
     updatedAt: string
     displayStatus?: string 
     cancelledAt: Date
+
 }
 
 // Loan Types
