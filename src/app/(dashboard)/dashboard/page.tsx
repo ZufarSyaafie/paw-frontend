@@ -250,7 +250,7 @@ function Dashboard() {
         <div style={{ backgroundColor: colors.bgPrimary }}>
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 pb-16">
                 <div className={`space-y-${spacing.sm}`}>
-                    <h1 className={typography.h1}>{greeting}, {username || "Guest"}!</h1>
+                    <h1 className={`${typography.h1} !text-[1.65rem] sm:text-4xl`}>{greeting}, {username || "Guest"}!</h1>
                     <p className={typography.body}>Explore books, reserve rooms, and stay updated</p>
                 </div>
             </div>
