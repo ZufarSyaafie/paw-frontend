@@ -61,7 +61,7 @@ export interface Booking {
     id: string
     _id?: string
     user: { id: string, name: string, email: string }
-    room: { id: string, name: string, capacity: number, image: string, photos: [] }
+    room: { id: string, name: string, capacity: number, image: string, photos: [], facilities: string[] }
     date: string
     features?: string[] 
     startTime: string
