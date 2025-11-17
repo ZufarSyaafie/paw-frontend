@@ -85,10 +85,10 @@ function Dashboard() {
         } catch {}
 
         const hour = new Date().getHours()
-        if (hour < 11) setGreeting("Selamat Pagi")
-        else if (hour < 15) setGreeting("Selamat Siang")
-        else if (hour < 18) setGreeting("Selamat Sore")
-        else setGreeting("Selamat Malam")
+        if (hour < 11) setGreeting("Good Morning")
+        else if (hour < 15) setGreeting("Good Afternoon")
+        else if (hour < 18) setGreeting("Good Evening")
+        else setGreeting("Good Night")
     }, [searchParams])
 
     useEffect(() => {

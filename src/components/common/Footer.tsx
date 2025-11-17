@@ -23,7 +23,7 @@ export default function Footer() {
               className={`${typography.bodySmall} mt-2`}
               style={{ color: colors.textTertiary }}
             >
-              Sistem Perpustakaan Digital Modern. Jelajahi buku, pesan ruangan, dan tetap terupdate.
+              Modern Digital Library System. Explore books, book rooms, and stay updated.
             </p>
           </div>
 

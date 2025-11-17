@@ -87,7 +87,7 @@ export default function ManageBooksPage(): React.JSX.Element {
 
   const handleDelete = async (bookId?: string) => {
     if (!bookId) return;
-    if (!confirm("Yakin mau hapus buku ini?")) return;
+    if (!confirm("Are you sure you want to delete this book? This action cannot be undone.")) return;
     try {
       await fetch(`${API_URL}/api/books/${bookId}`, {
         method: "DELETE",
@@ -192,13 +192,13 @@ export default function ManageBooksPage(): React.JSX.Element {
             </button>
 
             <h2 className="text-2xl font-bold mb-5" style={{ color: colors.textPrimary }}>
-              {isEditing ? "Edit Buku" : "Tambah Buku Baru"}
+              {isEditing ? "Edit Book" : "Add New Book"}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
               <div>
                 <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                  Judul
+                  Title
                 </label>
                 <Input
                   name="title"
@@ -283,7 +283,7 @@ export default function ManageBooksPage(): React.JSX.Element {
 
                 <div className="w-1/3">
                   <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                    Tahun
+                    Year
                   </label>
                   <Input
                     name="year"
@@ -339,7 +339,7 @@ export default function ManageBooksPage(): React.JSX.Element {
 
               <div>
                 <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                  Kategori
+                  Category
                 </label>
                 <Input
                   name="category"
@@ -417,13 +417,13 @@ export default function ManageBooksPage(): React.JSX.Element {
 
                 <div className="flex-1">
                   <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                    Lokasi Rak
+                    Shelf Location
                   </label>
                   <Input
                     name="location"
                     value={formData.location ?? ""}
                     onChange={handleFormChange}
-                    placeholder="Contoh: Rak A-1"
+                    placeholder="Example: Shelf A-1"
                     className="w-full px-4 py-2 rounded-lg border transition-all focus:outline-none"
                     style={{
                       backgroundColor: colors.bgSecondary,
@@ -470,7 +470,7 @@ export default function ManageBooksPage(): React.JSX.Element {
 
               <div>
                 <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                  Sinopsis
+                  Synopsis
                 </label>
                 <textarea
                   name="synopsis"
@@ -499,7 +499,7 @@ export default function ManageBooksPage(): React.JSX.Element {
                 className="w-full !mt-6 !py-3 font-semibold text-white rounded-lg transition-all hover:opacity-90"
                 style={{ backgroundColor: colors.primary }}
               >
-                {isEditing ? "Simpan Perubahan" : "Simpan Buku"}
+                {isEditing ? "Save Changes" : "Add Book"}
               </Button>
             </form>
           </div>
@@ -517,7 +517,7 @@ export default function ManageBooksPage(): React.JSX.Element {
           style={{ backgroundColor: colors.primary }}
         >
           <Plus className="w-4 h-4" />
-          Tambah Buku
+          Add Book
         </Button>
       </div>
 
@@ -526,7 +526,7 @@ export default function ManageBooksPage(): React.JSX.Element {
           <table className="w-full min-w-[900px]">
             <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
               <tr>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Judul</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Title</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Author</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Stock</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Borrowed</th>

@@ -71,7 +71,7 @@ export default function ManageUsersPage() {
     e.preventDefault();
     setError(null);
     if (!formData.password || formData.password.length < 6) {
-        setError("Password wajib diisi, minimal 6 karakter.");
+        setError("Password is required and must be at least 6 characters.");
         return;
     }
 
@@ -133,7 +133,7 @@ export default function ManageUsersPage() {
               className="text-2xl font-bold mb-5"
               style={{ color: colors.textPrimary }}
             >
-              Tambah User Baru
+              Add New User
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -142,7 +142,7 @@ export default function ManageUsersPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Nama Lengkap
+                  Full Name
                 </label>
                 <Input 
                   name="name" 
@@ -199,7 +199,7 @@ export default function ManageUsersPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Password (Minimal 6 karakter)
+                  Password (Minimum 6 characters)
                 </label>
                 <Input 
                   name="password" 
@@ -268,7 +268,7 @@ export default function ManageUsersPage() {
                   backgroundColor: colors.primary,
                 }}
               >
-                Simpan User
+                Submit
               </Button>
             </form>
           </div>
@@ -291,7 +291,7 @@ export default function ManageUsersPage() {
           }}
         >
           <Plus className="w-4 h-4" />
-          Tambah User
+          Add User
         </Button>
       </div>
 
@@ -316,7 +316,7 @@ export default function ManageUsersPage() {
                   className="text-left p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
-                  Nama
+                  Name
                 </th>
                 <th 
                   className="text-left p-4 font-semibold"

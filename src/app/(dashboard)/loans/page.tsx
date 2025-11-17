@@ -159,13 +159,13 @@ export default function LoansPage() {
             >
               My Book Loans
             </h1>
-            <span className="hidden sm:inline px-2 py-1 text-[11px] font-medium rounded-md
+            <span className="hidden sm:inline px-2 py-1 text-[12px] font-medium rounded-md
                              bg-cyan-50 text-cyan-700 border border-cyan-200">
               Loan History
             </span>
           </div>
-          <p className="mt-1 text-[11px] sm:text-sm text-gray-600 leading-snug">
-            Kelola dan pantau riwayat peminjaman buku kamu.
+          <p className="mt-1 text-[12px] sm:text-sm text-gray-600 leading-snug">
+            Manage and monitor your book loan history.
           </p>
         </div>
         <Button
@@ -252,7 +252,7 @@ export default function LoansPage() {
                     variant="outline"
                     className={`transition-colors text-sm font-medium ${
                       filter === option.value
-                        ? "bg-cyan-500 text-white border-cyan-500 hover:bg-cyan-600"
+                        ? "bg-cyan-600 text-white border-cyan-600 hover:bg-cyan-700"
                         : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
                     }`}
                   >
@@ -267,7 +267,13 @@ export default function LoansPage() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full max-w-xs px-3 py-2 rounded-lg border border-gray-300 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm"
+                className="w-full max-w-xs px-3 py-2 rounded-lg border border-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm bg-gray-100 text-gray-900"
+                style={{
+                  backgroundColor: colors.bgPrimary,
+                  color: "#111827",
+                  borderColor: "#9ca3af",
+                  fontWeight: "600",
+                }}
               >
                 <option value="dueDateDesc">Due Date (Newest)</option>
                 <option value="dueDateAsc">Due Date (Oldest)</option>

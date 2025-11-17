@@ -7,7 +7,7 @@ type AnnouncementCardProps = {
   title: string
   snippet: string
   date: string
-  variant?: "light" | "dark"
+  variant?: "light"
 }
 
 export default function AnnouncementCard({ 

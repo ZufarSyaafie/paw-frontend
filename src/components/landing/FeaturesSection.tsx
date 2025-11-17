@@ -5,23 +5,23 @@ import { BookOpen, Home, Bell, Users } from "lucide-react";
 const features = [
   {
     icon: BookOpen,
-    title: "Katalog Buku Digital",
-    description: "Cari dan temukan koleksi buku terlengkap. Bayar deposit sekali dan dapatkan akses unlimited.",
+    title: "Digital Book Catalog",
+    description: "Search and find the most complete book collection. Pay a one-time deposit and get unlimited access.",
   },
   {
     icon: Home,
     title: "Smart Room Booking",
-    description: "Booking ruangan diskusi dengan mudah. Lihat ketersediaan real-time dan dominasi jadwal Anda.",
+    description: "Easily book discussion rooms. See real-time availability and manage your schedule.",
   },
   {
     icon: Bell,
-    title: "Denda & Notifikasi",
-    description: "Dapatkan notifikasi real-time untuk setiap update pengembalian buku dan informasi penting lainnya.",
+    title: "Fines & Notifications",
+    description: "Receive real-time notifications for every book return update and other important information.",
   },
   {
     icon: Users,
-    title: "Manajemen Anggota",
-    description: "Kelola profil, riwayat peminjaman, dan interaksi dengan komunitas pengguna lainnya.",
+    title: "Member Management",
+    description: "Manage profiles, loan histories, and interactions with other community members.",
   },
 ];
 

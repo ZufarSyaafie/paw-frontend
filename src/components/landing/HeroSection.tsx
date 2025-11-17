@@ -21,7 +21,7 @@ export default function HeroSection() {
         >
           Welcome to
           <br />
-          <span className="text-cyan-400">Perpustakaan Naratama</span>
+          <span className="text-cyan-400">Naratama Digital Library</span>
         </motion.h1>
         
         <motion.p

@@ -122,11 +122,11 @@ export default function RoomDetailPage() {
       return
     }
     if (totalHours < 1) {
-      setApiError("Durasi minimal 1 jam")
+      setApiError("Minimal booking duration is 1 hour")
       return
     }
     if (calculateDurationHours(startTimeInput, endTimeInput) <= 0) {
-      setApiError("Waktu selesai harus setelah waktu mulai")
+      setApiError("End time must be after start time")
       return
     }
 
@@ -200,8 +200,8 @@ export default function RoomDetailPage() {
           <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-3 mb-6">
             <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-yellow-800">Ruangan Dalam Perbaikan</h3>
-              <p className="text-sm text-yellow-700">Ruangan ini tidak tersedia untuk dibooking karena sedang dalam maintenance.</p>
+              <h3 className="font-semibold text-yellow-800">Room Under Maintenance</h3>
+              <p className="text-sm text-yellow-700">This room is not available for booking because it is currently under maintenance.</p>
             </div>
           </div>
         )}
@@ -210,7 +210,7 @@ export default function RoomDetailPage() {
           <div className="lg:col-span-2 space-y-8">
             <div>
               <h1 className="text-4xl font-bold text-gray-900 mb-2">{room.name}</h1>
-              <p className="text-lg text-gray-600">{room.description || "Deskripsi ruangan tidak tersedia."}</p>
+              <p className="text-lg text-gray-600">{room.description || "Room description is not available."}</p>
               <div className="flex items-center gap-4 mt-3">
                 <span className="flex items-center gap-1 text-gray-700">
                   <Users className="w-4 h-4" />
@@ -266,7 +266,7 @@ export default function RoomDetailPage() {
 
             <div>
               <h3 className="font-semibold text-gray-900 text-xl mb-3">About the Room</h3>
-              <p className="text-gray-700 leading-relaxed">{room.description || "Deskripsi detail tidak tersedia untuk ruangan ini."}</p>
+              <p className="text-gray-700 leading-relaxed">{room.description || "Detailed description is not available for this room."}</p>
             </div>
           </div>
 
@@ -310,8 +310,8 @@ export default function RoomDetailPage() {
                   'bg-red-50 border-red-300' : 'bg-gray-50 border-gray-300'}`}>
                   <p className="text-sm font-semibold text-gray-800">
                     {totalHours < 1 ?
-                      '❌ Minimal durasi peminjaman adalah 1 jam.' : totalHours > 8 ? '❌ Maksimal durasi peminjaman adalah 8 jam.'
-                      : `Durasi yang dipilih: ${Number(totalHours.toFixed(2))} jam`}
+                      'Minimal booking duration is 1 hour.' : totalHours > 8 ? 'Maximum booking duration is 8 hours.'
+                      : `Selected duration: ${Number(totalHours.toFixed(2))} hours`}
                   </p>
                 </div>
               </div>

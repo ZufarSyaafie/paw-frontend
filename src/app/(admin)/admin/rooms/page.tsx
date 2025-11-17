@@ -151,7 +151,7 @@ export default function ManageRoomsPage() {
               className="text-2xl font-bold mb-5"
               style={{ color: colors.textPrimary }}
             >
-              {isEditing ? "Edit Ruangan" : "Tambah Ruangan Baru"}
+              {isEditing ? "Edit Room" : "Add New Room"}
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
@@ -160,7 +160,7 @@ export default function ManageRoomsPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Nama Ruangan
+                  Room Name
                 </label>
                 <Input 
                   name="name" 
@@ -188,7 +188,7 @@ export default function ManageRoomsPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Deskripsi
+                  Description
                 </label>
                 <textarea 
                   name="description" 
@@ -218,7 +218,7 @@ export default function ManageRoomsPage() {
                     className="text-sm font-medium block mb-2"
                     style={{ color: colors.textPrimary }}
                   >
-                    Kapasitas
+                    Capacity
                   </label>
                   <Input 
                     name="capacity" 
@@ -247,7 +247,7 @@ export default function ManageRoomsPage() {
                     className="text-sm font-medium block mb-2"
                     style={{ color: colors.textPrimary }}
                   >
-                    Harga/Jam
+                    Price per Hour (IDR)
                   </label>
                   <Input 
                     name="price" 
@@ -307,7 +307,7 @@ export default function ManageRoomsPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Fasilitas (Pisahkan dgn koma/spasi/enter)
+                  Facilities (Separate with commas/spaces/enters)
                 </label>
                 <textarea 
                   name="facilities" 
@@ -336,7 +336,7 @@ export default function ManageRoomsPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Photo URLs (Pisahkan dgn koma/spasi/enter)
+                  Photos URLs (Separate with commas/spaces/enters)
                 </label>
                 <textarea 
                   name="photos" 
@@ -369,7 +369,7 @@ export default function ManageRoomsPage() {
                   backgroundColor: colors.primary,
                 }}
               >
-                {isEditing ? "Simpan Perubahan" : "Simpan Ruangan"}
+                {isEditing ? "Save Changes" : "Add Room"}
               </Button>
             </form>
           </div>
@@ -392,7 +392,7 @@ export default function ManageRoomsPage() {
           }}
         >
           <Plus className="w-4 h-4" />
-          Tambah Ruangan
+          Add New Room
         </Button>
       </div>
 
@@ -417,7 +417,7 @@ export default function ManageRoomsPage() {
                   className="text-left p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
-                  Nama Ruangan
+                  Room Name
                 </th>
                 <th 
                   className="text-left p-4 font-semibold"
@@ -429,19 +429,19 @@ export default function ManageRoomsPage() {
                   className="text-left p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
-                  Kapasitas
+                  Capacity
                 </th>
                 <th 
                   className="text-left p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
-                  Harga/jam
+                  Price per Hour (IDR)
                 </th>
                 <th 
                   className="text-left p-4 font-semibold"
                   style={{ color: colors.textPrimary }}
                 >
-                  Fasilitas
+                  Facilities
                 </th>
                 <th 
                   className="text-left p-4 font-semibold"

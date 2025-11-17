@@ -239,7 +239,7 @@ function UpcomingDueDatesPanel({ loans }: { loans: Loan[] }) {
                   {loan.book.title}
                 </p>
                 <p className="text-sm" style={{ color: colors.textSecondary }}>
-                  oleh {loan.book.author}
+                  by {loan.book.author}
                 </p>
               </div>
               <div className="text-right flex-shrink-0 ml-4">
@@ -326,14 +326,14 @@ function QuickAnnouncementPanel() {
             className="text-sm font-medium block mb-2"
             style={{ color: colors.textPrimary }}
           >
-            Judul Pengumuman
+            Announcement Title
           </label>
           <input 
             name="title" 
             value={title} 
             onChange={(e) => setTitle(e.target.value)} 
             required 
-            placeholder="Misal: Perpus Tutup"
+            placeholder="Example: Library Maintenance"
             className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
             style={{
               backgroundColor: colors.bgSecondary,
@@ -355,7 +355,7 @@ function QuickAnnouncementPanel() {
             className="text-sm font-medium block mb-2"
             style={{ color: colors.textPrimary }}
           >
-            Isi Pesan
+            Announcement Message
           </label>
           <textarea 
             name="message" 
@@ -363,7 +363,7 @@ function QuickAnnouncementPanel() {
             onChange={(e) => setMessage(e.target.value)} 
             required 
             rows={4}
-            placeholder="Isi pengumumannya..."
+            placeholder="Enter the announcement message..."
             className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none"
             style={{
               backgroundColor: colors.bgSecondary,
@@ -405,7 +405,7 @@ function QuickAnnouncementPanel() {
           ) : (
             <Send className="w-4 h-4" />
           )}
-          {loading ? "Mengirim..." : "Kirim ke Semua User"}
+          {loading ? "Sending..." : "Send to All Users"}
         </button>
       </form>
     </div>

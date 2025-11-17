@@ -142,7 +142,7 @@ export default function ManageBookingsPage() {
             <Input 
               value={search} 
               onChange={(e) => setSearch(e.target.value)} 
-              placeholder="Cari ruangan atau email..." 
+              placeholder="Search by room name or user email..." 
               className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
               style={{
                 backgroundColor: colors.bgPrimary,
@@ -249,16 +249,16 @@ export default function ManageBookingsPage() {
             >
               <tr>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Ruangan
+                  Room
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   User (Email)
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Tanggal
+                  Date
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Waktu
+                  Time
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   Status
@@ -286,10 +286,10 @@ export default function ManageBookingsPage() {
                       }}
                     >
                       <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
-                        {booking.room?.name || 'Ruangan Dihapus'}
+                        {booking.room?.name || 'Room Deleted'}
                       </td>
                       <td className="p-4 align-top text-sm" style={{ color: colors.textPrimary }}>
-                        {booking.user?.email || 'User Dihapus'}
+                        {booking.user?.email || 'User Deleted'}
                       </td>
                       <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
                         {formatDate(booking.date)}
