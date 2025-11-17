@@ -126,7 +126,7 @@ export default function BookDetailPage() {
       }
       if (data?.payment_url) {
         alert("Borrow request created. Redirecting to payment.")
-        window.location.href = data.payment_url
+        window.open(data.payment_url, '_blank')
       } else {
         alert("Borrow request successful. Checking loans page.")
         router.push("/loans")

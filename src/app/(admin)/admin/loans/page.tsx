@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { Loader2, CheckCircle, Clock, RotateCcw, Search, Filter} from "lucide-react";
+import { Loader2, CheckCircle, Clock, RotateCcw, Search, Filter, X} from "lucide-react";
 import type { Loan } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +83,6 @@ export default function ManageLoansPage() {
   useEffect(() => {
     if (token) fetchLoans();
     else setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   const handleReturn = async (loanId: string) => {
@@ -99,7 +98,6 @@ export default function ManageLoansPage() {
     let prevStock: number | null = null;
     const tokenLocal = token;
 
-    // try fetch prev stock (best-effort)
     if (bookId) {
       try {
         const bRes = await fetch(`${API_URL}/api/books/${bookId}`, {
@@ -122,7 +120,6 @@ export default function ManageLoansPage() {
       const headers: HeadersInit = { "Content-Type": "application/json" };
       if (tokenLocal) headers["Authorization"] = `Bearer ${tokenLocal}`;
 
-      // call return endpoint
       const res = await fetch(`${API_URL}/api/loans/${loanId}/return`, {
         method: "POST",
         headers,
@@ -131,7 +128,6 @@ export default function ManageLoansPage() {
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(payload?.message || "return failed");
 
-      // after return, verify latest book stock
       if (bookId) {
         try {
           const latestRes = await fetch(`${API_URL}/api/books/${bookId}`, {
@@ -140,7 +136,6 @@ export default function ManageLoansPage() {
 
           if (!latestRes.ok) {
             console.warn("[admin] gagal fetch latest book after return");
-            // fallback: if we know prevStock ask admin
             if (prevStock !== null) {
               const doInc = confirm(
                 `Gagal verifikasi stok otomatis. Kalau server belum nambah, stok seharusnya ${prevStock + 1}. Mau increment manual?`
@@ -158,10 +153,8 @@ export default function ManageLoansPage() {
 
             if (prevStock !== null && latestStock !== null) {
               if (latestStock === prevStock) {
-                // server belum increment -> do increment once
                 await incrementBookStock(bookId, prevStock);
               } else {
-                // server udah increment -> skip
                 console.log("[admin] server already incremented stock, skip increment");
               }
             } else if (prevStock === null && latestStock !== null) {
@@ -200,7 +193,6 @@ export default function ManageLoansPage() {
     }
   };
 
-  // helper: incrementBookStock(bookId, prevStock)
   const incrementBookStock = async (bookId: string, prevStock: number | null) => {
     try {
       let currentBook: any = null;
@@ -241,12 +233,29 @@ export default function ManageLoansPage() {
     }
   };
 
-  // const handleClearFilters = () => {
-  //   setSearch("");
-  //   setFilter("all");
-  // };
+  const handleCancel = async (loanId: string) => {
+    if (!confirm("Yakin mau 'Cancel' (hapus) loan ini? Ini hanya bisa jika user belum bayar.")) return;
 
-  // const hasActiveFilters = filter !== "all" || search !== "";
+    const tokenLocal = token;
+    try {
+      const headers: HeadersInit = { "Content-Type": "application/json" };
+      if (tokenLocal) headers["Authorization"] = `Bearer ${tokenLocal}`;
+
+      const res = await fetch(`${API_URL}/api/loans/${loanId}/cancel`, {
+        method: "DELETE",
+        headers,
+      });
+
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(payload?.message || "Cancel failed");
+
+      await fetchLoans();
+      alert(payload?.message || "Loan berhasil dicancel.");
+    } catch (err: any) {
+      console.error("admin handleCancel error:", err);
+      alert(err?.message || "Gagal memproses cancel loan");
+    }
+  };
 
   const filteredLoans = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -395,7 +404,7 @@ export default function ManageLoansPage() {
                   const StatusIcon = statusInfo.icon;
                   const isLate = loan.status === "late";
                   const isReturned = loan.status === "returned";
-                  const isCancellable = !isReturned;
+                  const isUnpaid = (loan as any).paymentStatus === 'unpaid';
 
                   const borrowedDate = loan.borrowDate ? new Date(loan.borrowDate as any) : calculateBorrowedAt((loan as any).dueDate);
 
@@ -423,12 +432,17 @@ export default function ManageLoansPage() {
                           <StatusIcon className="w-4 h-4" />
                           {statusInfo.label}
                         </span>
+                        {isUnpaid && (
+                          <span className="flex items-center gap-1.5 text-xs font-semibold mt-1" style={{ color: colors.warning }}>
+                            (Unpaid)
+                          </span>
+                        )}
                       </td>
                       <td className="p-4 align-top text-center">
-                        {isCancellable && (
+                        {!isReturned && (
                           <button
                             onClick={() => handleReturn(loan._id || (loan as any).id)}
-                            className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
+                            className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex mr-2"
                             style={{
                               backgroundColor: `${colors.info}15`,
                               color: colors.info,
@@ -436,6 +450,19 @@ export default function ManageLoansPage() {
                             title="Verify Return (Admin)"
                           >
                             <RotateCcw className="w-5 h-5" />
+                          </button>
+                        )}
+                        {isUnpaid && (
+                          <button
+                            onClick={() => handleCancel(loan._id || (loan as any).id)}
+                            className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
+                            style={{
+                              backgroundColor: `${colors.danger}15`,
+                              color: colors.danger,
+                            }}
+                            title="Cancel Loan (Admin)"
+                          >
+                            <X className="w-5 h-5" />
                           </button>
                         )}
                       </td>

@@ -2,15 +2,12 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-// import Image from "next/image";
 import { getAuthToken } from "@/lib/auth";
 import { 
   Loader2, Users, Book, Box, 
-  DoorOpen, Hourglass, AlarmClock, Send, CalendarCheck
+  DoorOpen, Hourglass, AlarmClock, Send, CalendarCheck, Bell
 } from "lucide-react";
 import type { Loan, Room, Booking } from "@/types"; 
-// import { Button } from "@/components/ui/button";
-// import { Input } from "@/components/ui/input";
 import { colors } from "@/styles/colors";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -21,6 +18,7 @@ interface AdminStats {
   loans: number;
   availableRooms: number;
   pendingBookings: number;
+  announcements: number;
 }
 
 export default function AdminDashboardPage() {
@@ -37,7 +35,7 @@ export default function AdminDashboardPage() {
       }
       
       try {
-        const [usersRes, booksRes, loansRes, roomsRes, bookingsRes] = await Promise.all([
+        const [usersRes, booksRes, loansRes, roomsRes, bookingsRes, announcementsRes] = await Promise.all([
           fetch(`${API_URL}/api/users`, {
             headers: { "Authorization": `Bearer ${token}` }
           }),
@@ -52,6 +50,9 @@ export default function AdminDashboardPage() {
           }),
           fetch(`${API_URL}/api/rooms/bookings/list`, {
             headers: { "Authorization": `Bearer ${token}` }
+          }),
+          fetch(`${API_URL}/api/announcements`, {
+            headers: { "Authorization": `Bearer ${token}` }
           })
         ]);
 
@@ -60,9 +61,14 @@ export default function AdminDashboardPage() {
         const loansData: Loan[] = await loansRes.json();
         const roomsData: Room[] = await roomsRes.json();
         const bookingsData: Booking[] = await bookingsRes.json();
+        const announcementsData = await announcementsRes.json();
 
         const availableRoomsCount = roomsData.filter(room => room.status === 'available').length;
         const pendingBookingsCount = bookingsData.filter(b => b.status === 'pending_payment').length;
+
+        const announcementsCount = Array.isArray(announcementsData)
+          ? announcementsData.length
+          : announcementsData?.total ?? announcementsData?.count ?? 0;
 
         setStats({
           users: (usersData || []).length,
@@ -70,6 +76,7 @@ export default function AdminDashboardPage() {
           loans: (loansData || []).length,
           availableRooms: availableRoomsCount,
           pendingBookings: pendingBookingsCount,
+          announcements: announcementsCount,
         });
 
         setAllLoans(loansData || []);
@@ -93,7 +100,7 @@ export default function AdminDashboardPage() {
             <p className="ml-3 font-medium" style={{ color: colors.textSecondary }}>Loading stats...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
           <Link href="/admin/users">
             <StatCard 
               title="Total Users" 
@@ -129,6 +136,13 @@ export default function AdminDashboardPage() {
               icon={<Hourglass className="w-6 h-6" style={{ color: colors.danger }} />} 
             />
           </Link>
+          <Link href="/admin/announcements">
+            <StatCard
+              title="Announcements"
+              value={stats?.announcements?.toString() ?? '...'}
+              icon={<Bell className="w-6 h-6" style={{ color: colors.warning }} />}
+            />
+          </Link>
         </div>
       )}
 
@@ -145,7 +159,6 @@ export default function AdminDashboardPage() {
   );
 }
 
-
 function StatCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
   return (
     <div 
@@ -161,11 +174,9 @@ function StatCard({ title, value, icon }: { title: string, value: string, icon: 
         e.currentTarget.style.borderColor = colors.bgTertiary;
       }}
     >
-      {/* Div atas: Title */}
       <div className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
         {title}
       </div>
-      {/* Div bawah: Icon & Value */}
       <div className="flex items-center justify-between">
         <div className="p-3 rounded-full flex-shrink-0" style={{ backgroundColor: colors.bgSecondary }}>
           {icon}
@@ -178,7 +189,6 @@ function StatCard({ title, value, icon }: { title: string, value: string, icon: 
   );
 }
 
-// Panel: Upcoming Due Dates 
 function UpcomingDueDatesPanel({ loans }: { loans: Loan[] }) {
   const upcomingLoans = useMemo(() => {
     return loans
@@ -266,9 +276,10 @@ function UpcomingDueDatesPanel({ loans }: { loans: Loan[] }) {
   );
 }
 
-// Panel: Quick Announcement
 function QuickAnnouncementPanel() {
+  const [announcementType, setAnnouncementType] = useState<"general" | "book">("general");
   const [title, setTitle] = useState("");
+  const [bookTitle, setBookTitle] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -282,16 +293,31 @@ function QuickAnnouncementPanel() {
     const token = getAuthToken();
 
     try {
-      const res = await fetch(`${API_URL}/api/announcements`, { 
+      let payload: any = {};
+
+      if (announcementType === "book") {
+        // Book announcement
+        payload = {
+          title: title || `Buku Baru: ${bookTitle}`,
+          bookTitle: bookTitle,
+          message: message,
+        };
+      } else {
+        // General announcement
+        payload = {
+          title: title,
+          bookTitle: title,
+          message: message,
+        };
+      }
+
+      const res = await fetch(`${API_URL}/api/announcements`, {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          title: title, 
-          message: message
-        })
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
@@ -301,7 +327,11 @@ function QuickAnnouncementPanel() {
 
       setSuccess("Pengumuman berhasil dikirim ke semua user!");
       setTitle("");
+      setBookTitle("");
       setMessage("");
+      setAnnouncementType("general");
+
+      window.dispatchEvent(new CustomEvent("announcements:updated"));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -310,69 +340,141 @@ function QuickAnnouncementPanel() {
   };
 
   return (
-    <div 
+    <div
       className="p-6 rounded-lg border shadow-sm h-full"
       style={{
         backgroundColor: colors.bgPrimary,
-        borderColor: colors.bgTertiary
+        borderColor: colors.bgTertiary,
       }}
     >
       <h3 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>
         Quick Announcement
       </h3>
+
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Tipe Pengumuman */}
         <div>
-          <label 
-            className="text-sm font-medium block mb-2"
-            style={{ color: colors.textPrimary }}
-          >
-            Judul Pengumuman
+          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+            Tipe Pengumuman
           </label>
-          <input 
-            name="title" 
-            value={title} 
-            onChange={(e) => setTitle(e.target.value)} 
-            required 
-            placeholder="Misal: Perpus Tutup"
-            className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
-            style={{
-              backgroundColor: colors.bgSecondary,
-              color: colors.textPrimary,
-              borderColor: colors.bgTertiary,
-            }}
-            onFocus={(e) => {
-              e.target.style.borderColor = colors.primary;
-              e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
-            }}
-            onBlur={(e) => {
-              e.target.style.borderColor = colors.bgTertiary;
-              e.target.style.boxShadow = "none";
-            }}
-          />
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAnnouncementType("general")}
+              className="flex-1 py-2 px-4 rounded-lg font-medium transition-all"
+              style={{
+                backgroundColor: announcementType === "general" ? colors.primary : colors.bgSecondary,
+                color: announcementType === "general" ? "#ffffff" : colors.textSecondary,
+                border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}`,
+              }}
+            >
+              📢 Umum
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnnouncementType("book")}
+              className="flex-1 py-2 px-4 rounded-lg font-medium transition-all"
+              style={{
+                backgroundColor: announcementType === "book" ? colors.success : colors.bgSecondary,
+                color: announcementType === "book" ? "#ffffff" : colors.textSecondary,
+                border: `2px solid ${announcementType === "book" ? colors.success : colors.bgTertiary}`,
+              }}
+            >
+              📚 Buku Baru
+            </button>
+          </div>
         </div>
+
+        {/* Conditional Fields */}
+        {announcementType === "book" ? (
+          <>
+            <div>
+              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+                Judul Buku <span style={{ color: colors.danger }}>*</span>
+              </label>
+              <input
+                name="bookTitle"
+                value={bookTitle}
+                onChange={(e) => setBookTitle(e.target.value)}
+                required
+                placeholder="Misal: Norwegian Wood"
+                className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
+                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = colors.success;
+                  e.target.style.boxShadow = `0 0 0 2px ${colors.success}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = colors.bgTertiary;
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+                Judul Pengumuman <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(opsional)</span>
+              </label>
+              <input
+                name="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Default: Buku Baru: [Judul Buku]"
+                className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
+                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = colors.success;
+                  e.target.style.boxShadow = `0 0 0 2px ${colors.success}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = colors.bgTertiary;
+                  e.target.style.boxShadow = "none";
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <div>
+            <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+              Judul Pengumuman <span style={{ color: colors.danger }}>*</span>
+            </label>
+            <input
+              name="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              placeholder="Misal: Perpus Tutup Besok"
+              className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
+              style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+              onFocus={(e) => {
+                e.target.style.borderColor = colors.primary;
+                e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = colors.bgTertiary;
+                e.target.style.boxShadow = "none";
+              }}
+            />
+          </div>
+        )}
+
         <div>
-          <label 
-            className="text-sm font-medium block mb-2"
-            style={{ color: colors.textPrimary }}
-          >
-            Isi Pesan
+          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+            Isi Pesan <span style={{ color: colors.danger }}>*</span>
           </label>
-          <textarea 
-            name="message" 
-            value={message} 
-            onChange={(e) => setMessage(e.target.value)} 
-            required 
+          <textarea
+            name="message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            required
             rows={4}
-            placeholder="Isi pengumumannya..."
+            placeholder={announcementType === "book" ? "Deskripsi tentang buku baru..." : "Isi pengumumannya..."}
             className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none"
-            style={{
-              backgroundColor: colors.bgSecondary,
-              color: colors.textPrimary,
-              borderColor: colors.bgTertiary,
-            }}
+            style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
             onFocus={(e) => {
-              e.currentTarget.style.borderColor = colors.primary;
-              e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              const color = announcementType === "book" ? colors.success : colors.primary;
+              e.currentTarget.style.borderColor = color;
+              e.currentTarget.style.boxShadow = `0 0 0 2px ${color}20`;
             }}
             onBlur={(e) => {
               e.currentTarget.style.borderColor = colors.bgTertiary;
@@ -380,31 +482,17 @@ function QuickAnnouncementPanel() {
             }}
           />
         </div>
-        
-        {error && (
-          <p className="text-sm" style={{ color: colors.danger }}>
-            {error}
-          </p>
-        )}
-        {success && (
-          <p className="text-sm" style={{ color: colors.success }}>
-            {success}
-          </p>
-        )}
 
-        <button 
-          type="submit" 
+        {error && <p className="text-sm" style={{ color: colors.danger }}>{error}</p>}
+        {success && <p className="text-sm" style={{ color: colors.success }}>{success}</p>}
+
+        <button
+          type="submit"
           disabled={loading}
           className="w-full py-3 mt-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 text-white"
-          style={{
-            backgroundColor: colors.primary,
-          }}
+          style={{ backgroundColor: announcementType === "book" ? colors.success : colors.primary }}
         >
-          {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
           {loading ? "Mengirim..." : "Kirim ke Semua User"}
         </button>
       </form>

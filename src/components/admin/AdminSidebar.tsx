@@ -26,6 +26,7 @@ const adminNavs: LinkType[] = [
     { href: "/admin/rooms", label: "Manage Rooms", icon: DoorOpen },
     { href: "/admin/bookings", label: "Manage Bookings", icon: Hourglass },
     { href: "/admin/loans", label: "Manage Loans", icon: Box },
+    { href: "/admin/announcements", label: "Manage Announcements", icon: Box },
 ];
 
 // interface NavItemProps {
