@@ -1,17 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
     Users, Book, DoorOpen, Box, Hourglass,
     Menu, 
-    // X, 
+    // Bell, 
     LayoutDashboard, LucideIcon,
     LogOutIcon
 } from "lucide-react";
 import { colors } from "@/styles/colors";
+import { removeAuthToken } from '@/lib/auth'
 
 interface LinkType {
     href: string;
@@ -60,6 +61,15 @@ export default function AdminSidebar() {
     const isActive = useCallback((href: string) => pathname.startsWith(href), [pathname]);
     const [isOverlayOpen, setIsOverlayOpen] = useState(false);
 
+    const router = useRouter();
+    const handleLogout = () => {
+        if (window.confirm('Are yu sure you want to logout?')) {
+            removeAuthToken();
+            localStorage.removeItem("userProfilePicture");
+            localStorage.removeItem("userRole");
+            router.push("/sign-in");
+        }
+    }
     const handleNavClick = () => {
         setIsOverlayOpen(false);
     };
@@ -153,9 +163,9 @@ export default function AdminSidebar() {
                                 borderColor: `${colors.primary}40`,
                             }}
                         >
-                            <Link
-                                href="/dashboard"
-                                onClick={handleNavClick}
+                            <button
+                                // href="/dashboard"
+                                onClick={handleLogout}
                                 className="flex items-center justify-center gap-3 px-4 py-3 text-white rounded-lg transition-colors font-medium text-sm w-full hover:opacity-80"
                                 style={{
                                     backgroundColor: colors.danger,
@@ -163,7 +173,7 @@ export default function AdminSidebar() {
                             >
                                 <LogOutIcon className="w-5 h-5" />
                                 <span>Logout</span>
-                            </Link>
+                            </button>
                         </div>
                     </motion.div>
                 )}

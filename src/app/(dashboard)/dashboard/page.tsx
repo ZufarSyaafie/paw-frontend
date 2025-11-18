@@ -34,7 +34,7 @@ const sampleAnnouncements: Announcement[] = [
     { id: 1, title: "Mock Announcement", snippet: "Mock update.", bookTitle: "", message: "", createdAt: "" },
 ]
 
-// --- WRAP KOMPONEN UTAMA BIAR BISA PAKE useSearchParams ---
+// WRAP KOMPONEN UTAMA BIAR BISA PAKE useSearchParams
 export default function DashboardPageWrapper() {
     return (
         <Suspense fallback={<DashboardLoadingSkeleton />}>
@@ -119,7 +119,14 @@ function Dashboard() {
                     }
                     return;
                 }
+
                 const data = await res.json()
+
+                if (data?.role === 'admin') {
+                    router.replace('/admin/dashboard');
+                    return;
+                }
+
                 if (cancelled) return
                 const name = data?.username || data?.name || data?.email
                 if (name) {

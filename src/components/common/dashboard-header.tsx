@@ -59,11 +59,13 @@ export default function DashboardHeader() {
     }`;
 
   const handleLogout = () => {
-    removeAuthToken();
-    localStorage.removeItem("userProfilePicture");
-    localStorage.removeItem("userRole");
-    localStorage.removeItem("lastNotifRead");
-    router.push("/sign-in");
+    if (window.confirm('Are you sure you want to logout?')) {
+      removeAuthToken();
+      localStorage.removeItem("userProfilePicture");
+      localStorage.removeItem("userRole");
+      localStorage.removeItem("lastNotifRead");
+      router.push("/sign-in");
+    }
   };
 
   const handleProfileClick = () => router.push("/profile");
