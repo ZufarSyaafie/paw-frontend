@@ -2,6 +2,13 @@
 
 A comprehensive digital library management system for Perpustakaan Naratama, built with Next.js 14, TypeScript, and Tailwind CSS. This application provides a complete solution for managing library operations including book lending, room bookings, user management, and more, specifically designed to meet the needs of Naratama Library members and staff.
 
+## 🔗 Quick Links
+
+- **🚀 Live Deployment:** [https://perpustakaan-naratama.vercel.app/](https://perpustakaan-naratama.vercel.app/)
+- **📂 Web Demo & PPT (GDrive):** [View File and Video Presentation here!](https://drive.google.com/drive/folders/1o99ve6iU4NT23Hj_1stRBGGHhcSPngUq?usp=sharing)
+
+---
+
 ## 🚀 Features
 
 - **Modern Tech Stack**: Built with Next.js 14 App Router, TypeScript, and Tailwind CSS
