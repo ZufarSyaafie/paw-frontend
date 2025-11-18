@@ -24,7 +24,6 @@ const defaultFormState: Partial<Book> = {
   status: "available",
 };
 
-// Extended Book type with borrowedCount
 type BookWithBorrowed = Book & { borrowedCount?: number };
 
 export default function ManageBooksPage(): React.JSX.Element {
@@ -45,7 +44,6 @@ export default function ManageBooksPage(): React.JSX.Element {
       const data = await res.json();
       const booksData = data?.data ?? [];
       
-      // Fetch borrowed count for each book
       const booksWithBorrowed = await Promise.all(
         booksData.map(async (book: Book) => {
           try {
@@ -58,7 +56,6 @@ export default function ManageBooksPage(): React.JSX.Element {
               const loansData = await loansRes.json();
               const loans = Array.isArray(loansData) ? loansData : Array.isArray(loansData?.data) ? loansData.data : [];
               
-              // Count borrowed (status === 'borrowed')
               const borrowedCount = loans.filter((loan: any) => {
                 const loanBookId = loan.book?.id || loan.book?._id || loan.bookId;
                 return loanBookId === bookId && loan.status === 'borrowed';
@@ -97,7 +94,7 @@ export default function ManageBooksPage(): React.JSX.Element {
       });
       fetchBooks();
     } catch (err) {
-      console.error("delete error:", err);
+      console.error("Delete error:", err);
     }
   };
 
@@ -116,6 +113,19 @@ export default function ManageBooksPage(): React.JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+    setSuccess(null);
+
+    // Validasi: cek judul duplicate (hanya saat CREATE, bukan EDIT)
+    if (!isEditing) {
+      const titleExists = books.some(
+        book => book.title.toLowerCase().trim() === (formData.title || "").toLowerCase().trim()
+      );
+      if (titleExists) {
+        setError(`Book with title "${formData.title}" already exists in the database.`);
+        return;
+      }
+    }
 
     const finalFormData = {
       ...formData,
@@ -129,7 +139,7 @@ export default function ManageBooksPage(): React.JSX.Element {
       : `${API_URL}/api/books`;
 
     try {
-      await fetch(endpoint, {
+      const res = await fetch(endpoint, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
@@ -137,22 +147,35 @@ export default function ManageBooksPage(): React.JSX.Element {
         },
         body: JSON.stringify(finalFormData),
       });
-      closeModal();
-      fetchBooks();
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.message || "Failed to save book");
+      }
+
+      setSuccess(isEditing ? "Book successfully updated!" : "Book successfully added!");
+      setTimeout(() => {
+        closeModal();
+        fetchBooks();
+      }, 500);
     } catch (err) {
-      console.error("submit error:", err);
+      setError(err instanceof Error ? err.message : "Error saving book");
     }
   };
 
   const openCreateModal = () => {
     setIsEditing(null);
     setFormData(defaultFormState);
+    setError(null);
+    setSuccess(null);
     setShowModal(true);
   };
 
   const openEditModal = (book: Book) => {
     setIsEditing(book._id ?? (book as any).id ?? null);
     setFormData(book);
+    setError(null);
+    setSuccess(null);
     setShowModal(true);
   };
 
@@ -160,6 +183,8 @@ export default function ManageBooksPage(): React.JSX.Element {
     setShowModal(false);
     setIsEditing(null);
     setFormData(defaultFormState);
+    setError(null);
+    setSuccess(null);
   };
 
   if (isLoading && !showModal) {
@@ -196,6 +221,18 @@ export default function ManageBooksPage(): React.JSX.Element {
             <h2 className="text-2xl font-bold mb-5" style={{ color: colors.textPrimary }}>
               {isEditing ? "Edit Book" : "Add New Book"}
             </h2>
+
+            {error && (
+              <div className="p-3 mb-4 bg-red-100 text-red-800 rounded-lg border border-red-300 text-sm">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="p-3 mb-4 bg-green-100 text-green-800 rounded-lg border border-green-300 text-sm">
+                {success}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-4 max-h-[75vh] overflow-y-auto pr-2">
               <div>
