@@ -431,7 +431,7 @@ export default function RoomDetailPage() {
                 </div>
                 <div className={`p-3 rounded-lg border text-center ${totalHours < 1 || totalHours > 8 ? "bg-red-50 border-red-300" : "bg-gray-50 border-gray-300"}`}>
                   <p className="text-sm font-semibold text-gray-800">
-                    {totalHours < 1 ? "❌ Minimum booking duration is 1 hour." : totalHours > 8 ? "❌ Maximum booking duration is 8 hours." : `Selected duration: ${Number(totalHours.toFixed(2))} hours`}
+                    {totalHours < 1 ? "Minimum booking duration is 1 hour." : totalHours > 8 ? "Maximum booking duration is 8 hours." : `Selected duration: ${Number(totalHours.toFixed(2))} hours`}
                   </p>
                 </div>
               </div>

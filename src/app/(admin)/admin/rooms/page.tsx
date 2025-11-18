@@ -69,16 +69,16 @@ export default function ManageRoomsPage() {
       ? `${API_URL}/api/rooms/${isEditing}`
       : `${API_URL}/api/rooms`;
     
-    const splitRegex = /[\s,]+/; 
+    // const splitRegex = /[\s,]+/; 
     
     const finalFormData = {
       ...formData,
       facilities: facilitiesString
-        .split(splitRegex) 
+        .split(',') 
         .map(f => f.trim())
         .filter(f => f),
       photos: photosString
-        .split(splitRegex)
+        .split(',')
         .map(p => p.trim())
         .filter(p => p && p.startsWith("http"))
     };
@@ -307,7 +307,7 @@ export default function ManageRoomsPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Facilities (Separate with commas/spaces/enters)
+                  Facilities (Separate with commas)
                 </label>
                 <textarea 
                   name="facilities" 
