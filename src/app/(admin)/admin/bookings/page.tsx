@@ -335,7 +335,7 @@ export default function ManageBookingsPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="text-center p-8" style={{ color: colors.textSecondary }}>
-                    Tidak ada data booking yang cocok.
+                    There is no matching booking data.
                   </td>
                 </tr>
               )}

@@ -269,7 +269,7 @@ function UpcomingDueDatesPanel({ loans }: { loans: Loan[] }) {
         </ul>
       ) : (
         <p style={{ color: colors.textSecondary }}>
-          Tidak ada pinjaman aktif yang akan jatuh tempo.
+          There is no active loan that will be due soon.
         </p>
       )}
     </div>
@@ -355,7 +355,7 @@ function QuickAnnouncementPanel() {
         {/* Tipe Pengumuman */}
         <div>
           <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-            Tipe Pengumuman
+            Announcement Type
           </label>
           <div className="flex gap-2">
             <button
@@ -368,19 +368,19 @@ function QuickAnnouncementPanel() {
                 border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}`,
               }}
             >
-              📢 Umum
+              📢 General
             </button>
             <button
               type="button"
               onClick={() => setAnnouncementType("book")}
               className="flex-1 py-2 px-4 rounded-lg font-medium transition-all"
               style={{
-                backgroundColor: announcementType === "book" ? colors.success : colors.bgSecondary,
+                backgroundColor: announcementType === "book" ? colors.primary : colors.bgSecondary,
                 color: announcementType === "book" ? "#ffffff" : colors.textSecondary,
-                border: `2px solid ${announcementType === "book" ? colors.success : colors.bgTertiary}`,
+                border: `2px solid ${announcementType === "book" ? colors.primary : colors.bgTertiary}`,
               }}
             >
-              📚 Buku Baru
+              📚 New Book
             </button>
           </div>
         </div>
@@ -390,14 +390,14 @@ function QuickAnnouncementPanel() {
           <>
             <div>
               <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                Judul Buku <span style={{ color: colors.danger }}>*</span>
+                Book Title <span style={{ color: colors.danger }}>*</span>
               </label>
               <input
                 name="bookTitle"
                 value={bookTitle}
                 onChange={(e) => setBookTitle(e.target.value)}
                 required
-                placeholder="Misal: Norwegian Wood"
+                placeholder="E.g.: Norwegian Wood"
                 className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
                 style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
                 onFocus={(e) => {
@@ -413,13 +413,13 @@ function QuickAnnouncementPanel() {
 
             <div>
               <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-                Judul Pengumuman <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(opsional)</span>
+                Announcement Title <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(optional)</span>
               </label>
               <input
                 name="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Default: Buku Baru: [Judul Buku]"
+                placeholder="Default: New Book: [Book Title]"
                 className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
                 style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
                 onFocus={(e) => {
@@ -436,14 +436,14 @@ function QuickAnnouncementPanel() {
         ) : (
           <div>
             <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-              Judul Pengumuman <span style={{ color: colors.danger }}>*</span>
+              Announcement Title <span style={{ color: colors.danger }}>*</span>
             </label>
             <input
               name="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              placeholder="Misal: Perpus Tutup Besok"
+              placeholder="E.g.: Library Closed Tomorrow"
               className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
               style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
               onFocus={(e) => {
@@ -460,7 +460,7 @@ function QuickAnnouncementPanel() {
 
         <div>
           <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
-            Isi Pesan <span style={{ color: colors.danger }}>*</span>
+            Message <span style={{ color: colors.danger }}>*</span>
           </label>
           <textarea
             name="message"
@@ -468,7 +468,7 @@ function QuickAnnouncementPanel() {
             onChange={(e) => setMessage(e.target.value)}
             required
             rows={4}
-            placeholder={announcementType === "book" ? "Deskripsi tentang buku baru..." : "Isi pengumumannya..."}
+            placeholder={announcementType === "book" ? "Description about the new book..." : "Enter the announcement..."}
             className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none"
             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
             onFocus={(e) => {
@@ -490,10 +490,10 @@ function QuickAnnouncementPanel() {
           type="submit"
           disabled={loading}
           className="w-full py-3 mt-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 text-white"
-          style={{ backgroundColor: announcementType === "book" ? colors.success : colors.primary }}
+          style={{ backgroundColor: announcementType === "book" ? colors.primary : colors.primary }}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          {loading ? "Mengirim..." : "Kirim ke Semua User"}
+          {loading ? "Sending..." : "Send to All Users"}
         </button>
       </form>
     </div>
