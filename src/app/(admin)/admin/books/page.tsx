@@ -33,6 +33,8 @@ export default function ManageBooksPage(): React.JSX.Element {
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [formData, setFormData] = useState<Partial<Book>>(defaultFormState);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const token = getAuthToken();
 
@@ -520,6 +522,18 @@ export default function ManageBooksPage(): React.JSX.Element {
           Add Book
         </Button>
       </div>
+
+      {error && (
+        <div className="p-3 mb-4 bg-red-100 text-red-800 rounded-lg border border-red-300">
+          {error}
+        </div>
+      )}
+
+      {success && (
+        <div className="p-3 mb-4 bg-green-100 text-green-800 rounded-lg border border-green-300">
+          {success}
+        </div>
+      )}
 
       <div className="rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
         <div className="overflow-x-auto">
