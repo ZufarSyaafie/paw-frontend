@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import AdminSidebar from "@/components/admin/AdminSidebar";
+import { getAuthToken } from "@/lib/auth"; // <--- JANGAN LUPA IMPORT INI
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -15,7 +16,19 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/users/me`, { credentials: 'include' });
+        // backup, ambil token dari localstorage
+        const token = getAuthToken();
+        const headers: HeadersInit = {};
+        
+        if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+        }
+
+        // kirim header authorization as backup cookie
+        const res = await fetch(`${API_URL}/api/users/me`, { 
+            headers,
+            credentials: 'include' 
+        });
 
         if (!res.ok) throw new Error("Not authorized");
 
@@ -28,6 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           setIsAdmin(true); 
         }
       } catch (err) {
+        // Kalo gagal validasi token, tendang ke login
         router.push("/sign-in");
       } finally {
         setIsLoading(false);
@@ -41,13 +55,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return (
       <div className="flex h-screen items-center justify-center">
         <Loader2 className="w-8 h-8 animate-spin" />
-        <p className="ml-3">Memverifikasi akses admin...</p>
+        <p className="ml-3">Verifying admin access...</p>
       </div>
     );
   }
 
   if (!isAdmin) {
-    return null; 
+    return null;
   }
 
   return (
