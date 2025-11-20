@@ -100,7 +100,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex h-screen items-center justify-center flex-col gap-3">
         <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
         <p className="text-slate-500 text-sm">Verifying session...</p>
-        <p className="text-xs text-slate-400">Check Console (F12) for details</p>
+        {/* <p className="text-xs text-slate-400">Check Console (F12) for details</p> */}
       </div>
     )
   }
