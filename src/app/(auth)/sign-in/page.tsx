@@ -35,21 +35,22 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || "Login gagal. Periksa email atau password.")
+        throw new Error(data.message || "Sign-in failed. Recheck your email or password.")
       }
 
       // LOGIC FALLBACK
-      if (data.demoOtp) {
-        alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP Anda adalah: ${data.demoOtp}`);
-      } else {
-        alert("Login credentials verified. Please check your email.");
-      }
+      // if (data.demoOtp) {
+      //   alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP Anda adalah: ${data.demoOtp}`);
+      // } else {
+      //   alert("Login credentials verified. Please check your email.");
+      // }
       
       localStorage.setItem("loginEmail", email);
+      await new Promise(resolve => setTimeout(resolve, 100))
       router.push("/otp?flow=login");
 
     } catch (err: any) {
-      setError(err.message || "Login gagal. Silakan coba lagi.")
+      setError(err.message || "Sign-in failed. Please retry.")
     } finally {
       setIsLoading(false)
     }

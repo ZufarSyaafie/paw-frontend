@@ -33,7 +33,7 @@ export default function OtpClient() {
     if (storedEmail) {
       setEmail(storedEmail)
     } else {
-      setError("Sesi tidak ditemukan. Silakan kembali ke halaman utama.")
+      setError("Session not found. Please return to the main page.")
     }
   }, [flow, emailStorageKey])
   
@@ -43,7 +43,7 @@ export default function OtpClient() {
     setError("")
 
     if (!email) {
-      setError("Email tidak ditemukan.")
+      setError("Email not found.")
       setIsLoading(false)
       return
     }
@@ -62,17 +62,26 @@ export default function OtpClient() {
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.message || "Kode OTP tidak valid")
+      if (!response.ok) throw new Error(data.message || "Invalid OTP.")
 
-  // Cookie has been set by server; just clear temp email
-      localStorage.removeItem(emailStorageKey)
-      // Simpan token ke localStorage untuk header Authorization pada halaman yang memerlukannya
+  //    // Cookie has been set by server; just clear temp email
+  //     localStorage.removeItem(emailStorageKey)
+  //     // Simpan token ke localStorage untuk header Authorization pada halaman yang memerlukannya
+  //     if (data?.token && typeof data.token === "string") {
+  //       setAuthToken(data.token)
+  //     }
+  //     // dispatch(clearTempEmail())
+
       if (data?.token && typeof data.token === "string") {
         setAuthToken(data.token)
       }
-      // dispatch(clearTempEmail())
+
+      await new Promise(resolve => setTimeout(resolve, 200))
+
+      localStorage.removeItem(emailStorageKey)
       
-      alert("Verifikasi berhasil!")
+      alert("Verification successful!")
+
       router.push("/dashboard")
     } catch (err: any) {
       setError(err.message || "Verifikasi gagal. Silakan coba lagi.")

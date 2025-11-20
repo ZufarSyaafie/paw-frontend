@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             const user = await res.json();
 
             if (user.role !== "admin") {
-                alert("Akses ditolak. Hanya untuk Admin.");
+                alert("Access denied. Admin only.");
                 window.location.href = "/dashboard"; // Hard redirect
             } else {
                 setIsAdmin(true); 
