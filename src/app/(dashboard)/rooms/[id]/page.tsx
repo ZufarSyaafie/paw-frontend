@@ -57,6 +57,7 @@ const getMinDate = () => {
   today.setHours(0, 0, 0, 0)
   return formatDate(today)
 }
+
 const MOCK_ROOM: any = {
   id: "R-MOCK",
   name: "Discussion Room A (Fallback)",
@@ -112,14 +113,19 @@ export default function RoomDetailPage() {
   const currentTimeInMinutes = currentHour * 60 + currentMinutes
 
   const isTimeSlotDisabled = (time: string) => {
-    if (!isToday) return false // Kalo bukan hari ini, semua slot bisa
+    if (!isToday) return false 
 
     const [optionHour, optionMinute] = time.split(':').map(Number)
     const optionTimeInMinutes = optionHour * 60 + optionMinute
     
-    // Disable kalo jam slot-nya udah kelewat
     return optionTimeInMinutes < currentTimeInMinutes
   }
+
+  useEffect(() => {
+    if (apiError) {
+      setApiError(null)
+    }
+  }, [selectedDate, startTimeInput, endTimeInput])
 
   useEffect(() => {
     let cancelled = false
@@ -158,17 +164,24 @@ export default function RoomDetailPage() {
 
         const roomData = await roomResponse.json()
 
-        const userResponse = await fetch(`${API_URL}/api/users/me`, {
-          headers,
-          signal: controller.signal,
-        })
-        const userData = userResponse.ok ? await userResponse.json().catch(() => ({})) : {}
+        if (showLoading) {
+            const userResponse = await fetch(`${API_URL}/api/users/me`, {
+              headers,
+              signal: controller.signal,
+            })
+            const userData = userResponse.ok ? await userResponse.json().catch(() => ({})) : {}
+
+            if (!cancelled) {
+              setBorrowerName(userData.name || userData.email || "")
+              setPhoneNumber(userData.phone || "")
+            }
+        }
 
         if (!cancelled) {
-          setBorrowerName(userData.name || userData.email || "")
-          setPhoneNumber(userData.phone || "")
+          // setBorrowerName(userData.name || userData.email || "")
+          // setPhoneNumber(userData.phone || "")
           setRoom(roomData)
-          setSelectedDate(getMinDate())
+          // setSelectedDate(getMinDate()) // Optional: reset date on reload or keep
           setError(null)
         }
       } catch (err: any) {
@@ -214,20 +227,28 @@ export default function RoomDetailPage() {
 
   const totalHours = calculateDurationHours(startTimeInput, endTimeInput)
   const totalPrice = room ? totalHours * room.price : 0
+  const isRoomInMaintenance = room?.status === "maintenance"
+
+  let warningMessage: string | null = null
+  let warningColor = "bg-red-50 text-red-700 border-red-200"
+
+  if (isRoomInMaintenance) {
+    warningMessage = "This room is currently under maintenance."
+    warningColor = "bg-yellow-50 text-yellow-700 border-yellow-200"
+  } else if (calculateDurationHours(startTimeInput, endTimeInput) <= 0) {
+    warningMessage = "End time must be after start time."
+  } else if (totalHours < 1) {
+    warningMessage = "Minimum booking duration is 1 hour."
+  } else if (totalHours > 8) {
+    warningMessage = "Maximum booking duration is 8 hours."
+  } else if (apiError) {
+    warningMessage = apiError
+  }
+
+  const isButtonDisabled = isBooking || isRoomInMaintenance || !!warningMessage || !borrowerName.trim() || !phoneNumber.trim()
 
   const handleBook = async () => {
-    if (!room || !borrowerName.trim() || !phoneNumber.trim()) {
-      setApiError("Please fill required fields")
-      return
-    }
-    if (totalHours < 1) {
-      setApiError("Durasi minimal 1 jam")
-      return
-    }
-    if (calculateDurationHours(startTimeInput, endTimeInput) <= 0) {
-      setApiError("Waktu selesai harus setelah waktu mulai")
-      return
-    }
+    if (isButtonDisabled) return
 
     setIsBooking(true)
     setApiError(null)
@@ -282,7 +303,6 @@ export default function RoomDetailPage() {
       </div>
     )
 
-  const isRoomInMaintenance = room.status === "maintenance"
   const hasPhotos = room.photos && room.photos.length > 0
 
   return (
@@ -359,35 +379,38 @@ export default function RoomDetailPage() {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-        {(error || apiError) && (
+        
+        {/* GLOBAL ERROR (Fetch Gagal) */}
+        {error && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg mb-6">
-            <p className="text-sm text-red-700 font-medium">{error || apiError}</p>
-          </div>
-        )}
-
-        {isRoomInMaintenance && (
-          <div className="p-4 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-3 mb-6">
-            <AlertTriangle className="w-6 h-6 text-yellow-600 flex-shrink-0" />
-            <div>
-              <h3 className="font-semibold text-yellow-800">Room Under Maintenance</h3>
-              <p className="text-sm text-yellow-700">This room is unavailable for booking due to maintenance.</p>
-            </div>
+            <p className="text-sm text-red-700 font-medium">{error}</p>
           </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          
+          {/* DETAIL ROOM */}
           <div className="lg:col-span-2 space-y-8">
+            
+            {/* Header Info */}
             <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">{room.name}</h1>
-              <p className="text-lg text-gray-600">{room.description || "Deskripsi ruangan tidak tersedia."}</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+                {room.name}
+              </h1>
+              <p className="text-gray-700 leading-relaxed">
+                {room.description || "No description available for this room."}
+              </p>
+              
+              {/* Capacity */}
               <div className="flex items-center gap-4 mt-3">
-                <span className="flex items-center gap-1 text-gray-700">
-                  <Users className="w-4 h-4" />
-                  {room.capacity} people
+                <span className="flex items-center gap-2 text-gray-700 font-medium">
+                  <Users className="w-5 h-5" />
+                  {room.capacity} People
                 </span>
               </div>
             </div>
 
+            {/* Carousel Image */}
             <div className="relative w-full rounded-xl shadow-xl overflow-hidden aspect-[16/9] bg-gray-200">
               <Carousel className="w-full h-full" opts={{ loop: true }}>
                 <CarouselContent>
@@ -423,43 +446,45 @@ export default function RoomDetailPage() {
               </Carousel>
             </div>
 
+            {/* Room Features */}
             <div className="bg-gray-50 rounded-lg p-6">
               <h3 className="font-semibold text-gray-900 mb-3">Room Features</h3>
               <div className="flex flex-wrap gap-2">
                 {(room.facilities || []).map((feature: string, index: number) => (
-                  <span key={index} className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm font-medium">{feature}</span>
+                  <span key={index} className="px-3 py-1 bg-slate-200 text-slate-700 rounded-full text-sm font-medium">
+                    {feature}
+                  </span>
                 ))}
               </div>
             </div>
-
-            <div>
-              <h3 className="font-semibold text-gray-900 text-xl mb-3">About the Room</h3>
-              <p className="text-gray-700 leading-relaxed">{room.description || "Deskripsi detail tidak tersedia untuk ruangan ini."}</p>
-            </div>
           </div>
 
+          {/* FORM BOOKING */}
           <div className="lg:col-span-1">
             <div className="sticky top-32 space-y-8">
-              <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
-                <h3 className="font-semibold text-gray-900 text-lg">Book this Room</h3>
+              
+              <div className="bg-white p-6 rounded-2xl border border-gray-200 shadow-sm space-y-6">
+                <h3 className="font-bold text-gray-900 text-xl border-b pb-4">Book this Room</h3>
+                
                 <div>
                   <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                     <Calendar className="w-4 h-4" />
                     Select Date <span className="text-red-500">*</span>
                   </label>
-                  <input type="date" value={selectedDate} min={getMinDate()} onChange={(e) => setSelectedDate(e.target.value)} className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white" />
+                  <input type="date" value={selectedDate} min={getMinDate()} onChange={(e) => setSelectedDate(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white transition-all" />
                 </div>
+
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Clock className="w-4 h-4" /> Start Time
+                      <Clock className="w-4 h-4" /> Start
                     </label>
                     <select 
                       value={startTimeInput} 
                       onChange={(e) => setStartTimeInput(e.target.value)} 
-                      className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white transition-all text-sm"
                     >
-                     {startTimeOptions.map(time => {
+                      {startTimeOptions.map(time => {
                         const disabled = isTimeSlotDisabled(time);
                         return (
                           <option key={time} value={time} disabled={disabled} className={disabled ? 'text-gray-400' : ''}>
@@ -471,12 +496,12 @@ export default function RoomDetailPage() {
                   </div>
                   <div>
                     <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                      <Clock className="w-4 h-4" /> End Time
+                      <Clock className="w-4 h-4" /> End
                     </label>
                     <select 
-                      value={endTimeInput}
-                      onChange={(e) => setEndTimeInput(e.target.value)}
-                      className="w-full px-4 py-2.5 border border-slate-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white"
+                      value={endTimeInput} 
+                      onChange={(e) => setEndTimeInput(e.target.value)} 
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white transition-all text-sm"
                     >
                       {endTimeOptions.map(time => {
                         const disabled = isTimeSlotDisabled(time);
@@ -489,50 +514,64 @@ export default function RoomDetailPage() {
                     </select>
                   </div>
                 </div>
-                <div className={`p-3 rounded-lg border text-center ${totalHours < 1 || totalHours > 8 ? "bg-red-50 border-red-300" : "bg-gray-50 border-gray-300"}`}>
-                  <p className="text-sm font-semibold text-gray-800">
-                    {totalHours < 1 ? "Minimum booking duration is 1 hour." : totalHours > 8 ? "Maximum booking duration is 8 hours." : `Selected duration: ${Number(totalHours.toFixed(2))} hours`}
-                  </p>
-                </div>
-              </div>
 
-              <div className="bg-white p-6 rounded-lg border border-gray-200 space-y-6">
-                <h3 className="font-semibold text-gray-900 text-lg">Borrower Information</h3>
-                <div>
-                  <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <UserIcon className="w-4 h-4" />
-                    Borrower Name <span className="text-red-500">*</span>
-                    <Pencil className="w-4 h-4 ml-auto text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => setIsNameLocked(false)} style={{ display: isNameLocked ? "block" : "none" }} />
-                  </label>
-                  <input type="text" value={borrowerName} onChange={(e) => setBorrowerName(e.target.value)} placeholder="Enter your full name" readOnly={isNameLocked} className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all ${isNameLocked ? "bg-gray-100 border-slate-300" : "bg-white border-slate-500"}`} />
+                 <div className="border-t border-gray-100 pt-2 space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-900">Borrower Information</h4>
+                  
+                  {/* Name Input */}
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
+                      <UserIcon className="w-3.5 h-3.5" />
+                      Full Name <span className="text-red-500">*</span>
+                      <Pencil className="w-3 h-3 ml-auto text-gray-400 cursor-pointer hover:text-gray-600" onClick={() => setIsNameLocked(false)} style={{ display: isNameLocked ? "block" : "none" }} />
+                    </label>
+                    <input type="text" value={borrowerName} onChange={(e) => setBorrowerName(e.target.value)} placeholder="Enter your full name" readOnly={isNameLocked} className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm ${isNameLocked ? "bg-gray-50 border-gray-200 text-gray-600" : "bg-white border-gray-300"}`} />
+                  </div>
+
+                  {/* Phone Input */}
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1.5 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5" />
+                      Phone Number <span className="text-red-500">*</span>
+                      <Pencil className="w-3 h-3 ml-auto text-gray-400 cursor-pointer hover:text-gray-600" onClick={() => setIsPhoneLocked(false)} style={{ display: isPhoneLocked ? "block" : "none" }} />
+                    </label>
+                    <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="0812..." readOnly={isPhoneLocked} className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm ${isPhoneLocked ? "bg-gray-50 border-gray-200 text-gray-600" : "bg-white border-gray-300"}`} />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    Phone Number <span className="text-red-500">*</span>
-                    <Pencil className="w-4 h-4 ml-auto text-gray-500 cursor-pointer hover:text-gray-700" onClick={() => setIsPhoneLocked(false)} style={{ display: isPhoneLocked ? "block" : "none" }} />
-                  </label>
-                  <input type="tel" value={phoneNumber} onChange={(e) => setPhoneNumber(e.target.value)} placeholder="Enter your phone number (e.g., 08123456789)" readOnly={isPhoneLocked} className={`w-full px-4 py-2.5 border rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all ${isPhoneLocked ? "bg-gray-100 border-slate-300" : "bg-white border-slate-500"}`} />
+
+                {/* PRICE & BUTTON */}
+                <div className="border-t border-gray-100 pt-4 mt-2">
+                  <div className="flex justify-between items-center mb-1">
+                    <span className="text-sm text-gray-500">Duration</span>
+                    <span className="font-medium text-gray-900">{totalHours > 0 ? Number(totalHours.toFixed(1)) : 0} hrs</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-4">
+                    <span className="text-sm text-gray-500">Total Price</span>
+                    <span className="text-xl font-bold text-cyan-600">{formatRupiah(totalPrice)}</span>
+                  </div>
+
+                  {warningMessage && (
+                    <div className={`p-3 rounded-lg border flex items-start gap-2 mb-4 ${warningColor}`}>
+                      <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <p className="text-xs font-semibold">{warningMessage}</p>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={handleBook}
+                    disabled={isButtonDisabled}
+                    className="w-full bg-cyan-600 hover:bg-cyan-700 disabled:bg-slate-300 disabled:text-slate-500 text-white font-bold py-3.5 rounded-xl transition-all shadow-md hover:shadow-lg transform active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    {isBooking ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin" /> Processing...
+                      </>
+                    ) : (
+                      "Complete Booking"
+                    )}
+                  </Button>
                 </div>
-                <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
-                  <p className="text-sm text-gray-600 mb-1">Total Estimated Price ({Number(totalHours.toFixed(2))} hours)</p>
-                  <p className="text-2xl font-bold text-blue-600">{formatRupiah(totalPrice)}</p>
-                  <p className="text-xs text-gray-500 mt-2">Price per Hour: {formatRupiah(room.price)}</p>
-                </div>
-                <Button
-                  onClick={handleBook}
-                  disabled={
-                    isBooking ||
-                    isRoomInMaintenance ||
-                    totalHours < 1 ||
-                    calculateDurationHours(startTimeInput, endTimeInput) <= 0 ||
-                    !borrowerName.trim() ||
-                    !phoneNumber.trim()
-                  }
-                  className="w-full bg-cyan-500 hover:bg-cyan-600 disabled:bg-gray-400 text-white font-bold py-3 rounded-lg disabled:cursor-not-allowed transition-all"
-                >
-                  {isBooking ? "Processing..." : isRoomInMaintenance ? "Under Maintenance" : totalHours < 1 ? "Minimum 1 Hour Required" : `Complete Booking (${Number(totalHours.toFixed(2))} hours)`}
-                </Button>
+
               </div>
             </div>
           </div>
