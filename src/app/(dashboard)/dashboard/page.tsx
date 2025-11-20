@@ -13,7 +13,7 @@ import { spacing } from "@/styles/spacing"
 import type { Book, Room, Announcement, Loan } from "@/types"
 import { getAuthToken, setAuthToken, removeAuthToken } from "@/lib/auth"
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "" // fallback ke empty string
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 
 const sampleBooks: Book[] = [
   { id: "1", title: "Mock Book", author: "Mock Author", stock: 5, status: "available", category: "Fiction", year: 2023 },
@@ -79,7 +79,6 @@ function Dashboard() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
-  // refs to avoid stale closures / race
   const controllerRef = useRef<AbortController | null>(null)
   const cancelledRef = useRef(false)
   const intervalRef = useRef<number | null>(null)
@@ -92,13 +91,11 @@ function Dashboard() {
     }
   }, [])
 
-  // ambil token dari query (OAuth redirect)
   useEffect(() => {
     try {
       const token = searchParams?.get("token")
       if (token && typeof token === "string" && token !== "undefined") {
         setAuthToken(token)
-        // remove token param tanpa reload
         try {
           const url = new URL(window.location.href)
           url.searchParams.delete("token")
@@ -106,13 +103,13 @@ function Dashboard() {
         } catch {}
       }
     } catch {}
+
     const hour = new Date().getHours()
     if (hour < 11) setGreeting("Good Morning")
     else if (hour < 15) setGreeting("Good Afternoon")
     else if (hour < 18) setGreeting("Good Evening")
     else setGreeting("Good Night")
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams?.toString()])
+  }, [])
 
   useEffect(() => {
     try {
@@ -139,22 +136,25 @@ function Dashboard() {
     cancelledRef.current = false
 
     const safeJson = async (res: Response) => {
-      // cek status dulu
       if (!res.ok) {
         const text = await res.text().catch(() => "")
         throw new Error(`HTTP ${res.status} ${text}`)
       }
-      // coba parse json, fallback ke null
       return res.json().catch(() => null)
     }
 
-    const fetchDashboardDataSafe = async (showLoading = true) => {
-      if (!isMountedRef.current) return
+    type FetchResult = {
+      ok: boolean
+      unauthorized?: boolean
+      isAdmin?: boolean
+    }
+
+    const fetchDashboardDataSafe = async (showLoading = true): Promise<FetchResult> => {
+      if (!isMountedRef.current) return { ok: false }
       if (showLoading) setIsLoading(true)
       if (!showLoading) setError(null)
 
       try {
-        // abort previous
         controllerRef.current?.abort()
         const controller = new AbortController()
         controllerRef.current = controller
@@ -162,33 +162,21 @@ function Dashboard() {
 
         const headers: Record<string, string> = {}
         if (token) headers["Authorization"] = `Bearer ${token}`
-
         const common: RequestInit = { credentials: "include", headers, signal }
 
         const base = API_URL.replace(/\/+$/, "")
 
         const userRes = await fetch(`${base}/api/users/me`, common)
-
-        // unauthorized handling early
         if (userRes.status === 401 || userRes.status === 403) {
-          removeAuthToken()
-          if (!cancelledRef.current) router.replace("/sign-in")
-          return
+          return { ok: false, unauthorized: true }
         }
-
-        const userData = await safeJson(userRes)
-
-        if (cancelledRef.current) return
+        const userData = await safeJson(userRes).catch(() => null)
+        if (cancelledRef.current) return { ok: false }
 
         if (userData) {
           if (userData.role === "admin") {
-            controllerRef.current?.abort()
-            if (!cancelledRef.current) {
-              router.replace("/admin/dashboard")
-            }
-            return
+            return { ok: false, isAdmin: true }
           }
-
           const realName = userData.name || userData.username || "User"
           setUsername(realName)
           try { localStorage.setItem("username", realName) } catch {}
@@ -208,33 +196,30 @@ function Dashboard() {
           fetch(`${base}/api/loans/my`, common),
         ])
 
-        // unauthorized handling
         if ([featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes].some(r => r.status === 401 || r.status === 403)) {
-          removeAuthToken()
-          if (!cancelledRef.current) router.replace("/sign-in")
-          return
+          return { ok: false, unauthorized: true }
         }
 
-        const featuredBooksData = await safeJson(featuredBooksRes)
-        const totalBooksData = await safeJson(totalBooksRes)
-        const roomsData = await safeJson(roomsRes) || []
-        const announcementsData = await safeJson(announcementsRes) || []
-        const loansData = await safeJson(loansRes) || []
+        const featuredBooksData = await safeJson(featuredBooksRes).catch(() => null)
+        const totalBooksData = await safeJson(totalBooksRes).catch(() => null)
+        const roomsData = await safeJson(roomsRes).catch(() => []) || []
+        const announcementsData = await safeJson(announcementsRes).catch(() => []) || []
+        const loansData = await safeJson(loansRes).catch(() => []) || []
 
-        if (cancelledRef.current) return
+        if (cancelledRef.current) return { ok: false }
 
         const featuredBooks = (featuredBooksData?.data) || []
         const totalBooks = (totalBooksData?.total) || 0
 
         const featuredRooms = (roomsData || [])
           .sort((a: any, b: any) => {
-            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0
-            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+            const dateA = a?.createdAt ? new Date(a.createdAt).getTime() : 0
+            const dateB = b?.createdAt ? new Date(b.createdAt).getTime() : 0
             return dateB - dateA
           })
           .slice(0, 3)
 
-        const availableRooms = (roomsData || []).filter((r: any) => r.status === "available").length
+        const availableRooms = (roomsData || []).filter((r: any) => r?.status === "available").length
         const featuredAnnouncements = (announcementsData || []).slice(0, 3)
         const announcementCount = (announcementsData || []).length || 0
 
@@ -244,9 +229,9 @@ function Dashboard() {
         const startOfToday = new Date()
         startOfToday.setHours(0,0,0,0)
 
-        const late = (loansData || []).filter((loan: any) => loan.status === 'late')
+        const late = (loansData || []).filter((loan: any) => loan?.status === 'late')
         const upcoming = (loansData || []).filter((loan: any) => {
-          if (!loan.dueDate || isNaN(new Date(loan.dueDate).getTime())) return false
+          if (!loan?.dueDate || isNaN(new Date(loan.dueDate).getTime())) return false
           const dueDate = new Date(loan.dueDate)
           return loan.status === 'borrowed' && dueDate >= startOfToday && dueDate <= sevenDaysFromNow
         })
@@ -262,40 +247,57 @@ function Dashboard() {
           featuredAnnouncements,
         })
         setError(null)
+
+        return { ok: true }
       } catch (err: any) {
         if (err?.name === "AbortError") {
-          // ignore abort
         } else {
           console.error("dashboard fetch error:", err)
           if (!cancelledRef.current) {
             if (showLoading) setError("Failed to load dashboard data. Check backend.")
           }
         }
+        return { ok: false }
       } finally {
         if (!cancelledRef.current && showLoading) setIsLoading(false)
       }
     }
 
-    fetchDashboardDataSafe(true)
+    const start = async () => {
+      const res = await fetchDashboardDataSafe(true)
+      if (!res.ok) {
+        if (res.unauthorized) {
+          removeAuthToken()
+          if (!cancelledRef.current) router.replace("/sign-in")
+        }
+        return
+      }
 
-    const onFocus = () => fetchDashboardDataSafe(false)
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") fetchDashboardDataSafe(false)
+      if (res.isAdmin) {
+        removeAuthToken()
+        if (!cancelledRef.current) router.replace("/admin/dashboard")
+        return
+      }
+
+      try {
+        intervalRef.current = window.setInterval(() => {
+          fetchDashboardDataSafe(false).then(periodRes => {
+            if (periodRes.unauthorized) {
+              removeAuthToken()
+              if (!cancelledRef.current) router.replace("/sign-in")
+            }
+          })
+        }, 5000)
+      } finally {}
     }
 
-    window.addEventListener("focus", onFocus)
-    document.addEventListener("visibilitychange", onVisibility)
-
-    intervalRef.current = window.setInterval(() => fetchDashboardDataSafe(false), 5000)
+    start()
 
     return () => {
       cancelledRef.current = true
       controllerRef.current?.abort()
-      window.removeEventListener("focus", onFocus)
-      document.removeEventListener("visibilitychange", onVisibility)
-      if (intervalRef.current) window.clearInterval(intervalRef.current)
+      window.clearInterval(intervalRef.current ?? 0)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
   if (isLoading) return <DashboardLoadingSkeleton />
