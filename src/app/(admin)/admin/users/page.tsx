@@ -33,8 +33,9 @@ export default function ManageUsersPage() {
 
   const token = getAuthToken();
 
-  async function fetchUsers() {
-    setIsLoading(true);
+  async function fetchUsers(showLoading = true) {
+    if (showLoading) setIsLoading(true);
+
     const res = await fetch(`${API_URL}/api/users`, { 
       headers: { "Authorization": `Bearer ${token}` }
     });
@@ -45,11 +46,26 @@ export default function ManageUsersPage() {
         console.error("Gagal fetch users:", res.statusText);
         setUsers([]);
     }
-    setIsLoading(false);
+    
+    if (showLoading) setIsLoading(false);
   }
 
   useEffect(() => {
-    fetchUsers();
+    fetchUsers(true);
+
+    const onFocus = () => {
+        fetchUsers(false) 
+    }
+    window.addEventListener("focus", onFocus)
+
+    const interval = setInterval(() => {
+        fetchUsers(false); 
+    }, 5000);
+
+    return () => {
+        window.removeEventListener("focus", onFocus)
+        clearInterval(interval);
+    }
   }, [token]);
 
   const handleDelete = async (userId: string) => {

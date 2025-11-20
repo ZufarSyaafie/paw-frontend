@@ -52,43 +52,78 @@ export default function PaymentsPage() {
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        const fetchPayments = async () => {
+        let cancelled = false
+        let activeController: AbortController | null = null
+
+        const fetchPaymentsSafe = async (showLoading = false) => {
+            if (showLoading) setIsLoading(true)
+            if (!showLoading) setError(null) 
+
+            try {
+            if (activeController) activeController.abort()
+            const controller = new AbortController()
+            activeController = controller
+
             const token = getAuthToken()
-            
             if (!token) {
-                setError("Authentication required to view payment history.")
-                setIsLoading(false)
+                if (!cancelled) {
+                setError("authentication required to view payment history.")
+                setPayments([])
+                }
                 return
             }
 
-            setIsLoading(true)
-              setError(null)
-            
-            try {
-                const response = await fetch(`${API_URL}/api/payments/my`, {
-                    headers: {
-                        "Authorization": `Bearer ${token}`,
-                    },
-                });
+            const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
 
-                if (!response.ok) {
-                    const errorData = await response.json()
-                    throw new Error(errorData.message || "Failed to fetch payment.")
-                }
+            const response = await fetch(`${API_URL}/api/payments/my`, {
+                headers,
+                signal: controller.signal,
+            })
 
-                const data = await response.json()
-                setPayments(data);
+            if (!response.ok) {
+                const errBody = await response.json().catch(() => null)
+                throw new Error(errBody?.message || "failed to fetch payments")
+            }
+
+            const data = await response.json()
+            if (!cancelled) {
+                setPayments(data || [])
+                setError(null)
+            }
             } catch (err: any) {
+            if (!cancelled) {
+                if (err.name === "AbortError") {
+                } else {
                 console.error("Fetch Payments Error:", err)
-                setError(err.message || "Failed to load payment history.")
-                setPayments([]) // Set data kosong kalo error
+                setError(err.message || "failed to load payment history.")
+                setPayments([]) 
+                }
+            }
             } finally {
-                setIsLoading(false)
+            if (!cancelled && showLoading) setIsLoading(false)
             }
         }
 
-        fetchPayments()
-    }, []) 
+        fetchPaymentsSafe(true)
+
+        const onFocus = () => fetchPaymentsSafe(false)
+        const onVisibility = () => {
+            if (document.visibilityState === "visible") fetchPaymentsSafe(false)
+        }
+        window.addEventListener("focus", onFocus)
+        document.addEventListener("visibilitychange", onVisibility)
+
+        // polling without loader
+        const interval = setInterval(() => fetchPaymentsSafe(false), 5000)
+
+        return () => {
+            cancelled = true
+            if (activeController) activeController.abort()
+            window.removeEventListener("focus", onFocus)
+            document.removeEventListener("visibilitychange", onVisibility)
+            clearInterval(interval)
+        }
+    }, [])
 
     return (
         <div className="space-y-8 p-4 sm:p-6 lg:p-8">

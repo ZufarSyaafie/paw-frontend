@@ -27,13 +27,14 @@ export default function AdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchAllStats = async () => {
+    const fetchAllStats = async (showLoading = true) => {
       const token = getAuthToken();
       if (!token) {
         setIsLoading(false);
         return;
       }
       
+      if (showLoading) setIsLoading(true)
       try {
         const [usersRes, booksRes, loansRes, roomsRes, bookingsRes, announcementsRes] = await Promise.all([
           fetch(`${API_URL}/api/users`, {
@@ -84,11 +85,25 @@ export default function AdminDashboardPage() {
       } catch (err) {
         console.error("Gagal fetch admin stats:", err);
       } finally {
-        setIsLoading(false);
+        if (showLoading) setIsLoading(false);
       }
     };
 
-    fetchAllStats();
+    fetchAllStats(true)
+
+    const onFocus = () => {
+      fetchAllStats(false)
+    }
+    window.addEventListener("focus", onFocus)
+
+    const interval = setInterval(() => {
+      fetchAllStats(false)
+    }, 5000)
+
+    return () => {
+      window.removeEventListener("focus", onFocus)
+      clearInterval(interval)
+    }
   }, []);
 
   return (
@@ -443,7 +458,7 @@ function QuickAnnouncementPanel() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               required
-              placeholder="E.g.: Library Closed Tomorrow"
+              placeholder="E.g.: The Library is Closed Tomorrow"
               className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
               style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
               onFocus={(e) => {

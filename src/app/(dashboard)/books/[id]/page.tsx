@@ -44,9 +44,10 @@ export default function BookDetailPage() {
   const [isBorrowing, setIsBorrowing] = useState(false)
   const [displayStatusKey, setDisplayStatusKey] = useState<DisplayStatusKey>("unavailable")
 
-  const fetchBookAndLoanStatus = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
+  const fetchBookAndLoanStatus = useCallback(async (showLoading = true) => {
+    if (showLoading) setIsLoading(true)
+    if (!showLoading) setError(null)
+
     const token = getAuthToken()
     if (!token) {
       setError("Authentication required.")
@@ -58,6 +59,7 @@ export default function BookDetailPage() {
 
     try {
       if (!bookId) throw new Error("Book ID is required.")
+      
       const bookRes = await fetch(`${API_URL}/api/books/${bookId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
@@ -65,10 +67,12 @@ export default function BookDetailPage() {
         throw new Error("Book not found.")
       }
       const bookData = await bookRes.json()
+      
       let finalStatusKey: DisplayStatusKey
       const loanRes = await fetch(`${API_URL}/api/loans/status?bookId=${bookId}`, {
         headers: { Authorization: `Bearer ${token}` },
       })
+
       if (loanRes.ok) {
         const loanData = await loanRes.json()
         if (loanData.status === "overdue") {
@@ -81,22 +85,42 @@ export default function BookDetailPage() {
       } else {
         finalStatusKey = bookData.stock > 0 ? "available" : "unavailable"
       }
+      
       bookData.status = bookData.stock > 0 ? "available" : "unavailable"
       setBook(bookData)
       setDisplayStatusKey(finalStatusKey)
     } catch (err: any) {
       console.error(err)
-      setError(err?.message || "Failed to load book details.")
-      setBook(MOCK_BOOK)
-      setDisplayStatusKey(MOCK_BOOK.stock > 0 ? "available" : "unavailable")
+      // error cuma dimunculin pas mode loading aktif biar ga flicker
+      if (showLoading) {
+         setError(err?.message || "Failed to load book details.")
+         setBook(MOCK_BOOK)
+         setDisplayStatusKey(MOCK_BOOK.stock > 0 ? "available" : "unavailable")
+      }
     } finally {
-      setIsLoading(false)
+
+      if (showLoading) setIsLoading(false)
     }
   }, [bookId])
 
   useEffect(() => {
-    if (bookId) fetchBookAndLoanStatus()
-    else {
+    if (bookId) {
+      fetchBookAndLoanStatus(true)
+
+      const onFocus = () => {
+        fetchBookAndLoanStatus(false)
+      }
+      window.addEventListener("focus", onFocus)
+
+      const interval = setInterval(() => {
+        fetchBookAndLoanStatus(false)
+      }, 5000)
+
+      return () => {
+        window.removeEventListener("focus", onFocus)
+        clearInterval(interval)
+      }
+    } else {
       setError("Invalid book ID.")
       setIsLoading(false)
     }

@@ -32,16 +32,32 @@ export default function ManageRoomsPage() {
 
   const token = getAuthToken();
 
-  async function fetchRooms() {
-    setIsLoading(true);
+  async function fetchRooms(showLoading = true) {
+    if (showLoading) setIsLoading(true);
+    
     const res = await fetch(`${API_URL}/api/rooms`);
     const data = await res.json();
     setRooms(data || []);
-    setIsLoading(false);
+    
+    if (showLoading) setIsLoading(false);
   }
 
   useEffect(() => {
-    fetchRooms();
+    fetchRooms(true) 
+
+    const onFocus = () => {
+      fetchRooms(false) 
+    }
+    window.addEventListener("focus", onFocus)
+
+    const interval = setInterval(() => {
+      fetchRooms(false) 
+    }, 5000)
+
+    return () => {
+      window.removeEventListener("focus", onFocus)
+      clearInterval(interval)
+    }
   }, []);
 
   const handleDelete = async (roomId: string) => {

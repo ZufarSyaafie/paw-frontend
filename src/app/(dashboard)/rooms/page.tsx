@@ -29,34 +29,69 @@ export default function RoomsPage() {
   const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
-    const fetchRooms = async () => {
-      const token = getAuthToken()
+    let cancelled = false
+    let activeController: AbortController | null = null
 
-      setIsLoading(true)
-      setError(null)
+    const fetchRoomsSafe = async (showLoading = false) => {
+      if (showLoading) setIsLoading(true)
+      if (!showLoading) setError(null) 
 
       try {
-        const response = await fetch(`${API_URL}/api/rooms`, {
-          headers: { "Authorization": `Bearer ${token}` },
+        if (activeController) activeController.abort()
+        const controller = new AbortController()
+        activeController = controller
+
+        const token = getAuthToken()
+        const headers: Record<string, string> = {}
+        if (token) headers.Authorization = `Bearer ${token}`
+
+        const res = await fetch(`${API_URL}/api/rooms`, {
+          headers,
+          signal: controller.signal,
         })
 
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || "Failed to fetch rooms.")
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => null)
+          throw new Error(errBody?.message || "failed to fetch rooms")
         }
 
-        const data = await response.json()
-        setRooms(data || [])
+        const data = await res.json()
+        if (!cancelled) {
+          setRooms([...(data || [])])
+          setError(null)
+        }
       } catch (err: any) {
-        console.error("Fetch Rooms Error:", err)
-        setError(err.message || "Failed to load rooms.")
-        setRooms([])
+        if (!cancelled) {
+          if (err.name !== "AbortError") {
+            console.error(err)
+            setError(err.message || "Failed to load rooms.")
+            setRooms([]) // clear on error
+          }
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled && showLoading) setIsLoading(false)
       }
     }
 
-    fetchRooms()
+    fetchRoomsSafe(true)
+
+    const onFocus = () => fetchRoomsSafe(false)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchRoomsSafe(false)
+    }
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+
+    const interval = setInterval(() => fetchRoomsSafe(false), 5000)
+
+    return () => {
+      cancelled = true
+      if (activeController) activeController.abort()
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+      clearInterval(interval)
+    }
   }, [])
 
   const filteredRooms = useMemo(() => {

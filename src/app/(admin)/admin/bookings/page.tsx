@@ -44,8 +44,9 @@ export default function ManageBookingsPage() {
 
   const token = getAuthToken();
 
-  async function fetchBookings() {
-    setIsLoading(true);
+  async function fetchBookings(showLoading = true) {
+    if (showLoading) setIsLoading(true);
+
     const res = await fetch(`${API_URL}/api/rooms/bookings/list`, {
       headers: { "Authorization": `Bearer ${token}` }
     });
@@ -55,12 +56,27 @@ export default function ManageBookingsPage() {
     } else {
       setBookings([]);
     }
-    setIsLoading(false);
+    
+    if (showLoading) setIsLoading(false);
   }
 
   useEffect(() => {
     if (token) {
-      fetchBookings();
+      fetchBookings(true)
+
+      const onFocus = () => {
+        fetchBookings(false)
+      }
+      window.addEventListener("focus", onFocus)
+
+      const interval = setInterval(() => {
+        fetchBookings(false)
+      }, 5000)
+
+      return () => {
+        window.removeEventListener("focus", onFocus)
+        clearInterval(interval)
+      }
     } else {
       setIsLoading(false);
     }

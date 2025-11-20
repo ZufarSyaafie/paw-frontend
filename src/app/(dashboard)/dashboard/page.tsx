@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { ChevronRight, BookOpen, Users, Bell, Loader2, AlertCircle, AlertTriangle } from "lucide-react"
-import { useState, useEffect, Suspense } from "react" // <-- Tambah Suspense
-import { useRouter, useSearchParams } from "next/navigation" // <-- Tambah useSearchParams
+import { useState, useEffect, Suspense } from "react" 
+import { useRouter, useSearchParams } from "next/navigation" 
 import BookCard from "@/components/books/book-card"
 import { RoomCard } from "@/components/rooms/room-card"
 import AnnouncementCard from "@/components/announcements/announcement-card"
@@ -11,7 +11,7 @@ import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import { spacing } from "@/styles/spacing"
 import type { Book, Room, Announcement, Loan } from "@/types"
-import { getAuthToken, setAuthToken, removeAuthToken } from "@/lib/auth" // <-- Tambah removeAuthToken
+import { getAuthToken, setAuthToken, removeAuthToken } from "@/lib/auth" 
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
@@ -34,7 +34,6 @@ const sampleAnnouncements: Announcement[] = [
     { id: 1, title: "Mock Announcement", snippet: "Mock update.", bookTitle: "", message: "", createdAt: "" },
 ]
 
-// WRAP KOMPONEN UTAMA BIAR BISA PAKE useSearchParams
 export default function DashboardPageWrapper() {
     return (
         <Suspense fallback={<DashboardLoadingSkeleton />}>
@@ -92,126 +91,92 @@ function Dashboard() {
     }, [searchParams])
 
     useEffect(() => {
-        const token = getAuthToken()
-        const stored = localStorage.getItem("username")
-        if (stored) setUsername(stored)
-
-        let cancelled = false
-
-        ;(async () => {
-            try {
-                if (!API_URL || !token) {
-                    if(!token) setIsLoading(false); // Hindarin loading muter terus
-                    return;
-                }
-                const headers: HeadersInit = {}
-                headers["Authorization"] = `Bearer ${token}`
-                
-                const res = await fetch(`${API_URL}/api/users/me`, {
-                    headers,
-                    credentials: "include",
-                })
-                
-                if (!res.ok) {
-                    if (res.status === 401 || res.status === 403) {
-                         removeAuthToken(); // Token invalid
-                         router.replace("/sign-in");
-                    }
-                    return;
-                }
-
-                const data = await res.json()
-
-                if (data?.role === 'admin') {
-                    router.replace('/admin/dashboard');
-                    return;
-                }
-
-                if (cancelled) return
-                const name = data?.username || data?.name || data?.email
-                if (name) {
-                    setUsername(name)
-                    try {
-                        localStorage.setItem("username", name)
-                    } catch {}
-                }
-            } catch {}
-        })()
-
-        return () => {
-            cancelled = true
-        }
-    }, [router])
+        try {
+            const stored = localStorage.getItem("username")
+            if (stored) setUsername(stored)
+        } catch {}
+    }, [])
 
     useEffect(() => {
         const token = getAuthToken()
         if (!token) {
-             setError("Authentication required.");
-             setIsLoading(false);
-             router.replace("/sign-in");
-             return;
+            setError("Authentication required.")
+            setIsLoading(false)
+            router.replace("/sign-in")
+            return
         }
 
-        const fetchDashboardData = async () => {
-            setIsLoading(true)
-            setError(null)
+        let cancelled = false
+        let controller: AbortController | null = null
+
+        const fetchDashboardDataSafe = async (showLoading = true) => {
+            if (showLoading) setIsLoading(true)
+            if (!showLoading) setError(null)
+
             try {
-                const common: RequestInit = {
-                    credentials: "include",
-                }
-                const headers: HeadersInit = {}
+                if (controller) controller.abort()
+                controller = new AbortController()
+                const signal = controller.signal
+
+                const headers: Record<string, string> = {}
                 if (token) headers["Authorization"] = `Bearer ${token}`
 
-                const [featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes] = await Promise.all([
-                    fetch(`${API_URL}/api/books?limit=4&sortBy=createdAt&order=desc`, { ...common, headers }), // Ambil 4 buku
-                    fetch(`${API_URL}/api/books?limit=1`, { ...common, headers }), 
-                    fetch(`${API_URL}/api/rooms`, { ...common, headers }),
-                    fetch(`${API_URL}/api/announcements`, { ...common, headers }),
-                    fetch(`${API_URL}/api/loans/my`, { ...common, headers })
+                const common: RequestInit = { credentials: "include", headers, signal }
+
+                const [
+                    featuredBooksRes,
+                    totalBooksRes,
+                    roomsRes,
+                    announcementsRes,
+                    loansRes,
+                ] = await Promise.all([
+                    fetch(`${API_URL}/api/books?limit=4&sortBy=createdAt&order=desc`, common),
+                    fetch(`${API_URL}/api/books?limit=1`, common),
+                    fetch(`${API_URL}/api/rooms`, common),
+                    fetch(`${API_URL}/api/announcements`, common),
+                    fetch(`${API_URL}/api/loans/my`, common),
                 ])
-                
-                if ([featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes].some(res => res.status === 401)) {
-                    throw new Error("Invalid token. Please log in again.");
+
+                if ([featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes].some(r => r.status === 401 || r.status === 403)) {
+                    removeAuthToken()
+                    if (!cancelled) router.replace("/sign-in")
+                    return
                 }
 
-                const featuredBooksData = await featuredBooksRes.json()
-                const featuredBooks = featuredBooksData.data || []
-                
-                const totalBooksData = await totalBooksRes.json()
-                const totalBooks = totalBooksData.total || 0 
+                const featuredBooksData = await featuredBooksRes.json().catch(() => null)
+                const totalBooksData = await totalBooksRes.json().catch(() => null)
+                const roomsData = await roomsRes.json().catch(() => [])
+                const announcementsData = await announcementsRes.json().catch(() => [])
+                const loansData = await loansRes.json().catch(() => [])
 
-                const roomsData: Room[] = await roomsRes.json();
-                
+                if (cancelled) return
+
+                const featuredBooks = (featuredBooksData?.data) || []
+                const totalBooks = (totalBooksData?.total) || 0
+
                 const featuredRooms = (roomsData || [])
-                    .sort((a, b) => new Date((b as any).createdAt).getTime() - new Date((a as any).createdAt).getTime()) // Urutin dari yg terbaru
-                    .slice(0, 3); // Ambil 3 teratas
-                
+                    .sort((a: any, b: any) => new Date((b as any).createdAt).getTime() - new Date((a as any).createdAt).getTime())
+                    .slice(0, 3)
+
                 const availableRooms = (roomsData || []).filter((r: any) => r.status === "available").length
-
-                const announcementsData = await announcementsRes.json()
                 const featuredAnnouncements = (announcementsData || []).slice(0, 3)
-                const announcementCount = (announcementsData || []).length
+                const announcementCount = (announcementsData || []).length || 0
 
-                const loansData: Loan[] = await loansRes.json();
-                
-                const now = new Date();
-                const sevenDaysFromNow = new Date();
-                sevenDaysFromNow.setDate(now.getDate() + 7);
-                now.setHours(0, 0, 0, 0); 
+                const now = new Date()
+                const sevenDaysFromNow = new Date()
+                sevenDaysFromNow.setDate(now.getDate() + 7)
+                const startOfToday = new Date()
+                startOfToday.setHours(0,0,0,0)
 
-                const late = loansData.filter(loan => loan.status === 'late');
-                
-                const upcoming = loansData.filter(loan => {
-                    if (!loan.dueDate || isNaN(new Date(loan.dueDate).getTime())) return false; 
-                    const dueDate = new Date(loan.dueDate);
-                    return loan.status === 'borrowed' && 
-                           dueDate >= now && 
-                           dueDate <= sevenDaysFromNow;
-                });
-                
-                setLateLoans(late);
-                setUpcomingLoans(upcoming); 
+                const late = (loansData || []).filter((loan: any) => loan.status === 'late')
+                const upcoming = (loansData || []).filter((loan: any) => {
+                    if (!loan.dueDate || isNaN(new Date(loan.dueDate).getTime())) return false
+                    const dueDate = new Date(loan.dueDate)
+                    return loan.status === 'borrowed' && dueDate >= startOfToday && dueDate <= sevenDaysFromNow
+                })
 
+                setLateLoans(late)
+                setUpcomingLoans(upcoming)
                 setStats({
                     totalBooks,
                     availableRooms,
@@ -220,26 +185,43 @@ function Dashboard() {
                     featuredRooms,
                     featuredAnnouncements,
                 })
+                setError(null)
             } catch (err: any) {
-                if (err.message.includes("Invalid token")) {
-                    removeAuthToken();
-                    router.replace("/sign-in");
+                if (err?.name === "AbortError") {
+                    // ignore
+                } else {
+                    console.error("dashboard fetch error:", err)
+                    if (!cancelled) {
+                        if (showLoading) setError("Failed to load dashboard data. Check backend.")
+                    }
                 }
-                setError("Failed to load dashboard data. Check backend.")
-                setStats({
-                    totalBooks: 0,
-                    availableRooms: 0,
-                    announcementCount: 0,
-                    featuredBooks: sampleBooks,
-                    featuredRooms: sampleRooms,
-                    featuredAnnouncements: sampleAnnouncements,
-                })
             } finally {
-                setIsLoading(false)
+                // 3. Matiin loading cuma kalo tadi dinyalain
+                if (!cancelled && showLoading) setIsLoading(false)
             }
         }
 
-        fetchDashboardData()
+        // 4. Load awal (TRUE)
+        fetchDashboardDataSafe(true)
+
+        // 5. Load silent pas focus/interval (FALSE)
+        const onFocus = () => fetchDashboardDataSafe(false)
+        const onVisibility = () => {
+            if (document.visibilityState === "visible") fetchDashboardDataSafe(false)
+        }
+
+        window.addEventListener("focus", onFocus)
+        document.addEventListener("visibilitychange", onVisibility)
+
+        const interval = setInterval(() => fetchDashboardDataSafe(false), 5000)
+
+        return () => {
+            cancelled = true
+            if (controller) controller.abort()
+            window.removeEventListener("focus", onFocus)
+            document.removeEventListener("visibilitychange", onVisibility)
+            clearInterval(interval)
+        }
     }, [router])
 
     if (isLoading) return <DashboardLoadingSkeleton />; // Pake skeleton
@@ -319,7 +301,9 @@ function Dashboard() {
                     {/* grid-cols-2 */}
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                         {stats.featuredBooks.map((book: any) => (
-                            <BookCard key={book.id || book._id} id={book.id || book._id} title={book.title} author={book.author} cover={book.cover} stock={book.stock} />
+                            <BookCard key={book.id || book._id} id={book.id || book._id} title={book.title} author={book.author} cover={book.cover} stock={book.stock}
+                                status={book.status}     
+                            />
                         ))}
                     </div>
                 </Section>

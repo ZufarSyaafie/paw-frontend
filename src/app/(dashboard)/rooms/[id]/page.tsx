@@ -122,34 +122,94 @@ export default function RoomDetailPage() {
   }
 
   useEffect(() => {
-    const fetchRoom = async () => {
-      const token = getAuthToken()
-      setIsLoading(true)
-      setError(null)
+    let cancelled = false
+    let activeController: AbortController | null = null
+
+    const fetchRoomSafe = async (showLoading = false) => {
+      if (showLoading) setIsLoading(true)
+      if (!showLoading) setError(null)
+
       try {
-        const roomResponse = await fetch(`${API_URL}/api/rooms/${roomId}`, { headers: { Authorization: `Bearer ${token}` } })
-        const userResponse = await fetch(`${API_URL}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } })
+        if (activeController) activeController.abort()
+        const controller = new AbortController()
+        activeController = controller
+
+        const token = getAuthToken()
+        if (!token) {
+          if (!cancelled) {
+            setError("authentication required.")
+            setRoom(MOCK_ROOM)
+          }
+          return
+        }
+
+        const headers: Record<string, string> = {}
+        if (token) headers["Authorization"] = `Bearer ${token}`
+
+        const roomResponse = await fetch(`${API_URL}/api/rooms/${roomId}`, {
+          headers,
+          signal: controller.signal,
+        })
 
         if (!roomResponse.ok) {
-          const errorData = await roomResponse.json().catch(() => ({}))
-          throw new Error((errorData as any).message || "Room not found.")
+          const err = await roomResponse.json().catch(() => null)
+          throw new Error(err?.message || "room not found.")
         }
 
         const roomData = await roomResponse.json()
-        const userData = await userResponse.json().catch(() => ({}))
 
-        setBorrowerName(userData.name || userData.email || "")
-        setPhoneNumber(userData.phone || "")
-        setRoom(roomData)
-        setSelectedDate(getMinDate())
+        const userResponse = await fetch(`${API_URL}/api/users/me`, {
+          headers,
+          signal: controller.signal,
+        })
+        const userData = userResponse.ok ? await userResponse.json().catch(() => ({})) : {}
+
+        if (!cancelled) {
+          setBorrowerName(userData.name || userData.email || "")
+          setPhoneNumber(userData.phone || "")
+          setRoom(roomData)
+          setSelectedDate(getMinDate())
+          setError(null)
+        }
       } catch (err: any) {
-        setError(err?.message || "Failed to load room details.")
-        setRoom(MOCK_ROOM)
+        if (!cancelled) {
+          if (err.name === "AbortError") {
+          } else {
+            setError(err?.message || "failed to load room details.")
+            setRoom(MOCK_ROOM)
+          }
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled && showLoading) setIsLoading(false)
       }
     }
-    if (roomId) fetchRoom()
+
+    if (!roomId) {
+      setIsLoading(false)
+      setError("invalid room id.")
+      return
+    }
+
+    // initial load with loader once
+    fetchRoomSafe(true)
+
+    const onFocus = () => fetchRoomSafe(false)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchRoomSafe(false)
+    }
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+
+    const interval = setInterval(() => fetchRoomSafe(false), 5000)
+
+    return () => {
+      cancelled = true
+      if (activeController) activeController.abort()
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+      clearInterval(interval)
+    }
   }, [roomId])
 
   const totalHours = calculateDurationHours(startTimeInput, endTimeInput)

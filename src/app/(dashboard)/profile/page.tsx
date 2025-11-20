@@ -56,7 +56,11 @@ export default function ProfilePage() {
             return
         }
 
-        const fetchUserData = async () => {
+        let cancelled = false
+
+        const fetchUserData = async (showLoading = true) => {
+             if (showLoading) setIsLoading(true)
+             
              try {
                 const userRes = await fetch(`${API_URL}/api/users/me`, {
                     headers: { "Authorization": `Bearer ${token}` }
@@ -72,14 +76,17 @@ export default function ProfilePage() {
                     profilePicture: userJson.profilePicture || "https://api.dicebear.com/7.x/avataaars/svg?seed=user_default"
                 }
 
-                setUserData(userData)
-
-                setEditedUsername(userData.username)
-                setEditedEmail(userData.email) 
-                setEditedBio(userData.bio || "")
-                setEditedPhone(userData.phone || "")
-
-                localStorage.setItem('userProfilePicture', userData.profilePicture);
+                if (!cancelled) {
+                    setUserData(userData)
+                    // Update edit states only if not currently editing to avoid overwriting user input
+                    if (!isEditing) {
+                        setEditedUsername(userData.username)
+                        setEditedEmail(userData.email) 
+                        setEditedBio(userData.bio || "")
+                        setEditedPhone(userData.phone || "")
+                    }
+                    localStorage.setItem('userProfilePicture', userData.profilePicture);
+                }
 
                 const loansRes = await fetch(`${API_URL}/api/loans/my`, {
                      headers: { "Authorization": `Bearer ${token}` }
@@ -105,18 +112,31 @@ export default function ProfilePage() {
                         displayStatus: b.status === "confirmed" ? "completed" : "pending_payment" 
                     }));
 
-                setUserActivity({ loans: processedLoans, bookings: processedBookings })
+                if (!cancelled) {
+                    setUserActivity({ loans: processedLoans, bookings: processedBookings })
+                }
 
             } catch (err: any) {
                 console.error(err)
-                setError(err.message || "Failed to load profile data.")
+                if (!cancelled && showLoading) setError(err.message || "Failed to load profile data.")
             } finally {
-                setIsLoading(false)
+                if (!cancelled && showLoading) setIsLoading(false)
             }
         }
 
-        fetchUserData()
-    }, [])
+        fetchUserData(true)
+
+        const onFocus = () => fetchUserData(false)
+        window.addEventListener("focus", onFocus)
+
+        const interval = setInterval(() => fetchUserData(false), 5000)
+
+        return () => {
+            cancelled = true
+            window.removeEventListener("focus", onFocus)
+            clearInterval(interval)
+        }
+    }, [isEditing]) // Add isEditing dependency to prevent overwriting form data while editing
 
     const handleProfilePictureClick = () => {
         const choice = window.confirm("Pilih 'OK' untuk upload file (hanya sementara, tidak tersimpan di database), atau 'Cancel' untuk memasukkan URL gambar (permanen).");

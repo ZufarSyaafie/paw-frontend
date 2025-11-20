@@ -106,47 +106,92 @@ export default function LoanDetailPage() {
   const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
-    const fetchLoan = async () => {
-      const token = getAuthToken();
-      if (!token) {
-        setError("authentication required.");
-        setIsLoading(false);
-        return;
-      }
+    let cancelled = false
+    let activeController: AbortController | null = null
+
+    const fetchLoanSafe = async (showLoading = false) => {
+      if (showLoading) setIsLoading(true)
 
       try {
-        const response = await fetch(`${API_URL}/api/loans/${loanId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        // abort previous in-flight request
+        if (activeController) {
+          activeController.abort()
+        }
+        const controller = new AbortController()
+        activeController = controller
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData?.message || "loan not found.");
+        const token = getAuthToken()
+        if (!token) {
+          if (!cancelled) {
+            setError("authentication required.")
+          }
+          return
         }
 
-        const responseData = await response.json();
+        const headers: Record<string, string> = { Authorization: `Bearer ${token}` }
 
-        let data = responseData.loan || responseData || {};
-        data = normalizeLoan(data);
+        const response = await fetch(`${API_URL}/api/loans/${loanId}`, {
+          headers,
+          signal: controller.signal,
+        })
 
-        const isOverdue = data.status === "borrowed" && data.dueDate && new Date(data.dueDate) < new Date();
-        const fines = typeof data.depositAmount === "number" ? data.depositAmount * 0.1 : undefined;
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => null)
+          throw new Error(errorData?.message || "loan not found.")
+        }
 
-        setLoan({ ...data, isOverdue, fines } as FrontendLoanDetail);
+        const responseData = await response.json()
+        let data = responseData.loan || responseData || {}
+        data = normalizeLoan(data)
+
+        const isOverdue = data.status === "borrowed" && data.dueDate && new Date(data.dueDate) < new Date()
+        const fines = typeof data.depositAmount === "number" ? data.depositAmount * 0.1 : undefined
+
+        if (!cancelled) {
+          setLoan({ ...data, isOverdue, fines } as FrontendLoanDetail)
+          setError(null)
+        }
       } catch (err: any) {
-        console.error("Fetch loan error:", err);
-        setError(err?.message || "failed to load loan details.");
+        if (!cancelled) {
+          if (err.name === "AbortError") {
+            // ignore abort
+          } else {
+            console.error("Fetch loan error:", err)
+            setError(err?.message || "failed to load loan details.")
+          }
+        }
       } finally {
-        setIsLoading(false);
+        if (!cancelled && showLoading) setIsLoading(false)
       }
-    };
-
-    if (loanId) fetchLoan();
-    else {
-      setIsLoading(false);
-      setError("invalid loan id.");
     }
-  }, [loanId]);
+
+    if (!loanId) {
+      setIsLoading(false)
+      setError("invalid loan id.")
+      return
+    }
+
+    fetchLoanSafe(true)
+
+    // refresh without loader
+    const onFocus = () => fetchLoanSafe(false)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchLoanSafe(false)
+    }
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+
+    // polling without loader
+    const interval = setInterval(() => fetchLoanSafe(false), 5000)
+
+    return () => {
+      cancelled = true
+      if (activeController) activeController.abort()
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+      clearInterval(interval)
+    }
+  }, [loanId])
 
   const handleCancelLoan = async () => {
     if (!loan) return;

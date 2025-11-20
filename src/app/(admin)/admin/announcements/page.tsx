@@ -41,14 +41,13 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
 
   const token = getAuthToken();
 
-  async function fetchAnnouncements() {
-    setIsLoading(true);
+  async function fetchAnnouncements(showLoading = true) {
+    if (showLoading) setIsLoading(true);
     setError(null);
-
+    
     try {
       const headers: HeadersInit = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
-
       const res = await fetch(`${API_URL}/api/announcements`, { headers });
       if (!res.ok) {
         const errText = await res.text().catch(() => "");
@@ -60,21 +59,24 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
       setAnnouncements(arr);
     } catch (err: any) {
       setAnnouncements([]);
-      setError(err?.message || "Terjadi kesalahan saat mengambil pengumuman");
+      if (showLoading) {
+         setError(err?.message || "An error occurred while trying to fetch the announcement");
+      }
       console.error("fetchAnnouncements error:", err);
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    if (token) fetchAnnouncements();
-    else {
-      setError("token tidak ditemukan. silakan login ulang.");
+    if (token) {
+      fetchAnnouncements(true)
+    } else {
+      setError("Token unfound. Please sign-in again.");
       setIsLoading(false);
     }
 
-    const onUpdated = () => fetchAnnouncements();
+    const onUpdated = () => fetchAnnouncements(false);
     window.addEventListener("announcements:updated", onUpdated);
     return () => window.removeEventListener("announcements:updated", onUpdated);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -105,7 +107,7 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
 
   const handleResend = async (announcementId: string) => {
     if (!announcementId) return;
-    if (!window.confirm("yakin mau kirim ulang email pengumuman ini ke semua user?")) return;
+    if (!window.confirm("Are you sure you want to resend this announcement email to all users?")) return;
 
     setIsResending((prev) => {
       const next = new Set(prev);
@@ -124,15 +126,15 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
 
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
-        throw new Error(j?.message || "Gagal Mengirim Ulang Email.");
+        throw new Error(j?.message || "Failed to Resend Email.");
       }
 
       const result = await res.json().catch(() => ({}));
       const sentCount = result?.emailResult?.sent ?? result?.sent ?? 0;
-      window.alert(`Email berhasil dikirim ulang ke ${sentCount} user.`);
+      window.alert(`Email successfully resent to ${sentCount} users.`);
     } catch (err: any) {
       console.error("handleResend error:", err);
-      window.alert(err?.message || "Gagal memproses.");
+      window.alert(err?.message || "Failed to process.");
     } finally {
       setIsResending((prev) => {
         const next = new Set(prev);
@@ -162,7 +164,7 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
           <Input
             value={search}
             onChange={(e: any) => setSearch(e.target.value)}
-            placeholder="Cari judul atau pesan..."
+            placeholder="Search for title or message..."
             className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
             style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
             onFocus={(e: any) => {
@@ -184,21 +186,21 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="w-4 h-4" />
-            <span>Filter Tanggal</span>
+            <span>Date Filter</span>
           </Button>
         </div>
 
         {/* Filter Tanggal Desktop */}
         <div className="hidden sm:flex gap-2 flex-shrink-0 items-center">
           <label htmlFor="startDate" className="text-sm font-medium" style={{ color: colors.textSecondary }}>
-            Dari:
+            From Date:
           </label>
           <Input id="startDate" type="date" value={startDate} onChange={(e: any) => setStartDate(e.target.value)} className="w-full sm:w-auto px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
           <label htmlFor="endDate" className="text-sm font-medium" style={{ color: colors.textSecondary }}>
-            hingga:
+            To Date:
           </label>
           <Input id="endDate" type="date" value={endDate} onChange={(e: any) => setEndDate(e.target.value)} className="w-full sm:w-auto px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
-          <Button variant="secondary" className="ml-2 px-3 py-1.5" onClick={() => { setStartDate(""); setEndDate(""); }}>clear</Button>
+          <Button variant="secondary" className="ml-2 px-3 py-1.5" onClick={() => { setStartDate(""); setEndDate(""); }}>Clear</Button>
         </div>
       </div>
 
@@ -207,23 +209,23 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
         <div className="sm:hidden rounded-lg p-4 sm:p-6 border space-y-4 mb-4" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
           <div>
             <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
-              filter berdasar tanggal
+              Filter by Date
             </p>
             <div className="flex flex-col gap-4">
               <div>
                 <label htmlFor="startDateMobile" className="text-sm font-medium mb-1 block" style={{ color: colors.textSecondary }}>
-                  dari:
+                  From Date:
                 </label>
                 <Input id="startDateMobile" type="date" value={startDate} onChange={(e: any) => setStartDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
               </div>
               <div>
                 <label htmlFor="endDateMobile" className="text-sm font-medium mb-1 block" style={{ color: colors.textSecondary }}>
-                  hingga:
+                  To Date:
                 </label>
                 <Input id="endDateMobile" type="date" value={endDate} onChange={(e: any) => setEndDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
               </div>
               <div className="flex justify-end">
-                <Button variant="secondary" onClick={() => { setStartDate(""); setEndDate(""); }} className="px-3 py-1.5 rounded-md text-sm">clear</Button>
+                <Button variant="secondary" onClick={() => { setStartDate(""); setEndDate(""); }} className="px-3 py-1.5 rounded-md text-sm">Clear</Button>
               </div>
             </div>
           </div>
@@ -251,9 +253,9 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
               <table className="w-full min-w-[700px]">
                 <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
                   <tr>
-                    <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Judul</th>
+                    <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Title</th>
                     <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Snippet</th>
-                    <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Dibuat</th>
+                    <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Created At</th>
                     <th className="text-center p-4 font-semibold" style={{ color: colors.textPrimary }}>Action</th>
                   </tr>
                 </thead>
@@ -309,19 +311,19 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
     const token = getAuthToken();
 
     if (!token) {
-      setError("token tidak ditemukan. silakan login ulang.");
+      setError("Token unfound. Please sign-in again.");
       setLoading(false);
       return;
     }
 
     if (announcementType === "book" && !bookTitle.trim()) {
-      setError("judul buku wajib diisi untuk tipe buku.");
+      setError("Book title is required");
       setLoading(false);
       return;
     }
 
     if (!message.trim()) {
-      setError("isi pesan wajib diisi.");
+      setError("Message is required");
       setLoading(false);
       return;
     }
@@ -331,7 +333,7 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
 
       if (announcementType === "book") {
         payload = {
-          title: title?.trim() || `Buku Baru: ${bookTitle.trim()}`,
+          title: title?.trim() || `New Book: ${bookTitle.trim()}`,
           bookTitle: bookTitle.trim(),
           message: message.trim(),
         };
@@ -354,7 +356,7 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
         throw new Error(errData?.message || `server responded ${res.status}`);
       }
 
-      setSuccess("pengumuman berhasil dikirim ke semua user!");
+      setSuccess("Announcement successfully sent to all users!");
       setTitle("");
       setBookTitle("");
       setMessage("");
@@ -366,7 +368,7 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
         window.dispatchEvent(new CustomEvent("announcements:updated"));
       }
     } catch (err: any) {
-      setError(err?.message || "gagal mengirim pengumuman.");
+      setError(err?.message || "Failed to send announcement.");
       console.error("QuickAnnouncementPanel error:", err);
     } finally {
       setLoading(false);
@@ -379,7 +381,7 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Tipe Pengumuman</label>
+          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Type</label>
           <div className="flex gap-2">
             <button type="button" onClick={() => setAnnouncementType("general")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "general" ? colors.primary : colors.bgSecondary, color: announcementType === "general" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}` }}>📢 Umum</button>
             <button type="button" onClick={() => setAnnouncementType("book")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "book" ? colors.success : colors.bgSecondary, color: announcementType === "book" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "book" ? colors.success : colors.bgTertiary}` }}>📚 Buku Baru</button>
@@ -389,32 +391,32 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
         {announcementType === "book" ? (
           <>
             <div>
-              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Judul Buku <span style={{ color: colors.danger }}>*</span></label>
+              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Book Title <span style={{ color: colors.danger }}>*</span></label>
               <input name="bookTitle" value={bookTitle} onChange={(e) => setBookTitle(e.target.value)} required placeholder="Misal: Norwegian Wood" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
             </div>
 
             <div>
-              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Judul Pengumuman <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(opsional)</span></label>
-              <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Default: Buku Baru: [Judul Buku]" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
+              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Title <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(optional)</span></label>
+              <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Default: New Book: [Book Title]" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
             </div>
           </>
         ) : (
           <div>
-            <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Judul Pengumuman <span style={{ color: colors.danger }}>*</span></label>
-            <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="Misal: Perpus tutup besok" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
+            <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Title <span style={{ color: colors.danger }}>*</span></label>
+            <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="E.g.: The Library is Closed Tomorrow" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
           </div>
         )}
 
         <div>
-          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Isi pesan<span style={{ color: colors.danger }}>*</span></label>
-          <textarea name="message" value={message} onChange={(e) => setMessage(e.target.value)} required rows={4} placeholder={announcementType === "book" ? "Deskripsi tentang buku baru..." : "Isi pengumumannya..."} className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} onFocus={(e) => { const color = announcementType === "book" ? colors.success : colors.primary; (e.currentTarget as HTMLTextAreaElement).style.borderColor = color; (e.currentTarget as HTMLTextAreaElement).style.boxShadow = `0 0 0 2px ${color}20`; }} onBlur={(e) => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = colors.bgTertiary; (e.currentTarget as HTMLTextAreaElement).style.boxShadow = "none"; }} />
+          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Message<span style={{ color: colors.danger }}>*</span></label>
+          <textarea name="message" value={message} onChange={(e) => setMessage(e.target.value)} required rows={4} placeholder={announcementType === "book" ? "Description about the new book..." : "Enter the announcement..."} className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} onFocus={(e) => { const color = announcementType === "book" ? colors.success : colors.primary; (e.currentTarget as HTMLTextAreaElement).style.borderColor = color; (e.currentTarget as HTMLTextAreaElement).style.boxShadow = `0 0 0 2px ${color}20`; }} onBlur={(e) => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = colors.bgTertiary; (e.currentTarget as HTMLTextAreaElement).style.boxShadow = "none"; }} />
         </div>
 
         {error && <p className="text-sm" style={{ color: colors.danger }}>{error}</p>}
         {success && <p className="text-sm" style={{ color: colors.success }}>{success}</p>}
 
         <button type="submit" disabled={loading} className="w-full py-3 mt-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 text-white" style={{ backgroundColor: announcementType === "book" ? colors.success : colors.primary }}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {loading ? "Mengirim..." : "Kirim ke semua user"}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {loading ? "Sending..." : "Send to All Users"}
         </button>
       </form>
     </div>

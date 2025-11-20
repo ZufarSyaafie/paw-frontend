@@ -107,7 +107,7 @@ export default function BookingDetailPage() {
   }
 
   useEffect(() => {
-    const fetchBooking = async () => {
+    const fetchBooking = async (showLoading = true) => {
       const token = getAuthToken()
       if (!token) {
         setError("Authentication required.")
@@ -115,8 +115,10 @@ export default function BookingDetailPage() {
         return
       }
 
+      if (showLoading) setIsLoading(true)
+      if (!showLoading) setError(null)
+
       try {
-        // Ganti endpoint fetch jadi /api/rooms/bookings/list
         const response = await fetch(`${API_URL}/api/rooms/bookings/list`, {
           headers: { Authorization: `Bearer ${token}` },
         })
@@ -127,7 +129,6 @@ export default function BookingDetailPage() {
         }
 
         const list = (await response.json()) as Booking[]
-        // Cari booking-nya di dalam list
         const found = list.find((b) => String(b.id) === bookingId || String((b as any)._id) === bookingId)
 
         if (!found) {
@@ -137,22 +138,40 @@ export default function BookingDetailPage() {
         setBooking(found)
       } catch (err: any) {
         console.error(err)
-        setError(err.message || "Failed to load booking details. Using fallback data.")
-
-        const mockDataWithPhotos = {
-          ...MOCK_BOOKING,
-          room: {
-            ...MOCK_BOOKING.room,
-            photos: MOCK_BOOKING.room.photos || ["https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop"]
-          }
+        // jangan ganggu user dengan error flash pas silent reload
+        if (showLoading) {
+             setError(err.message || "Failed to load booking details. Using fallback data.")
+             const mockDataWithPhotos = {
+                ...MOCK_BOOKING,
+                room: {
+                  ...MOCK_BOOKING.room,
+                  photos: MOCK_BOOKING.room.photos || ["https://images.unsplash.com/photo-1552664730-d307ca884978?w=400&h=300&fit=crop"]
+                }
+              }
+              setBooking(mockDataWithPhotos as Booking)
         }
-        setBooking(mockDataWithPhotos as Booking)
       } finally {
-        setIsLoading(false)
+        if (showLoading) setIsLoading(false)
       }
     }
 
-    if (bookingId) fetchBooking()
+    if (bookingId) {
+      fetchBooking(true)
+
+      const onFocus = () => {
+        fetchBooking(false)
+      }
+      window.addEventListener("focus", onFocus)
+
+      const interval = setInterval(() => {
+        fetchBooking(false)
+      }, 5000)
+
+      return () => {
+        window.removeEventListener("focus", onFocus)
+        clearInterval(interval)
+      }
+    }
   }, [bookingId])
 
   const handleCancel = async () => {

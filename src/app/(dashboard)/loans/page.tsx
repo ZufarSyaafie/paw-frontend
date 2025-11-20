@@ -68,31 +68,74 @@ export default function LoansPage() {
   const [sortBy, setSortBy] = useState("dueDateDesc")
 
   useEffect(() => {
-    const fetchLoans = async () => {
-      const token = getAuthToken()
-      setIsLoading(true)
+    let cancelled = false
+    let activeController: AbortController | null = null
+
+    const fetchLoans = async (showLoading = false) => {
+      if (showLoading) setIsLoading(true)
 
       try {
-        const headers: HeadersInit = {}
+        // abort previous request (hindari race)
+        if (activeController) activeController.abort()
+        const controller = new AbortController()
+        activeController = controller
+
+        const token = getAuthToken()
+        const headers: Record<string, string> = {}
         if (token) headers["Authorization"] = `Bearer ${token}`
-        const response = await fetch(`${API_URL}/api/loans/my`, {
+
+        const res = await fetch(`${API_URL}/api/loans/my`, {
           headers,
           credentials: "include",
+          signal: controller.signal,
         })
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.message || "Failed to fetch loan history.")
+
+        if (!res.ok) {
+          // coba ambil message, tapi jangan crash kalo bukan json
+          const errData = await res.json().catch(() => null)
+          throw new Error(errData?.message || "failed to fetch loan history")
         }
-        const data = await response.json()
-        setLoans(data || [])
+
+        const data = await res.json()
+        if (!cancelled) {
+          setLoans(data || [])
+          setError(null)
+        }
       } catch (err: any) {
-        console.error("Fetch Loans Error:", err)
-        setError(err.message || "Failed to load loan history.")
+        if (!cancelled) {
+          if (err.name === "AbortError") {
+            // ignore abort
+          } else {
+            setError(err.message || "failed to load loan history.")
+          }
+        }
       } finally {
-        setIsLoading(false)
+        if (!cancelled && showLoading) setIsLoading(false)
       }
     }
-    fetchLoans()
+
+    // initial load: show loader
+    fetchLoans(true)
+
+    // refresh when tab focused or visible
+    const onFocus = () => fetchLoans(false)
+    const onVisibility = () => {
+      if (document.visibilityState === "visible") fetchLoans(false)
+    }
+
+    window.addEventListener("focus", onFocus)
+    document.addEventListener("visibilitychange", onVisibility)
+
+    // polling tanpa loading
+    const interval = setInterval(() => fetchLoans(false), 5000)
+
+    return () => {
+      cancelled = true
+      if (activeController) activeController.abort()
+      window.removeEventListener("focus", onFocus)
+      document.removeEventListener("visibilitychange", onVisibility)
+      clearInterval(interval)
+    }
   }, [])
 
   const filteredLoans = useMemo(() => {
@@ -275,9 +318,9 @@ export default function LoansPage() {
                   fontWeight: "600",
                 }}
               >
-                <option value="dueDateDesc">Due Date (Newest)</option>
-                <option value="dueDateAsc">Due Date (Oldest)</option>
-                <option value="borrowDate">Borrow Date (Newest)</option>
+                <option value="dueDateDesc">Due Date (Farthest)</option>
+                <option value="dueDateAsc">Due Date (Soonest)</option>
+                {/* <option value="borrowDate">Borrow Date (Oldest)</option> */}
               </select>
             </div>
           </div>

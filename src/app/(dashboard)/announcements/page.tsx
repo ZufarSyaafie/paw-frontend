@@ -25,43 +25,49 @@ export default function AnnouncementsPage() {
 	const [showFilters, setShowFilters] = useState(false)
     
 	useEffect(() => {
-		const fetchAnnouncements = async () => {
-			const token = getAuthToken()
+        const fetchAnnouncements = async (showLoading = true) => {
+            const token = getAuthToken()
 
-			setIsLoading(true)
-			setError(null)
+            if (showLoading) setIsLoading(true)
+            if (showLoading) setError(null)
 
-			try {
-				const headers: HeadersInit = {};
+            try {
+                const headers: HeadersInit = {};
                 if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
                 }
 
-				const response = await fetch(`${API_URL}/api/announcements`, {
-					headers: headers, 
-				})
+                const response = await fetch(`${API_URL}/api/announcements`, {
+                    headers: headers, 
+                })
 
-				if (!response.ok) {
-					const errorData = await response.json()
-					if (response.status === 401 || response.status === 403) {
-						throw new Error("Login required to view announcements, even though they are public list.");
-					}
-					throw new Error(errorData.message || "Failed to fetch announcements.")
-				}
+                if (!response.ok) {
+                    const errorData = await response.json()
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error("Login required to view announcements, even though they are public list.");
+                    }
+                    throw new Error(errorData.message || "Failed to fetch announcements.")
+                }
 
-				const data = await response.json()
-				setAnnouncements(data || []) 
-			} catch (err: any) {
-				console.error("Fetch Announcements Error:", err)
-				setError("Failed to load announcements. Please check backend status and log in.")
-				setAnnouncements([])
-			} finally {
-				setIsLoading(false)
-			}
-		}
+                const data = await response.json()
+                setAnnouncements(data || []) 
+            } catch (err: any) {
+                console.error("Fetch Announcements Error:", err)
+                if (showLoading) {
+                   setError("Failed to load announcements. Please check backend status and log in.")
+                   setAnnouncements([])
+                }
+            } finally {
+                if (showLoading) setIsLoading(false)
+            }
+        }
 
-		fetchAnnouncements()
-	}, [])
+        fetchAnnouncements(true)
+        
+        const interval = setInterval(() => fetchAnnouncements(false), 5000);
+        return () => clearInterval(interval);
+
+    }, [])
 
     const hasActiveFilters = searchQuery !== "" || startDate !== "" || endDate !== "";
     

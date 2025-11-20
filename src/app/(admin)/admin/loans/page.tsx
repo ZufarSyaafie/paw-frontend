@@ -59,8 +59,9 @@ export default function ManageLoansPage() {
 
   const token = getAuthToken();
 
-  async function fetchLoans() {
-    setIsLoading(true);
+  async function fetchLoans(showLoading = true) {
+    if (showLoading) setIsLoading(true);
+    
     try {
       const headers: HeadersInit = {};
       if (token) headers["Authorization"] = `Bearer ${token}`;
@@ -76,15 +77,30 @@ export default function ManageLoansPage() {
       setLoans([]);
       console.error("fetchLoans error:", err);
     } finally {
-      setIsLoading(false);
+      if (showLoading) setIsLoading(false);
     }
   }
 
   useEffect(() => {
-    if (token) fetchLoans();
-    else setIsLoading(false);
-  }, [token]);
+    if (token) {
+      fetchLoans(true) 
 
+      const onFocus = () => {
+        fetchLoans(false) 
+      }
+      window.addEventListener("focus", onFocus)
+
+      const interval = setInterval(() => {
+        fetchLoans(false)
+      }, 5000)
+
+      return () => {
+        window.removeEventListener("focus", onFocus)
+        clearInterval(interval)
+      }
+    } else setIsLoading(false);
+  }, [token]);
+  
   const handleReturn = async (loanId: string) => {
     if (!confirm("Are you sure you want to 'Force Return' this book?")) return;
 
