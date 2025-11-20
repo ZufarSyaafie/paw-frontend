@@ -10,10 +10,11 @@ interface BookingCardProps {
 }
 
 export const BookingCard: React.FC<BookingCardProps> = ({ booking }) => {
-  const statusConfig = {
+  const statusConfig: any = {
     confirmed: { color: 'bg-emerald-100 text-emerald-800', icon: CheckCircle, label: 'CONFIRMED' },
     pending_payment: { color: 'bg-amber-100 text-amber-800', icon: Hourglass, label: 'PENDING PAYMENT' },
     cancelled: { color: 'bg-red-100 text-red-800', icon: XCircle, label: 'CANCELLED' },
+    completed: { color: 'bg-slate-200 text-slate-700', icon: CheckCircle, label: 'COMPLETED' },
   }
 
   const config = statusConfig[booking.status] || statusConfig.cancelled
