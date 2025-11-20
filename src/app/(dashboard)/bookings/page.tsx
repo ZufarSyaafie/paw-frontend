@@ -11,27 +11,39 @@ import { colors } from "@/styles/colors"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
+const checkIfCompleted = (booking: Booking): boolean => {
+    if (booking.status !== 'confirmed') return false;
+    
+    const bookingEndDateTime = new Date(booking.date);
+    const [hours, minutes] = booking.endTime.split(':').map(Number);
+    bookingEndDateTime.setHours(hours, minutes, 0, 0);
+
+    return new Date().getTime() > bookingEndDateTime.getTime();
+};
+
 export default function BookingsPage() {
   const router = useRouter()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
-  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "cancelled">("all")
+  const [filter, setFilter] = useState<"all" | "confirmed" | "pending" | "cancelled" | "completed">("all")
   const [showFilters, setShowFilters] = useState(false)
   const [sortBy, setSortBy] = useState<"dateDesc" | "dateAsc">("dateDesc")
 
   useEffect(() => {
     let cancelled = false
 
-    const fetchMyBookings = async () => {
-      setIsLoading(true)
-      setError(null)
+    const fetchMyBookings = async (showLoading = true) => {
+      if (showLoading) setIsLoading(true)
+      if (!showLoading) setError(null)
 
       const token = getAuthToken()
       if (!token) {
-        setError("Authentication required. Please login.")
-        setIsLoading(false)
+        if (!cancelled) {
+             setError("Authentication required. Please login.")
+             setIsLoading(false)
+        }
         return
       }
 
@@ -71,26 +83,46 @@ export default function BookingsPage() {
           setBookings(data)
         }
       } catch (err: any) {
-        if (!cancelled) setError(err?.message || "Failed to load bookings")
+        // jangan set error state pas silent reload biar ga flicker error
+        if (!cancelled && showLoading) setError(err?.message || "Failed to load bookings")
       } finally {
-        if (!cancelled) setIsLoading(false)
+        if (!cancelled && showLoading) setIsLoading(false)
       }
     }
 
-    fetchMyBookings()
+    fetchMyBookings(true)
+
+    const onFocus = () => {
+      fetchMyBookings(false)
+    }
+    window.addEventListener("focus", onFocus)
+
+    const interval = setInterval(() => {
+      fetchMyBookings(false)
+    }, 5000)
+
     return () => {
+      window.removeEventListener("focus", onFocus)
+      clearInterval(interval)
       cancelled = true
     }
   }, [])
 
   const filteredBookings = useMemo(() => {
-    let list = bookings.slice()
+    let list = bookings.map(b => ({
+        ...b,
+        status: checkIfCompleted(b) ? 'completed' : b.status 
+    })) as any[];
+
+
+    // let list = listWithStatus;
 
     if (filter !== "all") {
       list = list.filter((booking) => {
         if (filter === "confirmed") return booking.status === "confirmed"
         if (filter === "pending") return booking.status === "pending_payment"
         if (filter === "cancelled") return booking.status === "cancelled"
+        if (filter === "completed") return booking.status === "completed" 
         return false
       })
     }
@@ -127,6 +159,7 @@ export default function BookingsPage() {
     { label: "Confirmed", value: "confirmed" },
     { label: "Pending Payment", value: "pending" },
     { label: "Cancelled", value: "cancelled" },
+    { label: "Completed", value: "completed" }, // Added option
   ]
 
   return (
