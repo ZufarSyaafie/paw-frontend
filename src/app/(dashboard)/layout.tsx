@@ -1,4 +1,4 @@
-"use client"
+"use client""use client"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
@@ -17,18 +17,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     let alive = true
 
     const checkSession = async () => {
-      try {
-        // cek token localstorage
-        const token = getAuthToken()
-        const headers: HeadersInit = {}
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`
-        }
+      const token = getAuthToken()
 
-        // fetch api
+      if (!token) {
+        if (alive) {
+          setAuthorized(false)
+          setChecking(false)
+          router.replace('/sign-in')
+        }
+        return
+      }
+
+      try {
         const res = await fetch(`${API_URL}/api/users/me`, {
-          headers, 
-          credentials: "include"
+          headers: {
+            Authorization: `Bearer ${token}`
+          },
+          credentials: "include",
+          cache: "no-store"
         })
 
         if (!alive) return
@@ -39,7 +45,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           setAuthorized(false)
           router.replace('/sign-in')
         }
-      } catch (error) {
+      } catch (err) {
         if (alive) {
           setAuthorized(false)
           router.replace('/sign-in')
@@ -50,14 +56,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     }
 
     checkSession()
-    
-    return () => { alive = false }
-  }, [router])
 
-  if (checking) return (
-    <div className="flex justify-center items-center h-screen">Loading...</div>
-  )
-  
+    return () => { alive = false }
+  }, [])
+
+  if (checking) {
+    return <div className="flex justify-center items-center h-screen">Loading...</div>
+  }
+
   if (!authorized) return null
 
   return (
