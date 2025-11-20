@@ -13,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 export default function BooksPage() {
     const [books, setBooks] = useState<Book[]>([])
-    const [isLoading, setIsLoading] = useState(true)
+    const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
     const [categories, setCategories] = useState<string[]>(["All"])
@@ -24,25 +24,23 @@ export default function BooksPage() {
     const [sortBy, setSortBy] = useState<"title" | "author" | "year">("title")
     const [showFilters, setShowFilters] = useState(false)
 
-    const fetchBooks = useCallback(async () => {
+    const fetchBooks = useCallback(async (showLoader = true) => {
         const token = getAuthToken()
-        setIsLoading(true)
+        
+        if (showLoader) setIsLoading(true)
         setError(null)
 
         const queryParams = new URLSearchParams()
-        const isYear = /^\d{4}$/.test(activeSearch);
+        const isYear = /^\d{4}$/.test(activeSearch)
         if (activeSearch) {
             if (isYear && parseInt(activeSearch) > 1900 && parseInt(activeSearch) <= new Date().getFullYear()) {
-                // Kalo taun, kirim sebagai parameter 'year'
                 queryParams.append("year", activeSearch)
             } else {
-                // Kalo bukan tahun, kirim sebagai parameter 'search' umum
                 queryParams.append("search", activeSearch)
-            }        
+            }
         }
         if (selectedCategory !== "All") queryParams.append("category", selectedCategory)
-        if (selectedStatus !== "All") queryParams.append("status", selectedStatus)
-
+        
         try {
             const headers: HeadersInit = {}
             if (token) headers["Authorization"] = `Bearer ${token}`
@@ -63,10 +61,12 @@ export default function BooksPage() {
             setBooks(data.data || data || [])
         } catch (err: any) {
             console.error("Fetch Books Error:", err)
-            setError(err.message || "Failed to load books. Please check backend status.")
-            setBooks([])
+            // no error state pas silent reload biar ga flicker error
+            if (showLoader) {
+                setError(err.message || "Failed to load books. Please check backend status.")
+            }
         } finally {
-            setIsLoading(false)
+            if (showLoader) setIsLoading(false)
         }
     }, [activeSearch, selectedCategory, selectedStatus])
 
@@ -135,7 +135,21 @@ export default function BooksPage() {
     }, [])
 
     useEffect(() => {
-        fetchBooks()
+        fetchBooks(true)
+
+        const onFocus = () => {
+            fetchBooks(false)
+        }
+        window.addEventListener("focus", onFocus)
+
+        const interval = setInterval(() => {
+            fetchBooks(false)
+        }, 5000)
+
+        return () => {
+            window.removeEventListener("focus", onFocus)
+            clearInterval(interval)
+        }
     }, [selectedCategory, selectedStatus, activeSearch, fetchBooks])
 
     useEffect(() => {
@@ -160,12 +174,30 @@ export default function BooksPage() {
     }
 
     const sortedBooks = useMemo(() => {
-        return [...books].sort((a, b) => {
+        let filteredData =[...books]
+        if (selectedStatus !== "All") {
+            filteredData = filteredData.filter((book) => {
+                const status = book.status || "available"
+                const stock = book.stock || 0
+                
+                if (selectedStatus === "Available") {
+                    return status === "available" && stock > 0
+                }
+                if (selectedStatus === "Out of Stock") {
+                    return status === "available" && stock === 0
+                }
+                if (selectedStatus === "Unavailable") {
+                    return status === "unavailable"
+                }
+                return true
+            })
+        }
+        return filteredData.sort((a, b) => {
             if (sortBy === "title") return (a.title || "").localeCompare(b.title || "")
             if (sortBy === "author") return (a.author || "").localeCompare(b.author || "")
             return (b.year || 0) - (a.year || 0)
         })
-    }, [books, sortBy])
+    }, [books, sortBy, selectedStatus])
 
     const hasActiveFilters = selectedCategory !== "All" || selectedStatus !== "All" || activeSearch !== ""
 
@@ -280,7 +312,7 @@ export default function BooksPage() {
                                         Status
                                     </p>
                                     <div className="flex flex-wrap gap-2">
-                                        {["All", "available", "unavailable"].map((status) => (
+                                        {["All", "Available", "Unavailable", "Out of Stock"].map((status) => (
                                             <button
                                                 key={status}
                                                 onClick={() => setSelectedStatus(status)}
@@ -324,7 +356,7 @@ export default function BooksPage() {
                 </div>
             </div>
 
-            {/* Books Grid - Responsive Columns */}
+            {/* Books Grid */}
             {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <p className="text-slate-600">Loading books...</p>
@@ -337,7 +369,7 @@ export default function BooksPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5 md:gap-6">
-                  {books.map((book) => (
+                  {sortedBooks.map((book) => (
                     <BookCard
                       key={book._id || book.id}
                       id={book._id || book.id}
@@ -345,6 +377,7 @@ export default function BooksPage() {
                       author={book.author}
                       cover={book.cover}
                       stock={book.stock}
+                      status={book.status}
                     />
                   ))}
                 </div>
