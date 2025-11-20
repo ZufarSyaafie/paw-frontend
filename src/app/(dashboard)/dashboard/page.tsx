@@ -167,15 +167,40 @@ function Dashboard() {
 
         const base = API_URL.replace(/\/+$/, "")
 
+        const userRes = await fetch(`${base}/api/users/me`, common)
+
+        // unauthorized handling early
+        if (userRes.status === 401 || userRes.status === 403) {
+          removeAuthToken()
+          if (!cancelledRef.current) router.replace("/sign-in")
+          return
+        }
+
+        const userData = await safeJson(userRes)
+
+        if (cancelledRef.current) return
+
+        if (userData) {
+          if (userData.role === "admin") {
+            controllerRef.current?.abort()
+            if (!cancelledRef.current) {
+              router.replace("/admin/dashboard")
+            }
+            return
+          }
+
+          const realName = userData.name || userData.username || "User"
+          setUsername(realName)
+          try { localStorage.setItem("username", realName) } catch {}
+        }
+
         const [
-          userRes,
           featuredBooksRes,
           totalBooksRes,
           roomsRes,
           announcementsRes,
           loansRes,
         ] = await Promise.all([
-          fetch(`${base}/api/users/me`, common),
           fetch(`${base}/api/books?limit=4&sortBy=createdAt&order=desc`, common),
           fetch(`${base}/api/books?limit=1`, common),
           fetch(`${base}/api/rooms`, common),
@@ -184,13 +209,12 @@ function Dashboard() {
         ])
 
         // unauthorized handling
-        if ([userRes, featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes].some(r => r.status === 401 || r.status === 403)) {
+        if ([featuredBooksRes, totalBooksRes, roomsRes, announcementsRes, loansRes].some(r => r.status === 401 || r.status === 403)) {
           removeAuthToken()
           if (!cancelledRef.current) router.replace("/sign-in")
           return
         }
 
-        const userData = await safeJson(userRes)
         const featuredBooksData = await safeJson(featuredBooksRes)
         const totalBooksData = await safeJson(totalBooksRes)
         const roomsData = await safeJson(roomsRes) || []
@@ -198,12 +222,6 @@ function Dashboard() {
         const loansData = await safeJson(loansRes) || []
 
         if (cancelledRef.current) return
-
-        if (userData) {
-          const realName = userData.name || userData.username || "User"
-          setUsername(realName)
-          try { localStorage.setItem("username", realName) } catch {}
-        }
 
         const featuredBooks = (featuredBooksData?.data) || []
         const totalBooks = (totalBooksData?.total) || 0
