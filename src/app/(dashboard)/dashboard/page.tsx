@@ -3,7 +3,9 @@
 import Link from "next/link"
 import { ChevronRight, BookOpen, Users, Bell, Loader2, AlertCircle, AlertTriangle } from "lucide-react"
 import { useState, useEffect, useRef, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter, 
+  // useSearchParams 
+} from "next/navigation"
 import BookCard from "@/components/books/book-card"
 import { RoomCard } from "@/components/rooms/room-card"
 import AnnouncementCard from "@/components/announcements/announcement-card"
@@ -11,7 +13,9 @@ import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import { spacing } from "@/styles/spacing"
 import type { Book, Room, Announcement, Loan } from "@/types"
-import { getAuthToken, setAuthToken, removeAuthToken } from "@/lib/auth"
+import { getAuthToken, 
+  // setAuthToken, 
+  removeAuthToken } from "@/lib/auth"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? ""
 
@@ -77,7 +81,7 @@ function Dashboard() {
   const [upcomingLoans, setUpcomingLoans] = useState<Loan[]>([])
 
   const router = useRouter()
-  const searchParams = useSearchParams()
+  // const searchParams = useSearchParams()
 
   const controllerRef = useRef<AbortController | null>(null)
   const cancelledRef = useRef(false)
@@ -93,15 +97,8 @@ function Dashboard() {
 
   useEffect(() => {
     try {
-      const token = searchParams?.get("token")
-      if (token && typeof token === "string" && token !== "undefined") {
-        setAuthToken(token)
-        try {
-          const url = new URL(window.location.href)
-          url.searchParams.delete("token")
-          window.history.replaceState({}, document.title, url.pathname + url.search)
-        } catch {}
-      }
+      const stored = localStorage.getItem("username")
+      if (stored) setUsername(stored)
     } catch {}
 
     const hour = new Date().getHours()
@@ -109,13 +106,6 @@ function Dashboard() {
     else if (hour < 15) setGreeting("Good Afternoon")
     else if (hour < 18) setGreeting("Good Evening")
     else setGreeting("Good Night")
-  }, [])
-
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem("username")
-      if (stored) setUsername(stored)
-    } catch {}
   }, [])
 
   useEffect(() => {
@@ -128,7 +118,7 @@ function Dashboard() {
     }
 
     if (!API_URL) {
-      setError("API URL tidak dikonfigurasi. Set NEXT_PUBLIC_API_URL.")
+      setError("API URL has not configured yet. Set NEXT_PUBLIC_API_URL.")
       setIsLoading(false)
       return
     }
@@ -163,7 +153,6 @@ function Dashboard() {
         const headers: Record<string, string> = {}
         if (token) headers["Authorization"] = `Bearer ${token}`
         const common: RequestInit = { credentials: "include", headers, signal }
-
         const base = API_URL.replace(/\/+$/, "")
 
         const userRes = await fetch(`${base}/api/users/me`, common)
@@ -229,24 +218,26 @@ function Dashboard() {
         const startOfToday = new Date()
         startOfToday.setHours(0,0,0,0)
 
-        const late = (loansData || []).filter((loan: any) => loan?.status === 'late')
+        const late = (loansData || []).filter((loan: any) => loan.status === 'late')
         const upcoming = (loansData || []).filter((loan: any) => {
           if (!loan?.dueDate || isNaN(new Date(loan.dueDate).getTime())) return false
           const dueDate = new Date(loan.dueDate)
           return loan.status === 'borrowed' && dueDate >= startOfToday && dueDate <= sevenDaysFromNow
         })
 
-        setLateLoans(late)
-        setUpcomingLoans(upcoming)
-        setStats({
-          totalBooks,
-          availableRooms,
-          announcementCount,
-          featuredBooks,
-          featuredRooms,
-          featuredAnnouncements,
-        })
-        setError(null)
+        if (!cancelledRef.current) {
+          setLateLoans(late)
+          setUpcomingLoans(upcoming)
+          setStats({
+            totalBooks,
+            availableRooms,
+            announcementCount,
+            featuredBooks,
+            featuredRooms,
+            featuredAnnouncements,
+          })
+          setError(null)
+        }
 
         return { ok: true }
       } catch (err: any) {
@@ -274,7 +265,6 @@ function Dashboard() {
       }
 
       if (res.isAdmin) {
-        removeAuthToken()
         if (!cancelledRef.current) router.replace("/admin/dashboard")
         return
       }
@@ -298,7 +288,8 @@ function Dashboard() {
       controllerRef.current?.abort()
       window.clearInterval(intervalRef.current ?? 0)
     }
-  }, [router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) 
 
   if (isLoading) return <DashboardLoadingSkeleton />
 
@@ -325,9 +316,9 @@ function Dashboard() {
           <div className="p-4 bg-red-50 border border-red-300 rounded-lg flex items-center gap-3">
             <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0" />
             <div>
-              <h3 className="font-semibold text-red-800">Peringatan Keterlambatan!</h3>
+              <h3 className="font-semibold text-red-800">Late Warning!</h3>
               <p className="text-sm text-red-700">
-                Ada {lateLoans.length} buku yang telat dibalikin. Cek <Link href="/loans" className="font-bold underline">Halaman Pinjaman</Link> buat liat denda.
+                There are {lateLoans.length} books that are overdue. Check the <Link href="/loans" className="font-bold underline">Loans Page</Link> to see the fines.
               </p>
             </div>
           </div>
@@ -389,7 +380,7 @@ function Dashboard() {
         </Section>
 
         <Section title="Available Rooms" description="Book a space for your group" viewAllHref="/rooms">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {stats.featuredRooms.map((room: any) => (
               <RoomCard key={room.id || room._id} {...room} />
             ))}

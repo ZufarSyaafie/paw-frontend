@@ -280,7 +280,7 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
                     })
                   ) : (
                     <tr>
-                      <td colSpan={4} className="text-center p-8" style={{ color: colors.textSecondary }}>{search || startDate || endDate ? "tidak ada pengumuman yang cocok dengan filter." : "belum ada pengumuman yang dibuat."}</td>
+                      <td colSpan={4} className="text-center p-8" style={{ color: colors.textSecondary }}>{search || startDate || endDate ? "No announcements match the filter." : "No announcement has been made yet."}</td>
                     </tr>
                   )}
                 </tbody>
@@ -383,8 +383,8 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
         <div>
           <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Type</label>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setAnnouncementType("general")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "general" ? colors.primary : colors.bgSecondary, color: announcementType === "general" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}` }}>📢 Umum</button>
-            <button type="button" onClick={() => setAnnouncementType("book")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "book" ? colors.success : colors.bgSecondary, color: announcementType === "book" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "book" ? colors.success : colors.bgTertiary}` }}>📚 Buku Baru</button>
+            <button type="button" onClick={() => setAnnouncementType("general")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "general" ? colors.primary : colors.bgSecondary, color: announcementType === "general" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}` }}>📢 General</button>
+            <button type="button" onClick={() => setAnnouncementType("book")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "book" ? colors.success : colors.bgSecondary, color: announcementType === "book" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "book" ? colors.success : colors.bgTertiary}` }}>📚 New Book</button>
           </div>
         </div>
 

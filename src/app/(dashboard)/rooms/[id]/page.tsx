@@ -250,6 +250,14 @@ export default function RoomDetailPage() {
   const handleBook = async () => {
     if (isButtonDisabled) return
 
+    const selectedDateTime = new Date(`${selectedDate}T${startTimeInput}:00`);
+    const nowCheck = new Date();
+
+    if (selectedDateTime.getTime() < nowCheck.getTime()) {
+      setApiError("Booking failed: Selected time is in the past. Please select a future time/date.")
+      return
+    }
+    
     setIsBooking(true)
     setApiError(null)
     const token = getAuthToken()
