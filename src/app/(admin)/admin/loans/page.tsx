@@ -455,7 +455,7 @@ export default function ManageLoansPage() {
                         )}
                       </td>
                       <td className="p-4 align-top text-center">
-                        {!isReturned && (
+                        {!isReturned && !isUnpaid && (
                           <button
                             onClick={() => handleReturn(loan._id || (loan as any).id)}
                             className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex mr-2"
