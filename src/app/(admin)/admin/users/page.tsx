@@ -43,7 +43,7 @@ export default function ManageUsersPage() {
       const data = await res.json();
       setUsers(data || []);
     } else {
-        console.error("Gagal fetch users:", res.statusText);
+        console.error("Failed to fetch users:", res.statusText);
         setUsers([]);
     }
     
@@ -69,7 +69,7 @@ export default function ManageUsersPage() {
   }, [token]);
 
   const handleDelete = async (userId: string) => {
-    if (!confirm("Yakin mau hapus user ini? Ini gak bisa di-undo.")) return;
+    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     
     await fetch(`${API_URL}/api/users/${userId}`, { 
       method: "DELETE",
@@ -102,7 +102,7 @@ export default function ManageUsersPage() {
 
     if (!res.ok) {
         const errData = await res.json();
-        setError(errData.message || "Gagal membuat user.");
+        setError(errData.message || "Failed to create user.");
     } else {
         closeModal();
         fetchUsers();
@@ -215,7 +215,7 @@ export default function ManageUsersPage() {
                   className="text-sm font-medium block mb-2"
                   style={{ color: colors.textPrimary }}
                 >
-                  Password (Minimum 6 characters)
+                  Password (Minimum of 6 characters)
                 </label>
                 <Input 
                   name="password" 

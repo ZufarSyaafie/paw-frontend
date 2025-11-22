@@ -83,7 +83,7 @@ export default function ManageBookingsPage() {
   }, [token]);
 
   const handleCancel = async (bookingId: string) => {
-    if (!confirm("Yakin mau cancel booking user ini?")) return;
+    if (!confirm("Are you sure you want to cancel this user's booking?")) return;
     
     await fetch(`${API_URL}/api/rooms/bookings/${bookingId}/cancel`, {
       method: "PUT",
@@ -351,7 +351,7 @@ export default function ManageBookingsPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="text-center p-8" style={{ color: colors.textSecondary }}>
-                    There is no matching booking data.
+                    No matching booking data found.
                   </td>
                 </tr>
               )}

@@ -84,7 +84,7 @@ export default function OtpClient() {
 
       router.push("/dashboard")
     } catch (err: any) {
-      setError(err.message || "Verifikasi gagal. Silakan coba lagi.")
+      setError(err.message || "Verification failed. Please try again.")
     } finally {
       setIsLoading(false)
     }
@@ -95,7 +95,7 @@ export default function OtpClient() {
     setError("")
 
     if (!email) {
-        setError("Email tidak ditemukan.")
+        setError("Email not found.")
         setIsResending(false)
         return
     }
@@ -114,17 +114,17 @@ export default function OtpClient() {
       })
 
       const data = await response.json()
-      if (!response.ok) throw new Error(data.message || "Gagal mengirim ulang kode")
+      if (!response.ok) throw new Error(data.message || "Failed to resend code")
 
       // ALERT OTP BARU) 
       if (data.demoOtp) {
-          alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP BARU Anda adalah: ${data.demoOtp}`);
+          alert(`DEMO MODE (Email Failed to Send):\nYour NEW OTP code is: ${data.demoOtp}`);
       } else {
-          alert("Kode OTP baru telah 'dikirim'.");
+          alert("A new OTP code has been 'sent'.");
       }
 
     } catch (err: any) {
-      setError(err.message || "Gagal mengirim ulang kode.")
+      setError(err.message || "Failed to resend the code.")
     } finally {
       setIsResending(false)
     }
@@ -147,7 +147,7 @@ export default function OtpClient() {
         <div className="space-y-4 text-center">
           <p className="text-red-400">{error}</p>
           <Button onClick={() => router.push("/sign-in")} className="w-full">
-            Kembali
+            Back
           </Button>
         </div>
       ) : (

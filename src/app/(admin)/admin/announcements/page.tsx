@@ -392,7 +392,7 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
           <>
             <div>
               <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Book Title <span style={{ color: colors.danger }}>*</span></label>
-              <input name="bookTitle" value={bookTitle} onChange={(e) => setBookTitle(e.target.value)} required placeholder="Misal: Norwegian Wood" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
+              <input name="bookTitle" value={bookTitle} onChange={(e) => setBookTitle(e.target.value)} required placeholder="E.g.: Norwegian Wood" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
             </div>
 
             <div>

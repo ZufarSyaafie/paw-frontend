@@ -139,15 +139,15 @@ export default function ProfilePage() {
     }, [isEditing]) // Add isEditing dependency to prevent overwriting form data while editing
 
     const handleProfilePictureClick = () => {
-        const choice = window.confirm("Pilih 'OK' untuk upload file (hanya sementara, tidak tersimpan di database), atau 'Cancel' untuk memasukkan URL gambar (permanen).");
+        const choice = window.confirm("Select 'OK' to upload the file (temporary, not saved in the database), or 'Cancel' to enter an image URL (permanent).");
         if (choice) {
             fileInputRef.current?.click();
         } else {
-            const newImageUrl = window.prompt("Masukkan URL gambar online (e.g., https://i.imgur.com/...jpg):");
+            const newImageUrl = window.prompt("Enter the online image URL (e.g., https://i.imgur.com/...jpg):");
             if (newImageUrl && newImageUrl.startsWith("http")) {
                 handleSaveProfilePictureUrl(newImageUrl);
             } else if (newImageUrl) {
-                alert("URL tidak valid. Harus dimulai dengan 'http'.");
+                alert("Invalid URL. Must start with 'http'.");
             }
         }
     }
@@ -188,17 +188,17 @@ export default function ProfilePage() {
             setUserData({ ...userData!, profilePicture: updatedUser.profilePicture });
             localStorage.setItem('userProfilePicture', updatedUser.profilePicture);
             window.dispatchEvent(new Event('storage'));
-            alert("Foto profil berhasil diperbarui!");
+            alert("Profile picture updated successfully!");
 
         } catch (err: any) {
-            alert(`Gagal update foto: ${err.message}`);
+            alert(`Failed to update photo: ${err.message}`);
         } finally {
             setIsSaving(false);
         }
     }
 
     const handleSaveProfile = async () => {
-        if (!window.confirm("Yakin mau simpan perubahan ini?")) {
+        if (!window.confirm("Save these changes?")) {
             return;
         }
 
@@ -242,7 +242,7 @@ export default function ProfilePage() {
             window.dispatchEvent(new Event('storage'));
             
             if (oldEmail !== updatedUser.email && !updatedUser.isVerified) {
-                alert("Profile updated! Email Anda telah diganti dan sekarang UNVERIFIED. Silakan verifikasi email baru Anda.");
+                alert("Profile updated! Your email has been changed and is now UNVERIFIED. Please verify your new email.");
             } else {
                 alert("Profile updated successfully!");
             }
@@ -592,43 +592,74 @@ function OverviewTab({ activity }: { activity: { loans: FrontendLoan[], bookings
 function BooksTab({ books }: { books: FrontendLoan[] }) {
     return (
         <div className="space-y-3">
-            {books.map((loan) => (
-                <div
-                    key={(loan.id || loan._id) as string}
-                    className="rounded-lg border border-slate-200 p-4"
-                    style={{ backgroundColor: colors.bgSecondary }}
-                >
-                     <div className="flex items-start justify-between mb-3">
-                        <div>
-                            <p className={typography.h4} style={{ color: colors.textPrimary }}>
-                                {loan.book.title}
-                             </p>
-                            <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
-                               by {loan.book.author}
-                             </p>
+            {books.map((loan) => {
+                const returnDate = loan.returnDate || (loan as any).returnedAt;
+                const isReturned = loan.status === 'returned';
+
+                let borrowDateObj = new Date(loan.borrowDate);
+                if (isNaN(borrowDateObj.getTime()) && loan.dueDate) {
+                     const due = new Date(loan.dueDate);
+                     borrowDateObj = new Date(due.getTime() - 7 * 24 * 60 * 60 * 1000);
+                }
+                
+                const displayBorrowDate = !isNaN(borrowDateObj.getTime())
+                    ? borrowDateObj.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                    : "N/A";
+
+                let rightLabel = "Due Date";
+                let rightValueString = loan.dueDate;
+                let rightColor = (loan.status as string) === "overdue" ? colors.danger : colors.textPrimary;
+                let rightWeight = "normal";
+
+                if (isReturned && returnDate) {
+                    rightLabel = "Returned Date";
+                    rightValueString = returnDate;
+                    rightColor = colors.success;
+                    rightWeight = "600";
+                }
+
+                const displayRightDate = rightValueString
+                    ? new Date(rightValueString).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })
+                    : "N/A";
+
+                return (
+                    <div
+                        key={(loan.id || loan._id) as string}
+                        className="rounded-lg border border-slate-200 p-4"
+                        style={{ backgroundColor: colors.bgSecondary }}
+                    >
+                        <div className="flex items-start justify-between mb-3">
+                            <div>
+                                <p className={typography.h4} style={{ color: colors.textPrimary }}>
+                                    {loan.book.title}
+                                </p>
+                                <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
+                                    by {loan.book.author}
+                                </p>
+                            </div>
+                            <StatusBadge status={loan.status} />
                         </div>
-                        <StatusBadge status={loan.status} />
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
+                                    Borrow Date
+                                </p>
+                                <p className={typography.body} style={{ color: colors.textPrimary }}>
+                                    {displayBorrowDate}
+                                </p>
+                            </div>
+                            <div>
+                                <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
+                                    {rightLabel}
+                                </p>
+                                <p className={typography.body} style={{ color: rightColor, fontWeight: rightWeight }}>
+                                    {displayRightDate}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                            <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
-                                Borrow Date
-                            </p>
-                             <p className={typography.body} style={{ color: colors.textPrimary }}>
-                                {new Date(loan.borrowDate).toLocaleDateString()}
-                            </p>
-                        </div>
-                        <div>
-                            <p className={typography.labelSmall} style={{ color: colors.textSecondary }}>
-                                Due Date
-                            </p>
-                            <p style={{ color: (loan.status as string) === "overdue" ? colors.danger : colors.textPrimary }}>
-                                {new Date(loan.dueDate).toLocaleDateString()}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            ))}
+                )
+            })}
         </div>
     )
 }

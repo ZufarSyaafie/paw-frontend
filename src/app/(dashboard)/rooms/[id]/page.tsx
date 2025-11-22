@@ -356,10 +356,10 @@ export default function RoomDetailPage() {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Duration:</span>
-                <span className="font-semibold text-gray-900">{totalHours.toFixed(2)} jam</span>
+                <span className="font-semibold text-gray-900">{totalHours.toFixed(2)} hrs</span>
               </div>
               <div className="border-t border-gray-200 pt-2 mt-2 flex justify-between">
-                <span className="text-gray-900 font-semibold">Total Harga:</span>
+                <span className="text-gray-900 font-semibold">Total Price:</span>
                 <span className="text-cyan-600 font-bold text-lg">{formatRupiah(totalPrice)}</span>
               </div>
             </div>

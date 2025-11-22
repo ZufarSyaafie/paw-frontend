@@ -31,6 +31,10 @@ export default function RegisterPage() {
       return
     }
     
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters")
+      return
+    }
     setIsLoading(true)
     setError("") 
 
@@ -49,12 +53,12 @@ export default function RegisterPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        throw new Error(data.message || "Registrasi gagal. Silakan coba lagi.")
+        throw new Error(data.message || "Registration failed. Please try again.")
       }
 
       // LOGIC FALLBACK
       if (data.demoOtp) {
-        alert(`MODE DEMO (Email Gagal Terkirim):\nKode OTP Anda adalah: ${data.demoOtp}`);
+        alert(`DEMO MODE (Email Failed to Send):\nYour OTP code is: ${data.demoOtp}`);
       } else {
         alert("Registration initiated. Please check your email.");
       }
@@ -74,7 +78,8 @@ export default function RegisterPage() {
     window.location.href = `${API_URL}/api/auth/google`
   }
 
-  const isFormValid = username && phone && email && password && confirmPassword && password === confirmPassword
+  const isFormValid = username && phone && email && password && confirmPassword && password === confirmPassword 
+  && password.length >= 6
 
   return (
     <AuthLayout>

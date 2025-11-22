@@ -102,7 +102,7 @@ export default function ManageLoansPage() {
   }, [token]);
   
   const handleReturn = async (loanId: string) => {
-    if (!confirm("Are you sure you want to 'Force Return' this book?")) return;
+    if (!confirm("Are you sure you want to 'Return' this book?")) return;
 
     const loan = loans.find((l) => (l._id || (l as any).id) === loanId);
     if (!loan) {
@@ -250,7 +250,7 @@ export default function ManageLoansPage() {
   };
 
   const handleCancel = async (loanId: string) => {
-    if (!confirm("Yakin mau 'Cancel' (hapus) loan ini? Ini hanya bisa jika user belum bayar.")) return;
+    if (!confirm("Are you sure you want to 'Cancel' (delete) this loan? This can only be done if the user has not paid the deposit.")) return;
 
     const tokenLocal = token;
     try {
@@ -266,10 +266,10 @@ export default function ManageLoansPage() {
       if (!res.ok) throw new Error(payload?.message || "Cancel failed");
 
       await fetchLoans();
-      alert(payload?.message || "Loan berhasil dicancel.");
+      alert(payload?.message || "Loan cancelled successfully.");
     } catch (err: any) {
       console.error("admin handleCancel error:", err);
-      alert(err?.message || "Gagal memproses cancel loan");
+      alert(err?.message || "Failed to process loan cancellation");
     }
   };
 

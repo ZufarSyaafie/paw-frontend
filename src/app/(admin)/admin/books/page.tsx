@@ -357,8 +357,7 @@ export default function ManageBooksPage(): React.JSX.Element {
                 const stock = book.stock as number;
                 const borrowed = book.borrowedCount ?? 0;
 
-                // --- LOGIC YANG BENER ---
-                let finalStatus: string = book.status; // Tipe string biar gak rewel
+                let finalStatus: string = book.status; 
                 let statusLabel: string = book.status;
 
                 if (stock === 0) {
