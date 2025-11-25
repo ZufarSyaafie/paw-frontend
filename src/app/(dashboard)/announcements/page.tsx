@@ -7,24 +7,23 @@ import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
 import type { Announcement } from "@/types"
 import { getAuthToken } from "@/lib/auth"
+import { Button } from "@/components/ui/button"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 const sampleAnnouncements: Announcement[] = []
 
 export default function AnnouncementsPage() {
-	const [announcements, setAnnouncements] = useState<Announcement[]>(sampleAnnouncements)
-	const [isLoading, setIsLoading] = useState(false)
-	const [error, setError] = useState<string | null>(null)
+    const [announcements, setAnnouncements] = useState<Announcement[]>(sampleAnnouncements)
+    const [isLoading, setIsLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
 
-	const [searchQuery, setSearchQuery] = useState("")
-    
+    const [searchQuery, setSearchQuery] = useState("")
     const [startDate, setStartDate] = useState(''); 
     const [endDate, setEndDate] = useState(''); 
-
-	const [showFilters, setShowFilters] = useState(false)
+    const [showFilters, setShowFilters] = useState(false)
     
-	useEffect(() => {
+    useEffect(() => {
         const fetchAnnouncements = async (showLoading = true) => {
             const token = getAuthToken()
 
@@ -88,13 +87,11 @@ export default function AnnouncementsPage() {
             
             if (startDate) {
                 const start = new Date(startDate);
-                // compare timestamp
                 matchesDate = matchesDate && announcementDate.getTime() >= start.getTime();
             }
             
             if (endDate) {
                 const end = new Date(endDate);
-                // Tambah satu hari biar inklusif (sampai akhir hari yang dipilih)
                 end.setDate(end.getDate() + 1); 
                 matchesDate = matchesDate && announcementDate.getTime() < end.getTime();
             }
@@ -105,28 +102,28 @@ export default function AnnouncementsPage() {
     
     const handleClearFilters = () => {
         setSearchQuery("");
-        setStartDate(''); // Clear date filters
+        setStartDate('');
         setEndDate('');
     };
 
-	return (
-		<div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
-			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-				
-				<div className="py-6 space-y-4">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                        <div>
-                            <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
-                                Announcements
-                            </h1>
-                            <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
-                                {filteredAnnouncements.length} latest updates from the library.
-                            </p>
-                        </div>
-					</div>
-					
-                    {/* SEARCH INPUT & FILTER BUTTONS */}
-					<div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
+    return (
+        <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                
+                {/* Header Section */}
+                <div className="py-8 border-b" style={{ borderBottomColor: "#e2e8f0" }}>
+                    <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
+                        Announcements
+                    </h1>
+                    <p className={`${typography.bodySmall} mt-2`} style={{ color: colors.textSecondary }}>
+                        {filteredAnnouncements.length} result
+                        {filteredAnnouncements.length !== 1 ? "s" : ""} found
+                    </p>
+                </div>
+
+                {/* Search & Filters */}
+                <div className="py-6 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
                         <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
                             {/* Search bar */}
                             <div className="relative flex-1 min-w-0 sm:flex-auto">
@@ -148,8 +145,8 @@ export default function AnnouncementsPage() {
                                 />
                             </div>
 
-                            {/* Filter Button */}
-                            <button
+                            {/* Filter button */}
+                            <Button
                                 onClick={() => setShowFilters(!showFilters)}
                                 className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
                                 style={{
@@ -162,96 +159,117 @@ export default function AnnouncementsPage() {
                             >
                                 <Filter className="w-5 h-5 flex-shrink-0" />
                                 <span className="hidden sm:inline">Filters</span>
-                            </button>
+                            </Button>
 
-                            {/* Clear Button */}
+                            {/* Clear button */}
                             {hasActiveFilters && (
-                                <button
+                                <Button
                                     onClick={handleClearFilters}
                                     className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
                                     style={{
                                         backgroundColor: colors.bgPrimary,
                                         color: colors.danger,
-                                        border: `1px solid #fecaca`,
+                                        border: "1px solid #fecaca",
                                         minHeight: "42px",
                                         padding: "10px 12px",
                                     }}
                                 >
                                     <X className="w-5 h-5 flex-shrink-0" />
                                     <span className="hidden sm:inline">Clear</span>
-                                </button>
+                                </Button>
                             )}
                         </div>
                     </div>
                     
                     {showFilters && (
-                        <div className="rounded-lg p-4 border bg-gray-50 space-y-4">
-                            <h3 className="font-semibold text-gray-700 text-sm mb-2">Filter by Date</h3>
-                            <div className="grid grid-cols-2 gap-4 max-w-lg">
-                                {/* Input From Date */}
+                        <div
+                            className="rounded-lg p-4 sm:p-6 border space-y-4 sm:space-y-6 overflow-x-auto"
+                            style={{
+                                backgroundColor: colors.bgPrimary,
+                                borderColor: "#e2e8f0",
+                            }}
+                        >
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                                {/* From Date */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">From Date</label>
+                                    <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                                        From Date
+                                    </p>
                                     <input
                                         type="date"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500"
-                                        style={{ backgroundColor: colors.bgPrimary }}
+                                        className="w-full px-3 sm:px-4 py-2 rounded-lg border font-medium focus:outline-none focus:ring-2 transition-all text-sm"
+                                        style={{
+                                            backgroundColor: colors.bgSecondary,
+                                            borderColor: "#cbd5e1",
+                                            color: colors.textPrimary,
+                                            borderWidth: "1px",
+                                        }}
                                     />
                                 </div>
-                                {/* Input To Date */}
+
+                                {/* To Date */}
                                 <div>
-                                    <label className="block text-xs font-medium text-gray-500 mb-1">To Date</label>
+                                    <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                                        To Date
+                                    </p>
                                     <input
                                         type="date"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.target.value)}
-                                        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:ring-blue-500 focus:border-blue-500"
-                                        style={{ backgroundColor: colors.bgPrimary }}
+                                        className="w-full px-3 sm:px-4 py-2 rounded-lg border font-medium focus:outline-none focus:ring-2 transition-all text-sm"
+                                        style={{
+                                            backgroundColor: colors.bgSecondary,
+                                            borderColor: "#cbd5e1",
+                                            color: colors.textPrimary,
+                                            borderWidth: "1px",
+                                        }}
                                     />
                                 </div>
                             </div>
                         </div>
                     )}
-                </div>				
+                </div>
+            </div>
 
-				{/* Content based on state */}
-				{isLoading ? (
-					<div className="flex justify-center items-center h-48">
-						<Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
-						<p className="ml-3 text-gray-600 font-medium">Loading announcements...</p>
-					</div>
-				) : error ? (
-					<div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center flex flex-col items-center">
-						<AlertCircle className="w-8 h-8 text-red-600 mb-3" />
-						<h3 className="font-semibold text-red-800 mb-1">Error Loading Data</h3>
-						<p className="text-sm text-red-700">{error}</p>
-					</div>
-				) : filteredAnnouncements.length > 0 ? (
-					<div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-2">
-						{filteredAnnouncements.map((announcement) => (
-							<AnnouncementCard 
-								key={(announcement.id || announcement._id) as string} 
-								id={(announcement.id || announcement._id) as string}
-                                // Fallback logic (priority: title > bookTitle)
-								title={(announcement.title || announcement.bookTitle || "New Update") as string}
-								snippet={(announcement.message || announcement.snippet || "") as string}
-								date={(announcement.createdAt || announcement.date || "") as string}
-							/>
-						))}
-					</div>
-				) : (
-					<div className="text-center py-16">
-						<Bell className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textTertiary }} />
-						<h3 className={`${typography.h3} mb-2`} style={{ color: colors.textSecondary }}>
-							No new announcements
-						</h3>
-						<p className={typography.bodySmall} style={{ color: colors.textTertiary }}>
-							The library currently has no active announcements.
-						</p>
-					</div>
-				)}
-			</div>
-		</div>
-	)
+            {/* Content - Separate Wrapper */}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                {isLoading ? (
+                    <div className="flex justify-center items-center h-48">
+                        <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+                        <p className="ml-3 text-gray-600 font-medium">Loading announcements...</p>
+                    </div>
+                ) : error ? (
+                    <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center flex flex-col items-center">
+                        <AlertCircle className="w-8 h-8 text-red-600 mb-3" />
+                        <h3 className="font-semibold text-red-800 mb-1">Error Loading Data</h3>
+                        <p className="text-sm text-red-700">{error}</p>
+                    </div>
+                ) : filteredAnnouncements.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-6">
+                        {filteredAnnouncements.map((announcement) => (
+                            <AnnouncementCard 
+                                key={(announcement.id || announcement._id) as string} 
+                                id={(announcement.id || announcement._id) as string}
+                                title={(announcement.title || announcement.bookTitle || "New Update") as string}
+                                snippet={(announcement.message || announcement.snippet || "") as string}
+                                date={(announcement.createdAt || announcement.date || "") as string}
+                            />
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16">
+                        <Bell className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textTertiary }} />
+                        <h3 className={`${typography.h3} mb-2`} style={{ color: colors.textSecondary }}>
+                            No announcements found
+                        </h3>
+                        <p className={typography.bodySmall} style={{ color: colors.textTertiary }}>
+                            Try adjusting your search or filter options
+                        </p>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
 }

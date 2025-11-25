@@ -202,186 +202,186 @@ export default function BooksPage() {
     const hasActiveFilters = selectedCategory !== "All" || selectedStatus !== "All" || activeSearch !== ""
 
     return (
-        <div className="px-4 sm:px-6 md:px-8 lg:px-12 py-6">
-          <div className="space-y-6">
-            {/* Header & Search */}
-            <div className="space-y-4">
-                <div className="py-8 border-b" style={{ borderBottomColor: "#e2e8f0" }}>
-                    <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
-                        Books
-                    </h1>
-                    <p className={`${typography.bodySmall} mt-2`} style={{ color: colors.textSecondary }}>
-                        {sortedBooks.length} results found
-                    </p>
-                </div>
-
-                <div className="py-6 space-y-4">
-					<div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
-						<div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
-							{/* Search bar */}
-							<div className="relative flex-1 min-w-0 sm:flex-auto">
-                                {/* <form onSubmit={handleSearchSubmit}> */}
-                                <Search
-                                    className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
-                                    style={{ color: colors.textTertiary }}
-                                />
-                                <input
-                                    type="text"
-                                    placeholder="Search title, ISBN, year, cat..."                                        value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
-                                    style={{
-                                        backgroundColor: colors.bgPrimary,
-                                        borderColor: "#cbd5e1",
-                                        color: colors.textPrimary,
-                                    }}
-                                />
-                                {/* </form> */}
-							</div>
-
-							{/* Filter button */}
-							<Button
-								onClick={() => setShowFilters(!showFilters)}
-								className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
-								style={{
-									backgroundColor: showFilters ? colors.info : colors.bgPrimary,
-									color: showFilters ? "white" : colors.textSecondary,
-									border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
-									minHeight: "42px",
-									padding: "10px 12px",
-								}}
-							>
-								<Filter className="w-5 h-5 flex-shrink-0" />
-								<span className="hidden sm:inline">Filters</span>
-							</Button>
-
-							{/* Clear button */}
-							{hasActiveFilters && (
-								<Button
-									onClick={handleClearFilters}
-									className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
-									style={{
-										backgroundColor: colors.bgPrimary,
-										color: colors.danger,
-										border: "1px solid #fecaca",
-										minHeight: "42px",
-										padding: "10px 12px",
-									}}
-								>
-									<X className="w-5 h-5 flex-shrink-0" />
-									<span className="hidden sm:inline">Clear</span>
-								</Button>
-							)}
-						</div>
-					</div>
-
-                    {showFilters && (
-                        <div
-                            className="rounded-lg p-4 sm:p-6 border space-y-4 sm:space-y-6 overflow-x-auto"
-                            style={{
-                                backgroundColor: colors.bgPrimary,
-                                borderColor: "#e2e8f0",
-                            }}
-                        >
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                                <div>
-                                    <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
-                                        Category
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {categories.map((cat) => (
-                                            <button
-                                                key={cat}
-                                                onClick={() => setSelectedCategory(cat)}
-                                                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap"
-                                                style={{
-                                                    backgroundColor: selectedCategory === cat ? colors.info : colors.bgSecondary,
-                                                    color: selectedCategory === cat ? "white" : colors.textSecondary,
-                                                    borderColor: selectedCategory === cat ? colors.info : "#cbd5e1",
-                                                    borderWidth: "1px",
-                                                }}
-                                            >
-                                                {cat}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
-                                        Status
-                                    </p>
-                                    <div className="flex flex-wrap gap-2">
-                                        {["All", "Available", "Unavailable", "Out of Stock"].map((status) => (
-                                            <button
-                                                key={status}
-                                                onClick={() => setSelectedStatus(status)}
-                                                className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
-                                                style={{
-                                                    backgroundColor: selectedStatus === status ? colors.info : colors.bgSecondary,
-                                                    color: selectedStatus === status ? "white" : colors.textSecondary,
-                                                    borderColor: selectedStatus === status ? colors.info : "#cbd5e1",
-                                                    borderWidth: "1px",
-                                                }}
-                                            >
-                                                {status === "All" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
-                                            </button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                <div>
-                                    <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
-                                        Sort By
-                                    </p>
-                                    <select
-                                        value={sortBy}
-                                        onChange={(e) => setSortBy(e.target.value as "title" | "author" | "year")}
-                                        className="w-full px-3 sm:px-4 py-2 rounded-lg border font-medium focus:outline-none focus:ring-2 transition-all text-sm sm:text-base"
-                                        style={{
-                                            backgroundColor: colors.bgSecondary,
-                                            borderColor: "#cbd5e1",
-                                            color: colors.textPrimary,
-                                            borderWidth: "1px",
-                                        }}
-                                    >
-                                        <option value="title">Title (A-Z)</option>
-                                        <option value="author">Author (A-Z)</option>
-                                        <option value="year">Year (Newest)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-                </div>
+        <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Header Section */}
+            <div className="py-8 border-b" style={{ borderBottomColor: "#e2e8f0" }}>
+              <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
+                Books
+              </h1>
+              <p className={`${typography.bodySmall} mt-2`} style={{ color: colors.textSecondary }}>
+                {sortedBooks.length} results found
+              </p>
             </div>
 
-            {/* Books Grid */}
-            {isLoading ? (
-                <div className="flex items-center justify-center py-12">
-                  <p className="text-slate-600">Loading books...</p>
-                </div>
-              ) : error ? (
-                <div className="text-red-600 text-center py-12">{error}</div>
-              ) : books.length === 0 ? (
-                <div className="text-slate-600 text-center py-12">
-                  No books found
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-5 md:gap-6">
-                  {sortedBooks.map((book) => (
-                    <BookCard
-                      key={book._id || book.id}
-                      id={book._id || book.id}
-                      title={book.title}
-                      author={book.author}
-                      cover={book.cover}
-                      stock={book.stock}
-                      status={book.status}
+            {/* Search & Filters */}
+            <div className="py-6 space-y-4">
+              <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
+                <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
+                  {/* Search bar */}
+                  <div className="relative flex-1 min-w-0 sm:flex-auto">
+                    <Search
+                      className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+                      style={{ color: colors.textTertiary }}
                     />
-                  ))}
+                    <input
+                      type="text"
+                      placeholder="Search title, ISBN, year, cat..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+                      style={{
+                        backgroundColor: colors.bgPrimary,
+                        borderColor: "#cbd5e1",
+                        color: colors.textPrimary,
+                      }}
+                    />
+                  </div>
+
+                  {/* Filter button */}
+                  <Button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
+                    style={{
+                      backgroundColor: showFilters ? colors.info : colors.bgPrimary,
+                      color: showFilters ? "white" : colors.textSecondary,
+                      border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
+                      minHeight: "42px",
+                      padding: "10px 12px",
+                    }}
+                  >
+                    <Filter className="w-5 h-5 flex-shrink-0" />
+                    <span className="hidden sm:inline">Filters</span>
+                  </Button>
+
+                  {/* Clear button */}
+                  {hasActiveFilters && (
+                    <Button
+                      onClick={handleClearFilters}
+                      className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
+                      style={{
+                        backgroundColor: colors.bgPrimary,
+                        color: colors.danger,
+                        border: "1px solid #fecaca",
+                        minHeight: "42px",
+                        padding: "10px 12px",
+                      }}
+                    >
+                      <X className="w-5 h-5 flex-shrink-0" />
+                      <span className="hidden sm:inline">Clear</span>
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {showFilters && (
+                <div
+                  className="rounded-lg p-4 sm:p-6 border space-y-4 sm:space-y-6 overflow-x-auto"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    borderColor: "#e2e8f0",
+                  }}
+                >
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <div>
+                      <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                        Category
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {categories.map((cat) => (
+                          <button
+                            key={cat}
+                            onClick={() => setSelectedCategory(cat)}
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap"
+                            style={{
+                              backgroundColor: selectedCategory === cat ? colors.info : colors.bgSecondary,
+                              color: selectedCategory === cat ? "white" : colors.textSecondary,
+                              borderColor: selectedCategory === cat ? colors.info : "#cbd5e1",
+                              borderWidth: "1px",
+                            }}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                        Status
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {["All", "Available", "Unavailable", "Out of Stock"].map((status) => (
+                          <button
+                            key={status}
+                            onClick={() => setSelectedStatus(status)}
+                            className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
+                            style={{
+                              backgroundColor: selectedStatus === status ? colors.info : colors.bgSecondary,
+                              color: selectedStatus === status ? "white" : colors.textSecondary,
+                              borderColor: selectedStatus === status ? colors.info : "#cbd5e1",
+                              borderWidth: "1px",
+                            }}
+                          >
+                            {status === "All" ? "All" : status.charAt(0).toUpperCase() + status.slice(1)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                        Sort By
+                      </p>
+                      <select
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value as "title" | "author" | "year")}
+                        className="w-full px-3 sm:px-4 py-2 rounded-lg border font-medium focus:outline-none focus:ring-2 transition-all text-sm sm:text-base"
+                        style={{
+                          backgroundColor: colors.bgSecondary,
+                          borderColor: "#cbd5e1",
+                          color: colors.textPrimary,
+                          borderWidth: "1px",
+                        }}
+                      >
+                        <option value="title">Title (A-Z)</option>
+                        <option value="author">Author (A-Z)</option>
+                        <option value="year">Year (Newest)</option>
+                      </select>
+                    </div>
+                  </div>
                 </div>
               )}
+            </div>
+          </div>
+
+          {/* Books Grid - Separate Wrapper */}
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <p className="text-slate-600">Loading books...</p>
+              </div>
+            ) : error ? (
+              <div className="text-red-600 text-center py-12">{error}</div>
+            ) : sortedBooks.length === 0 ? (
+              <div className="text-slate-600 text-center py-12">
+                No books found
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-5 lg:gap-6">
+                {sortedBooks.map((book) => (
+                  <BookCard
+                    key={book._id || book.id}
+                    id={book._id || book.id}
+                    title={book.title}
+                    author={book.author}
+                    cover={book.cover}
+                    stock={book.stock}
+                    status={book.status}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
     )

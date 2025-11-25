@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Plus, Search, Filter, Loader2, BookOpen, AlertCircle, X } from "lucide-react"
 import { useState, useEffect, useMemo } from "react"
-// import { typography } from "@/styles/typography" // removed, pakai custom responsive classes
+import { typography } from "@/styles/typography"
 import { LoanCard } from "@/components/loans/LoanCard"
 import type { Loan } from "@/types"
 import { getAuthToken } from "@/lib/auth"
@@ -11,8 +11,6 @@ import { useRouter } from "next/navigation"
 import { colors } from "@/styles/colors"
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL
-
-// type FrontendLoan = Loan & { status: "borrowed" | "returned" | "overdue" }
 
 const MOCK_LOANS: Loan[] = [
   {
@@ -75,7 +73,6 @@ export default function LoansPage() {
       if (showLoading) setIsLoading(true)
 
       try {
-        // abort previous request (hindari race)
         if (activeController) activeController.abort()
         const controller = new AbortController()
         activeController = controller
@@ -91,7 +88,6 @@ export default function LoansPage() {
         })
 
         if (!res.ok) {
-          // coba ambil message, tapi jangan crash kalo bukan json
           const errData = await res.json().catch(() => null)
           throw new Error(errData?.message || "failed to fetch loan history")
         }
@@ -114,10 +110,8 @@ export default function LoansPage() {
       }
     }
 
-    // initial load: show loader
     fetchLoans(true)
 
-    // refresh when tab focused or visible
     const onFocus = () => fetchLoans(false)
     const onVisibility = () => {
       if (document.visibilityState === "visible") fetchLoans(false)
@@ -126,7 +120,6 @@ export default function LoansPage() {
     window.addEventListener("focus", onFocus)
     document.addEventListener("visibilitychange", onVisibility)
 
-    // polling tanpa loading
     const interval = setInterval(() => fetchLoans(false), 5000)
 
     return () => {
@@ -191,166 +184,183 @@ export default function LoansPage() {
   ]
 
   return (
-    <div className="space-y-8 p-4 sm:p-6 lg:p-8">
-      {/* HEADER MIRROR BOOKING STYLE */}
-      <header className="flex items-start sm:items-center justify-between gap-3 sm:gap-2">
-        <div className="flex flex-col">
-          <div className="flex items-center gap-2">
-            <h1
-              className="text-[18px] sm:text-[30px] font-bold leading-tight tracking-tight text-gray-900
-                         whitespace-nowrap overflow-hidden max-w-[65%] sm:max-w-none"
-            >
+    <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header Section */}
+        <div className="py-8 border-b flex items-start sm:items-center justify-between gap-4" style={{ borderBottomColor: "#e2e8f0" }}>
+          <div>
+            <h1 className={`${typography.h1}`} style={{ color: colors.textPrimary }}>
               My Book Loans
             </h1>
-            {/* <span className="hidden sm:inline px-2 py-1 text-[12px] font-medium rounded-md
-                             bg-cyan-50 text-cyan-700 border border-cyan-200">
-              Loan History
-            </span> */}
+            <p className={`${typography.bodySmall} mt-2`} style={{ color: colors.textSecondary }}>
+              {sortedLoans.length} loan{sortedLoans.length !== 1 ? "s" : ""} found
+            </p>
           </div>
-          <p className="mt-1 text-[12px] sm:text-sm text-gray-600 leading-snug">
-            Manage and monitor your book loan history.
-          </p>
-        </div>
-        <Button
-          onClick={() => router.push("/books")}
-          className="flex-shrink-0 h-9 sm:h-10 px-3 sm:px-4 rounded-md sm:rounded-lg
-                     bg-cyan-500 hover:bg-cyan-600 text-white text-xs sm:text-sm font-semibold
-                     flex items-center gap-1 sm:gap-2 transition-colors"
-        >
-          <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
-          <span className="hidden xs:inline">Borrow</span>
-          <span className="hidden sm:inline">Book</span>
-        </Button>
-      </header>
-
-      {/* SEARCH / FILTER BAR - TIGHTER MOBILE */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-3 sm:gap-4 w-full">
-        <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
-          {/* Search bar */}
-          <div className="relative flex-1 min-w-0 sm:flex-auto">
-            <Search
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 flex-shrink-0"
-              style={{ color: colors.textTertiary }}
-            />
-            <input
-              type="text"
-              placeholder="Search..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full sm:w-64 pl-10 pr-3 py-2 rounded-md sm:rounded-lg border text-sm focus:outline-none focus:ring-2 transition-all"
-              style={{
-                backgroundColor: colors.bgPrimary,
-                borderColor: "#cbd5e1",
-                color: colors.textPrimary,
-              }}
-            />
-          </div>
-
-          {/* Filter button */}
           <Button
-            onClick={() => setShowFilters(!showFilters)}
-            className="px-3 sm:px-4 py-2 rounded-md sm:rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-xs sm:text-sm transition-all"
+            onClick={() => router.push("/books")}
+            className="flex-shrink-0 px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center gap-2 whitespace-nowrap text-sm"
             style={{
-              backgroundColor: showFilters ? colors.info : colors.bgPrimary,
-              color: showFilters ? "white" : colors.textSecondary,
-              border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
-              minHeight: "38px",
-              padding: "8px 12px",
+              backgroundColor: colors.info,
+              color: "white",
+              minHeight: "42px",
+              padding: "10px 12px",
             }}
           >
-            <Filter className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-            <span className="hidden sm:inline">Filters</span>
+            <Plus className="w-5 h-5 flex-shrink-0" />
+            <span className="hidden sm:inline">Borrow Book</span>
+            <span className="sm:hidden">Borrow</span>
           </Button>
+        </div>
 
-          {/* Clear button */}
-          {hasActiveFilters && (
-            <Button
-              onClick={handleClearFilters}
-              className="px-3 py-2 rounded-md sm:rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-xs sm:text-sm transition-all"
+        {/* Search & Filters */}
+        <div className="py-6 space-y-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-stretch sm:justify-end justify-center gap-4 w-full">
+            <div className="flex w-full sm:w-auto items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Search bar */}
+              <div className="relative flex-1 min-w-0 sm:flex-auto">
+                <Search
+                  className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+                  style={{ color: colors.textTertiary }}
+                />
+                <input
+                  type="text"
+                  placeholder="Search title, author..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    borderColor: "#cbd5e1",
+                    color: colors.textPrimary,
+                  }}
+                />
+              </div>
+
+              {/* Filter button */}
+              <Button
+                onClick={() => setShowFilters(!showFilters)}
+                className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
+                style={{
+                  backgroundColor: showFilters ? colors.info : colors.bgPrimary,
+                  color: showFilters ? "white" : colors.textSecondary,
+                  border: `1px solid ${showFilters ? colors.info : "#cbd5e1"}`,
+                  minHeight: "42px",
+                  padding: "10px 12px",
+                }}
+              >
+                <Filter className="w-5 h-5 flex-shrink-0" />
+                <span className="hidden sm:inline">Filters</span>
+              </Button>
+
+              {/* Clear button */}
+              {hasActiveFilters && (
+                <Button
+                  onClick={handleClearFilters}
+                  className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
+                  style={{
+                    backgroundColor: colors.bgPrimary,
+                    color: colors.danger,
+                    border: "1px solid #fecaca",
+                    minHeight: "42px",
+                    padding: "10px 12px",
+                  }}
+                >
+                  <X className="w-5 h-5 flex-shrink-0" />
+                  <span className="hidden sm:inline">Clear</span>
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {showFilters && (
+            <div
+              className="rounded-lg p-4 sm:p-6 border space-y-4 sm:space-y-6 overflow-x-auto"
               style={{
                 backgroundColor: colors.bgPrimary,
-                color: colors.danger,
-                border: "1px solid #fecaca",
-                minHeight: "38px",
-                padding: "8px 12px",
+                borderColor: "#e2e8f0",
               }}
             >
-              <X className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
-              <span className="hidden sm:inline">Clear</span>
-            </Button>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div>
+                  <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                    Status
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {filterOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => setFilter(option.value)}
+                        className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
+                        style={{
+                          backgroundColor: filter === option.value ? colors.info : colors.bgSecondary,
+                          color: filter === option.value ? "white" : colors.textSecondary,
+                          borderColor: filter === option.value ? colors.info : "#cbd5e1",
+                          borderWidth: "1px",
+                        }}
+                      >
+                        {option.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className={`${typography.labelSmall} uppercase mb-3 sm:mb-4 font-bold`} style={{ color: colors.textPrimary }}>
+                    Sort By
+                  </p>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="w-full px-3 sm:px-4 py-2 rounded-lg border font-medium focus:outline-none focus:ring-2 transition-all text-sm sm:text-base"
+                    style={{
+                      backgroundColor: colors.bgSecondary,
+                      borderColor: "#cbd5e1",
+                      color: colors.textPrimary,
+                      borderWidth: "1px",
+                    }}
+                  >
+                    <option value="dueDateDesc">Due Date (Farthest)</option>
+                    <option value="dueDateAsc">Due Date (Soonest)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
 
-      {showFilters && (
-        <div className="p-4 sm:p-6 rounded-lg border border-gray-200 bg-gray-50 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-3">Filter by Status</p>
-              <div className="flex flex-wrap gap-2">
-                {filterOptions.map((option) => (
-                  <Button
-                    key={option.value}
-                    onClick={() => setFilter(option.value)}
-                    variant="outline"
-                    className={`transition-colors text-sm font-medium ${
-                      filter === option.value
-                        ? "bg-cyan-600 text-white border-cyan-600 hover:bg-cyan-700"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-3">Sort By</p>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="w-full max-w-xs px-3 py-2 rounded-lg border border-gray-400 font-medium focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all text-sm bg-gray-100 text-gray-900"
-                style={{
-                  backgroundColor: colors.bgPrimary,
-                  color: "#111827",
-                  borderColor: "#9ca3af",
-                  fontWeight: "600",
-                }}
-              >
-                <option value="dueDateDesc">Due Date (Farthest)</option>
-                <option value="dueDateAsc">Due Date (Soonest)</option>
-                {/* <option value="borrowDate">Borrow Date (Oldest)</option> */}
-              </select>
-            </div>
+      {/* Content - Separate Wrapper */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {isLoading ? (
+          <div className="flex justify-center items-center h-48">
+            <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
+            <p className="ml-3 text-gray-600 font-medium">Loading loan history...</p>
           </div>
-        </div>
-      )}
-
-      {isLoading ? (
-        <div className="flex justify-center items-center h-48">
-          <Loader2 className="w-8 h-8 text-cyan-500 animate-spin" />
-          <p className="ml-3 text-gray-600 font-medium">Loading loan history...</p>
-        </div>
-      ) : error ? (
-        <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center flex flex-col items-center">
-          <AlertCircle className="w-8 h-8 text-red-600 mb-3" />
-          <h3 className="font-semibold text-red-800 mb-1">Error Loading Data</h3>
-          <p className="text-sm text-red-700">{error}</p>
-        </div>
-      ) : sortedLoans.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {sortedLoans.map((loan) => (
-            <LoanCard key={loan.id || (loan._id as string)} loan={loan as Loan} />
-          ))}
-        </div>
-      ) : (
-        <div className="p-6 bg-gray-50 border border-gray-200 rounded-lg text-center">
-          <BookOpen className="w-8 h-8 text-gray-500 mx-auto mb-3" />
-          <h3 className="font-semibold text-gray-800 mb-1">No Loans Found</h3>
-          <p className="text-sm text-gray-600">You currently have no loans matching the filter.</p>
-        </div>
-      )}
+        ) : error ? (
+          <div className="p-6 bg-red-50 border border-red-200 rounded-lg text-center flex flex-col items-center">
+            <AlertCircle className="w-8 h-8 text-red-600 mb-3" />
+            <h3 className="font-semibold text-red-800 mb-1">Error Loading Data</h3>
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        ) : sortedLoans.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {sortedLoans.map((loan) => (
+              <LoanCard key={loan.id || (loan._id as string)} loan={loan as Loan} />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-16">
+            <BookOpen className="w-12 h-12 mx-auto mb-4" style={{ color: colors.textTertiary }} />
+            <h3 className={`${typography.h3} mb-2`} style={{ color: colors.textSecondary }}>
+              No Loans Found
+            </h3>
+            <p className={typography.bodySmall} style={{ color: colors.textTertiary }}>
+              Try adjusting your search or filter options
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
