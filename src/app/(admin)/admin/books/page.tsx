@@ -427,9 +427,7 @@ export default function ManageBooksPage(): React.JSX.Element {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}><tr>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}></th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Title</th>
-                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Author</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Book</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Stock</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Borrowed</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Status</th>
@@ -468,15 +466,25 @@ export default function ManageBooksPage(): React.JSX.Element {
 
                 return (
                   <tr key={key} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
-                    <td className="p-4 align-middle">
+                    <td className="p-4 align-top">
+                      <div className="flex items-start gap-3">
                         <img 
                             src={book.cover || "https://via.placeholder.com/150"} 
                             alt={book.title}
-                            className="w-10 h-14 object-cover rounded shadow-sm border border-slate-100"
+                            className="w-10 h-14 object-cover rounded border border-slate-200 shadow-sm flex-shrink-0"
                         />
+                        <div>
+                            <p className="font-medium line-clamp-2" style={{ color: colors.textPrimary }}>
+                                {book?.title || "Book Deleted"}
+                            </p>
+                            <p className="text-xs text-slate-500 mt-0.5">
+                                {book?.author}
+                            </p>
+                        </div>
+                      </div>
                     </td>
-                    <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{book.title}</td>
-                    <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{book.author}</td>
+                    {/* <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{book.title}</td> */}
+                    {/* <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{book.author}</td> */}
                     <td className="p-4 align-top font-semibold" style={{ color: stock === 0 ? colors.danger : colors.textPrimary }}>{stock}</td>
                     <td className="p-4 align-top font-semibold" style={{ color: borrowed > 0 ? colors.warning : colors.textSecondary }}>{borrowed}</td>
                     <td className="p-4 align-top">
