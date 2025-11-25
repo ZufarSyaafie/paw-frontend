@@ -12,7 +12,8 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL
 
 const STATUS_COLORS: Record<string, string> = {
     borrowed: "bg-cyan-50 text-cyan-700",
-    upcoming: "bg-emerald-50 text-emerald-700",
+    confirmed: "bg-emerald-50 text-emerald-700", 
+    Confirmed: "bg-emerald-50 text-emerald-700",
     returned: "bg-slate-100 text-slate-600",
     completed: "bg-slate-100 text-slate-600",
     overdue: "bg-red-50 text-red-700",
@@ -24,7 +25,8 @@ const STATUS_LABELS: Record<string, string> = {
     borrowed: "Borrowed",
     returned: "Returned",
     overdue: "Overdue",
-    upcoming: "Upcoming",
+    confirmed: "Confirmed",
+    Confirmed: "Confirmed",
     completed: "Completed",
     cancelled: "Cancelled",
     pending_payment: "Pending Payment",
@@ -116,10 +118,26 @@ export default function ProfilePage() {
 
                 const processedBookings = bookingsData
                     .filter((b: Booking) => b.status !== "cancelled")
-                    .map((b: Booking) => ({
-                        ...b,
-                        displayStatus: b.status === "confirmed" ? "completed" : "pending_payment" 
-                    }));
+                    .map((b: Booking) => {
+                        let displayStatus: string = b.status;
+                        if (b.status === 'confirmed') {
+                            const bookingEnd = new Date(b.date);
+                            const [endH, endM] = b.endTime.split(':').map(Number);
+                            bookingEnd.setHours(endH, endM, 0, 0);
+
+                            if (new Date() > bookingEnd) {
+                                displayStatus = 'Completed';
+                            } else {
+                                displayStatus = 'Confirmed';
+                            }
+                        } else if (b.paymentStatus === 'unpaid' || b.status === 'pending_payment') {
+                            displayStatus = 'pending_payment';
+                    }
+
+                    return { ...b, displayStatus };
+                    //     ...b,
+                    //     displayStatus: b.status === "confirmed" ? "completed" : "pending_payment" 
+                    });
 
                 if (!cancelled) {
                     setUserActivity({ loans: processedLoans, bookings: processedBookings })
