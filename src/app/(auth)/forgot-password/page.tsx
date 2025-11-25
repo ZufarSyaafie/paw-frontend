@@ -37,7 +37,9 @@ export default function ForgotPasswordPage() {
         throw new Error(data.message || "Failed to send reset link.")
       }
       
-      setEmailSent(true)
+      // setEmailSent(true)
+      localStorage.setItem("resetEmail", email);
+      router.push("/reset-password");
 
     } catch (err: any) {
       setError(err.message || "Failed to connect to the server.")

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
-import { Camera, Mail, Calendar, BookOpen, Users, Loader2, AlertCircle, Phone } from "lucide-react" // <-- Tambah ikon Phone
+import { Camera, Mail, Calendar, BookOpen, Users, Loader2, AlertCircle, Phone, KeyRound, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { typography } from "@/styles/typography"
 import { colors } from "@/styles/colors"
@@ -41,12 +41,18 @@ export default function ProfilePage() {
     const [editedUsername, setEditedUsername] = useState("")
     const [editedEmail, setEditedEmail] = useState("") 
     const [editedBio, setEditedBio] = useState("")
-    const [editedPhone, setEditedPhone] = useState("") // <-- State baru
+    const [editedPhone, setEditedPhone] = useState("")
 
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
     const [formError, setFormError] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
+
+    const [showPasswordModal, setShowPasswordModal] = useState(false);
+    const [otp, setOtp] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [isSendingOtp, setIsSendingOtp] = useState(false);
+    const [passwordError, setPasswordError] = useState("");
 
     useEffect(() => {
         const token = getAuthToken()
@@ -59,15 +65,15 @@ export default function ProfilePage() {
         let cancelled = false
 
         const fetchUserData = async (showLoading = true) => {
-             if (showLoading) setIsLoading(true)
-             
-             try {
+            if (showLoading) setIsLoading(true)
+            
+            try {
                 const userRes = await fetch(`${API_URL}/api/users/me`, {
                     headers: { "Authorization": `Bearer ${token}` }
                 })
-                 if (!userRes.ok) throw new Error("Failed to fetch user data.")
+                if (!userRes.ok) throw new Error("Failed to fetch user data.")
                 
-                 const userJson = await userRes.json() as UserType
+                const userJson = await userRes.json() as UserType
                 
                 const userData = {
                     ...userJson,
@@ -78,7 +84,6 @@ export default function ProfilePage() {
 
                 if (!cancelled) {
                     setUserData(userData)
-                    // Update edit states only if not currently editing to avoid overwriting user input
                     if (!isEditing) {
                         setEditedUsername(userData.username)
                         setEditedEmail(userData.email) 
@@ -99,9 +104,13 @@ export default function ProfilePage() {
                 const bookingsData = await bookingsRes.json() || []
 
                 const processedLoans = loansData.map((loan: any) => {
-                    let status = loan.status as "borrowed" | "returned" | "overdue";
-                    const isOverdue = status === "borrowed" && new Date(loan.dueDate) < new Date();
-                    if (isOverdue) status = "overdue";
+                    let status = loan.status;
+                    if (loan.paymentStatus === 'unpaid') {
+                        status = 'pending_payment'; 
+                    } else {
+                        const isOverdue = status === 'borrowed' && new Date(loan.dueDate) < new Date();
+                        if (isOverdue) status = "overdue";
+                    }
                     return { ...loan, status: status } as FrontendLoan;
                 });
 
@@ -136,18 +145,18 @@ export default function ProfilePage() {
             window.removeEventListener("focus", onFocus)
             clearInterval(interval)
         }
-    }, [isEditing]) // Add isEditing dependency to prevent overwriting form data while editing
+    }, [isEditing]) 
 
     const handleProfilePictureClick = () => {
-        const choice = window.confirm("Select 'OK' to upload the file (temporary, not saved in the database), or 'Cancel' to enter an image URL (permanent).");
+        const choice = window.confirm("Choose 'OK' to upload a file (temporary), or 'Cancel' to enter an image URL.");
         if (choice) {
             fileInputRef.current?.click();
         } else {
-            const newImageUrl = window.prompt("Enter the online image URL (e.g., https://i.imgur.com/...jpg):");
+            const newImageUrl = window.prompt("Enter an online image URL (e.g., https://i.imgur.com/...jpg):");
             if (newImageUrl && newImageUrl.startsWith("http")) {
                 handleSaveProfilePictureUrl(newImageUrl);
             } else if (newImageUrl) {
-                alert("Invalid URL. Must start with 'http'.");
+                alert("Invalid URL. It must start with 'http'.");
             }
         }
     }
@@ -188,19 +197,17 @@ export default function ProfilePage() {
             setUserData({ ...userData!, profilePicture: updatedUser.profilePicture });
             localStorage.setItem('userProfilePicture', updatedUser.profilePicture);
             window.dispatchEvent(new Event('storage'));
-            alert("Profile picture updated successfully!");
+            alert("Profile photo updated successfully!");
 
         } catch (err: any) {
-            alert(`Failed to update photo: ${err.message}`);
+            alert(`Failed to update profile photo: ${err.message}`);
         } finally {
             setIsSaving(false);
         }
     }
 
     const handleSaveProfile = async () => {
-        if (!window.confirm("Save these changes?")) {
-            return;
-        }
+        if (!window.confirm("Are you sure you want to save these changes?")) return;
 
         setIsSaving(true);
         setFormError(null);
@@ -262,18 +269,71 @@ export default function ProfilePage() {
         setEditedUsername(userData!.username)
         setEditedEmail(userData!.email) 
         setEditedBio(userData!.bio || "")
-        setEditedPhone(userData!.phone || "") // < reset phone pas cancel
+        setEditedPhone(userData!.phone || "")
+    }
+
+    const initiateChangePassword = async () => {
+        if (!confirm("We will send an OTP to your email to verify a password change. Continue?")) return;
+        
+        setIsSendingOtp(true);
+        setPasswordError("");
+
+        try {
+            const res = await fetch(`${API_URL}/api/auth/forgot-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: userData?.email })
+            });
+            
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to send OTP");
+
+            setShowPasswordModal(true);
+        } catch (err: any) {
+            alert(err.message);
+        } finally {
+            setIsSendingOtp(false);
+        }
+    }
+
+    const submitNewPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSendingOtp(true);
+        setPasswordError("");
+
+        try {
+            const res = await fetch(`${API_URL}/api/auth/reset-password`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    email: userData?.email,
+                    otp,
+                    newPassword
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || "Failed to reset password");
+
+            alert("Password changed successfully!");
+            setShowPasswordModal(false);
+            setOtp("");
+            setNewPassword("");
+        } catch (err: any) {
+            setPasswordError(err.message);
+        } finally {
+            setIsSendingOtp(false);
+        }
     }
 
     const formatDate = (date: string) =>
         new Date(date).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })
 
-    // Cek perubahan (termasuk phone)
     const isChanged = userData 
         ? userData.username !== editedUsername || 
           userData.email !== editedEmail || 
           (userData.bio || "") !== editedBio ||
-          (userData.phone || "") !== editedPhone // cek phone
+          (userData.phone || "") !== editedPhone
         : false;
 
     if (isLoading) return (
@@ -293,6 +353,63 @@ export default function ProfilePage() {
 
     return (
         <div className="min-h-screen" style={{ backgroundColor: colors.bgPrimary }}>
+            
+            {showPasswordModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+                    <div className="bg-white rounded-xl shadow-xl max-w-sm w-full p-6 relative animate-in fade-in zoom-in duration-200">
+                        <button 
+                            onClick={() => setShowPasswordModal(false)}
+                            className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                        
+                        <h3 className="text-xl font-bold text-gray-900 mb-2">Change Password</h3>
+                        <p className="text-sm text-gray-600 mb-4">
+                            Enter the OTP sent to <b>{userData.email}</b> and your new password.
+                        </p>
+
+                        <form onSubmit={submitNewPassword} className="space-y-4">
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase">OTP Code</label>
+                                <input 
+                                    type="text" 
+                                    value={otp}
+                                    onChange={(e) => setOtp(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"
+                                    placeholder="123456"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="text-xs font-semibold text-gray-500 uppercase">New Password</label>
+                                <input 
+                                    type="password" 
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+                                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-cyan-500 outline-none"
+                                    placeholder="Min. 6 characters"
+                                    minLength={6}
+                                    required
+                                />
+                            </div>
+
+                            {passwordError && (
+                                <p className="text-xs text-red-600 bg-red-50 p-2 rounded">{passwordError}</p>
+                            )}
+
+                            <Button 
+                                type="submit" 
+                                disabled={isSendingOtp}
+                                className="w-full bg-cyan-600 hover:bg-cyan-700 text-white"
+                            >
+                                {isSendingOtp ? "Processing..." : "Reset Password"}
+                            </Button>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                      {/* Profile Card */}
@@ -309,68 +426,67 @@ export default function ProfilePage() {
                                     />
                                      <button
                                          onClick={handleProfilePictureClick} 
-                                         className="absolute bottom-0 right-0 p-2 rounded-full text-white hover:opacity-90 transition-opacity"
+                                          className="absolute bottom-0 right-0 p-2 rounded-full text-white hover:opacity-90 transition-opacity"
                                         style={{ backgroundColor: colors.primary }}
-                                    >
+                                     >
                                          <Camera className="w-5 h-5" />
-                                    </button>
+                                     </button>
                                  </div>
                                 <input
-                                     ref={fileInputRef}
+                                      ref={fileInputRef}
                                      type="file"
                                     accept="image/*"
-                                     onChange={handleProfilePictureChange}
+                                      onChange={handleProfilePictureChange}
                                      className="hidden"
                                 />
-                             </div>
+                            </div>
 
                              {/* User Info */}
                             <div className="space-y-4">
-                                 <div>
+                                <div>
                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
                                          Name
-                                    </p>
+                                     </p>
                                      {isEditing ? (
                                         <input
                                             type="text"
-                                            value={editedUsername}
+                                             value={editedUsername}
                                             onChange={(e) => setEditedUsername(e.target.value)}
-                                            className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
+                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
                                             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
-                                        />
+                                         />
                                     ) : (
                                         <p className={typography.h4} style={{ color: colors.textPrimary }}>
-                                             {userData.username}
+                                              {userData.username}
                                         </p>
-                                    )}
+                                     )}
                                 </div>
 
-                                {/* Bagian Email */}
-                                 <div>
+                                  <div>
                                      {isEditing ? (
                                         <>
                                             <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
                                                 Email
                                             </p>
-                                            <input
+                                             <input
                                                 type="email"
                                                 value={editedEmail}
                                                 onChange={(e) => setEditedEmail(e.target.value)}
-                                                className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
+                                                 className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
                                                 style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
-                                            />
+                                             />
                                         </>
-                                     ) : (
+                                      ) : (
                                         <InfoField 
-                                            icon={<Mail className="w-4 h-4" />} 
+                                            icon={<Mail className="w-4 h-4 flex-shrink-0" />} 
                                             label="Email" 
                                             value={
-                                             <div className="flex items-center gap-2">
-                                                    <span>{userData.email}</span>
-                                                    {!userData.isVerified && (
-                                                        <span className="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-700">
+                                              <div className="flex items-center gap-2 min-w-0">
+                                                    <span className="truncate" title={userData.email}>{userData.email}</span>
+                                                     {!userData.isVerified && (
+                                                        <span className="px-2 py-0.5 text-xs font-semibold rounded bg-red-100 text-red-700 flex-shrink-0">
                                                             Unverified
-                                                        </span>
+                                                       </span>
                                                     )}
                                                 </div>
                                             } 
@@ -384,47 +500,47 @@ export default function ProfilePage() {
                                             <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
                                                 Phone Number
                                             </p>
-                                            <input
+                                             <input
                                                 type="tel"
                                                 value={editedPhone}
                                                 onChange={(e) => setEditedPhone(e.target.value)}
-                                                placeholder="0812..."
+                                                 placeholder="0812..."
                                                 className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2"
-                                                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                                 style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
                                             />
-                                        </>
+                                         </>
                                      ) : (
                                         <InfoField 
-                                            icon={<Phone className="w-4 h-4" />} 
+                                             icon={<Phone className="w-4 h-4" />} 
                                             label="Phone" 
                                             value={userData.phone || "No phone added yet"} 
                                         />
                                      )}
-                                </div>
+                                 </div>
 
                                  <InfoField
                                     icon={<Calendar className="w-4 h-4" />}
-                                    label="Member Since"
+                                     label="Member Since"
                                     value={formatDate(userData.joinDate)}
                                 />
 
-                                <div>
+                                 <div>
                                     <p className={`${typography.labelSmall} uppercase mb-2`} style={{ color: colors.textSecondary }}>
-                                        Bio
+                                         Bio
                                     </p>
                                     {isEditing ? (
                                         <textarea
                                             value={editedBio}
-                                            onChange={(e) => setEditedBio(e.target.value)}
+                                             onChange={(e) => setEditedBio(e.target.value)}
                                             className="w-full px-3 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 resize-none"
-                                            style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
+                                             style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary }}
                                             rows={3}
-                                            placeholder="Ceritakan sedikit tentang dirimu..." 
+                                             placeholder="Tell us a bit about yourself..." 
                                          />
                                     ) : (
                                         <p className={typography.bodySmall} style={{ color: colors.textSecondary }}>
                                               {userData.bio || "No bio added yet"}
-                                        </p>
+                                         </p>
                                      )}
                                 </div>
                                 
@@ -433,71 +549,79 @@ export default function ProfilePage() {
                                 )}
                             </div>
 
-                             {/* Tombol Aksi */}
                             <div className="space-y-2 pt-4 border-t border-slate-200">
                                 {isEditing ? (
                                     <>
                                         <Button
-                                            onClick={handleSaveProfile}
+                                             onClick={handleSaveProfile}
                                             variant="success" 
-                                            className="w-full"
+                                             className="w-full"
                                             disabled={isSaving || !isChanged} 
                                         >
                                            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Save Changes"}
                                         </Button>
-                                        <Button
+                                         <Button
                                              onClick={handleCancel}
-                                             variant="secondary"
+                                              variant="secondary"
                                             className="w-full"
-                                             disabled={isSaving}
+                                              disabled={isSaving}
                                          >
                                             Cancel
-                                        </Button>
+                                         </Button>
                                     </>
-                                 ) : (
-                                    <Button
-                                         onClick={() => setIsEditing(true)}
-                                        variant="primary"
-                                         className="w-full"
-                                     >
-                                        Edit Profile
-                                    </Button>
+                                ) : (
+                                    <div className="flex flex-col gap-2">
+                                        <Button
+                                             onClick={() => setIsEditing(true)}
+                                             variant="primary"
+                                             className="w-full"
+                                         >
+                                            Edit Profile
+                                        </Button>
+                                        
+                                        <Button
+                                            onClick={initiateChangePassword}
+                                            variant="outline"
+                                            className="w-full border-slate-300 text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2"
+                                        >
+                                            <KeyRound className="w-4 h-4" /> Change Password
+                                        </Button>
+                                    </div>
                                 )}
                             </div>
                          </div>
                      </div>
 
-                    {/* Bagian Aktivitas */}
                     <div className="lg:col-span-2">
                         <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
                              {/* Tabs */}
-                            <div className="flex border-b border-slate-200">
+                             <div className="flex border-b border-slate-200">
                                 {[
                                     { id: "overview", label: "Overview" },
-                                    { id: "books", label: "Books", icon: BookOpen, count: userActivity.loans.length },
+                                     { id: "books", label: "Books", icon: BookOpen, count: userActivity.loans.length },
                                     { id: "rooms", label: "Rooms", icon: Users, count: userActivity.bookings.length },
-                                ].map((tab) => (
+                                 ].map((tab) => (
                                     <TabButton
                                         key={tab.id}
-                                        isActive={activeTab === tab.id}
+                                         isActive={activeTab === tab.id}
                                         onClick={() => setActiveTab(tab.id as "overview" | "books" | "rooms")}
                                         icon={tab.icon}
                                         label={tab.label}
-                                        count={tab.count}
+                                         count={tab.count}
                                     />
                                 ))}
-                             </div>
+                              </div>
                             {/* Konten Tab */}
                             <div className="p-6">
-                                {activeTab === "overview" && <OverviewTab activity={userActivity} />}
+                                 {activeTab === "overview" && <OverviewTab activity={userActivity} />}
                                 {activeTab === "books" && <BooksTab books={userActivity.loans} />}
                                 {activeTab === "rooms" && <RoomsTab bookings={userActivity.bookings} />} 
-                            </div>
+                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-         </div>
+          </div>
     )
 }
 
@@ -545,10 +669,10 @@ function InfoField({
             <div className="flex items-center gap-2 mb-2">
                 <span style={{ color: colors.textSecondary }}>{icon}</span>
                 <p className={`${typography.labelSmall} uppercase`} style={{ color: colors.textSecondary }}>
-                     {label}
+                      {label}
                 </p>
             </div>
-            <div className={typography.body} style={{ color: colors.textPrimary }}>
+            <div className={`${typography.body} break-all`} style={{ color: colors.textPrimary }}>
                 {value}
             </div>
         </div>
@@ -556,33 +680,76 @@ function InfoField({
 }
 
 function OverviewTab({ activity }: { activity: { loans: FrontendLoan[], bookings: Booking[] } }) {
+    const allItems = [
+        ...activity.loans.map(loan => {
+            const rawDate = loan.createdAt || loan.borrowDate;
+            const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now();
+            return {
+                type: 'loan',
+                date: isNaN(timestamp) ? Date.now() : timestamp,
+                data: loan
+            };
+        }),
+        ...activity.bookings.map(booking => {
+            const rawDate = booking.createdAt || booking.date;
+            const timestamp = rawDate ? new Date(rawDate).getTime() : Date.now();
+            return {
+                type: 'booking',
+                date: isNaN(timestamp) ? Date.now() : timestamp,
+                data: booking
+            };
+        })
+    ];
+
+    const sortedItems = allItems.sort((a, b) => b.date - a.date);
+    const recentActivity = sortedItems.slice(0, 5);
+
+    const booksCount = activity.loans.filter(l => l.paymentStatus === 'paid').length;
+    const roomsCount = activity.bookings.filter(b => b.status === 'confirmed' || (b as any).displayStatus === 'completed').length;
+
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
-                <StatBox label="Books Borrowed" value={activity.loans.length} />
-                <StatBox label="Room Bookings" value={activity.bookings.length} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <StatBox label="Books Borrowed" value={booksCount} />
+                <StatBox label="Room Bookings" value={roomsCount} />
             </div>
+
             <div>
                 <h3 className={`${typography.h4} mb-3`} style={{ color: colors.textPrimary }}>
                     Recent Activity
                 </h3>
                 <div className="space-y-3">
-                    {activity.loans.slice(0, 2).map((loan) => (
-                         <ActivityCard
-                            key={(loan.id || loan._id) as string}
-                            title={loan.book.title}
-                            subtitle={`By ${loan.book.author}`}
-                            status={loan.status}
-                        />
-                    ))}
-                    {activity.bookings.slice(0, 2).map((booking) => (
-                        <ActivityCard
-                            key={(booking.id || booking._id) as string}
-                            title={booking.room.name}
-                            subtitle={`Slot: ${booking.startTime} - ${booking.endTime}`}
-                            status={booking.displayStatus || booking.status} 
-                        />
-                    ))}
+                    {recentActivity.length > 0 ? (
+                        recentActivity.map((item, idx) => {
+                            const dateStr = new Date(item.date).toLocaleDateString("id-ID", {
+                                day: 'numeric', month: 'short', year: 'numeric'
+                            });
+
+                            if (item.type === 'loan') {
+                                const loan = item.data as FrontendLoan;
+                                return (
+                                    <ActivityCard
+                                        key={`loan-${idx}`}
+                                        title={loan.book.title}
+                                        subtitle={`Book Loan • ${dateStr}`}
+                                        status={loan.status}
+                                    />
+                                );
+                            } else {
+                                const booking = item.data as Booking;
+                                return (
+                                    <ActivityCard
+                                        key={`booking-${idx}`}
+                                        title={booking.room.name}
+                                        subtitle={`Room Booking • ${dateStr}`}
+                                        status={booking.displayStatus || booking.status} 
+                                    />
+                                );
+                            }
+                        })
+                    ) : (
+                        <p className="text-gray-500 text-sm italic">No recent activity found.</p>
+                    )}
                 </div>
             </div>
         </div>
@@ -719,7 +886,7 @@ function ActivityCard({ title, subtitle, status }: { title: string; subtitle: st
         >
             <div>
                 <p className={typography.body} style={{ color: colors.textPrimary }}>
-                    {title}
+                     {title}
                 </p>
                 <p className={`${typography.bodySmall} mt-1`} style={{ color: colors.textSecondary }}>
                     {subtitle}

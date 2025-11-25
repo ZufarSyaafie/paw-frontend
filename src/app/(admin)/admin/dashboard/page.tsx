@@ -154,7 +154,7 @@ export default function AdminDashboardPage() {
           </Link>
           <Link href="/admin/announcements">
             <StatCard
-              title="News"
+              title="Announcements"
               value={stats?.announcements?.toString() ?? '...'}
               icon={<Bell className="w-5 h-5" style={{ color: colors.warning }} />}
             />
