@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { getAuthToken } from "@/lib/auth";
-import { Loader2, Send, AlertCircle, Search, Filter } from "lucide-react";
+import { Loader2, Send, AlertCircle, Search, Filter, ChevronUp, ChevronDown } from "lucide-react";
 import type { Announcement } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -158,79 +158,112 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
         Manage Announcements
       </h1>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-4">
-        <div className="relative flex-1 sm:flex-none sm:w-64">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0" style={{ color: colors.textSecondary }} />
-          <Input
-            value={search}
-            onChange={(e: any) => setSearch(e.target.value)}
-            placeholder="Search for title or message..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
-            style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
-            onFocus={(e: any) => {
-              e.currentTarget.style.borderColor = colors.primary;
-              e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
-            }}
-            onBlur={(e: any) => {
-              e.currentTarget.style.borderColor = colors.bgTertiary;
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          />
-        </div>
+      {/* Filter Bar */}
+      <div className="py-6 space-y-4 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
+          {/* Search bar */}
+          <div className="relative flex-1 min-w-0 sm:flex-auto">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+              style={{ color: colors.textSecondary }}
+            />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search for title or message..."
+              className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                color: colors.textPrimary,
+                borderColor: colors.bgTertiary,
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.borderColor = colors.primary;
+                e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.borderColor = colors.bgTertiary;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            />
+          </div>
 
-        {/* Tombol Filter Mobile */}
-        <div className="sm:hidden w-full">
+          {/* Filter toggle button */}
           <Button
-            variant="secondary"
-            className="w-full justify-center px-3 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2"
             onClick={() => setShowFilters(!showFilters)}
+            className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
+            style={{
+              backgroundColor: showFilters ? colors.primary : colors.bgPrimary,
+              color: showFilters ? "#ffffff" : colors.textSecondary,
+              border: `1px solid ${showFilters ? colors.primary : colors.bgTertiary}`,
+              minHeight: "42px",
+              padding: "10px 12px",
+            }}
           >
-            <Filter className="w-4 h-4" />
-            <span>Date Filter</span>
+            <Filter className="w-5 h-5 flex-shrink-0" />
+            <span className="hidden sm:inline">Filters</span>
           </Button>
+
+          {/* Clear button */}
+          {(search || startDate || endDate) && (
+            <Button
+              onClick={() => { setSearch(""); setStartDate(""); setEndDate(""); }}
+              className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                color: colors.danger,
+                border: `1px solid ${colors.danger}40`,
+                minHeight: "42px",
+                padding: "10px 12px",
+              }}
+            >
+              <span className="text-lg leading-none">✕</span>
+              <span className="hidden sm:inline">Clear</span>
+            </Button>
+          )}
         </div>
 
-        {/* Filter Tanggal Desktop */}
-        <div className="hidden sm:flex gap-2 flex-shrink-0 items-center">
-          <label htmlFor="startDate" className="text-sm font-medium" style={{ color: colors.textSecondary }}>
-            From Date:
-          </label>
-          <Input id="startDate" type="date" value={startDate} onChange={(e: any) => setStartDate(e.target.value)} className="w-full sm:w-auto px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
-          <label htmlFor="endDate" className="text-sm font-medium" style={{ color: colors.textSecondary }}>
-            To Date:
-          </label>
-          <Input id="endDate" type="date" value={endDate} onChange={(e: any) => setEndDate(e.target.value)} className="w-full sm:w-auto px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
-          <Button variant="secondary" className="ml-2 px-3 py-1.5" onClick={() => { setStartDate(""); setEndDate(""); }}>Clear</Button>
-        </div>
-      </div>
+        {/* Filter Panel */}
+        {showFilters && (
+          <div
+            className="rounded-lg p-4 sm:p-6 border space-y-4"
+            style={{
+              backgroundColor: colors.bgPrimary,
+              borderColor: colors.bgTertiary,
+            }}
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+              <div>
+                <label className="text-sm font-medium block mb-1" style={{ color: colors.textSecondary }}>
+                  From Date
+                </label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm"
+                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+                />
+              </div>
 
-      {/* Panel Filter Mobile */}
-      {showFilters && (
-        <div className="sm:hidden rounded-lg p-4 sm:p-6 border space-y-4 mb-4" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
-          <div>
-            <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
-              Filter by Date
-            </p>
-            <div className="flex flex-col gap-4">
               <div>
-                <label htmlFor="startDateMobile" className="text-sm font-medium mb-1 block" style={{ color: colors.textSecondary }}>
-                  From Date:
+                <label className="text-sm font-medium block mb-1" style={{ color: colors.textSecondary }}>
+                  To Date
                 </label>
-                <Input id="startDateMobile" type="date" value={startDate} onChange={(e: any) => setStartDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
-              </div>
-              <div>
-                <label htmlFor="endDateMobile" className="text-sm font-medium mb-1 block" style={{ color: colors.textSecondary }}>
-                  To Date:
-                </label>
-                <Input id="endDateMobile" type="date" value={endDate} onChange={(e: any) => setEndDate(e.target.value)} className="w-full px-3 py-2.5 rounded-lg border text-sm" style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
-              </div>
-              <div className="flex justify-end">
-                <Button variant="secondary" onClick={() => { setStartDate(""); setEndDate(""); }} className="px-3 py-1.5 rounded-md text-sm">Clear</Button>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-lg border text-sm"
+                  style={{ backgroundColor: colors.bgPrimary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+                />
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
       {error && !isLoading && (
         <div className="p-4 bg-red-50 border border-red-200 rounded-lg mb-4 flex items-center gap-2">
@@ -243,12 +276,47 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
         {/* Quick Announcement */}
         <div className="lg:col-span-1 lg:order-last">
-          <QuickAnnouncementPanel onAnnouncementCreated={fetchAnnouncements} />
+          <QuickAnnouncementPanel />
         </div>
 
         {/* Tabel List Pengumuman */}
         <div className="lg:col-span-2">
-          <div className="rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
+          {/* mobile */}
+        <div className="grid grid-cols-1 gap-4 md:hidden">
+          {filteredAnnouncements.length > 0 ? (
+             filteredAnnouncements.map((ann) => {
+               const id = ((ann as any)._id ?? (ann as any).id) as string;
+               const isProcessing = isResending.has(id);
+
+               return (
+                 <div 
+                     key={id}
+                     className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3"
+                 >
+                     <div className="flex justify-between items-start">
+                         <div className="flex-1 pr-2">
+                             <h3 className="font-semibold text-slate-900 text-base">{ann.bookTitle ?? ann.title}</h3>
+                             <span className="text-xs text-slate-500 mt-1 block">{formatDate(ann.createdAt)}</span>
+                         </div>
+                         <Button onClick={() => handleResend(id)} disabled={isProcessing} className="px-3 py-1.5 h-auto rounded-lg transition-colors hover:opacity-80 inline-flex items-center gap-1.5 flex-shrink-0" style={{ backgroundColor: isProcessing ? colors.bgTertiary : colors.info, color: "#ffffff" }} title="Resend Email">
+                           {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" style={{ color: "#ffffff" }} /> : <Send className="w-4 h-4" style={{ color: "#ffffff" }} />}
+                         </Button>
+                     </div>
+                     <p className="text-sm text-slate-600 line-clamp-3 border-t border-slate-100 pt-2 mt-1">
+                         {(ann.message ?? "")}
+                     </p>
+                 </div>
+               )
+             })
+          ) : (
+              <div className="text-center p-8 text-slate-500 bg-white rounded-xl border border-slate-200">
+                  {search || startDate || endDate ? "No announcements match the filter." : "No announcement has been made yet."}
+              </div>
+          )}
+        </div>
+
+          {/* desktop */}
+          <div className="hidden md:block rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[700px]">
                 <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
@@ -258,8 +326,7 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
                     <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Created At</th>
                     <th className="text-center p-4 font-semibold" style={{ color: colors.textPrimary }}>Action</th>
                   </tr>
-                </thead>
-                <tbody>
+                </thead><tbody>
                   {filteredAnnouncements.length > 0 ? (
                     filteredAnnouncements.map((ann) => {
                       const id = ((ann as any)._id ?? (ann as any).id) as string;
@@ -267,11 +334,11 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
 
                       return (
                         <tr key={id} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
-                          <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{ann.bookTitle ?? ann.title}</td>
+                          <td className="p-4 align-top font-medium" style={{ color: colors.textPrimary }}>{ann.bookTitle ?? ann.title}</td>
                           <td className="p-4 align-top text-sm" style={{ color: colors.textSecondary }}>{(ann.message ?? "").substring(0, 140)}{(ann.message ?? "").length > 140 ? "..." : ""}</td>
-                          <td className="p-4 align-top" style={{ color: colors.textSecondary }}>{formatDate(ann.createdAt)}</td>
+                          <td className="p-4 align-top text-sm" style={{ color: colors.textSecondary }}>{formatDate(ann.createdAt)}</td>
                           <td className="p-4 align-top text-center">
-                            <Button onClick={() => handleResend(id)} disabled={isProcessing} className="px-3 py-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex items-center gap-1.5" style={{ backgroundColor: isProcessing ? colors.bgTertiary : colors.info, color: "#ffffff" }} title="resend email">
+                            <Button onClick={() => handleResend(id)} disabled={isProcessing} className="px-3 py-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex items-center gap-1.5" style={{ backgroundColor: isProcessing ? colors.bgTertiary : colors.info, color: "#ffffff" }} title="Resend Email">
                               {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" style={{ color: "#ffffff" }} /> : <><Send className="w-5 h-5" style={{ color: "#ffffff" }} /><span className="text-sm">Resend</span></>}
                             </Button>
                           </td>
@@ -294,7 +361,8 @@ export default function ManageAnnouncementsPage(): React.JSX.Element {
 }
 
 // Quick Announcement
-function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreated: () => void }) {
+function QuickAnnouncementPanel() {
+  const [isOpen, setIsOpen] = useState(true);
   const [announcementType, setAnnouncementType] = useState<"general" | "book">("general");
   const [title, setTitle] = useState("");
   const [bookTitle, setBookTitle] = useState("");
@@ -310,50 +378,35 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
     setSuccess(null);
     const token = getAuthToken();
 
-    if (!token) {
-      setError("Token unfound. Please sign-in again.");
-      setLoading(false);
-      return;
-    }
-
-    if (announcementType === "book" && !bookTitle.trim()) {
-      setError("Book title is required");
-      setLoading(false);
-      return;
-    }
-
-    if (!message.trim()) {
-      setError("Message is required");
-      setLoading(false);
-      return;
-    }
-
     try {
       let payload: any = {};
 
       if (announcementType === "book") {
         payload = {
-          title: title?.trim() || `New Book: ${bookTitle.trim()}`,
-          bookTitle: bookTitle.trim(),
-          message: message.trim(),
+          title: title || `Buku Baru: ${bookTitle}`,
+          bookTitle: bookTitle,
+          message: message,
         };
       } else {
         payload = {
-          title: title.trim(),
-          bookTitle: title.trim(),
-          message: message.trim(),
+          title: title,
+          bookTitle: title,
+          message: message,
         };
       }
 
       const res = await fetch(`${API_URL}/api/announcements`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify(payload),
       });
 
       if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData?.message || `server responded ${res.status}`);
+        const errData = await res.json();
+        throw new Error(errData.message || "Failed to send announcement.");
       }
 
       setSuccess("Announcement successfully sent to all users!");
@@ -362,61 +415,182 @@ function QuickAnnouncementPanel({ onAnnouncementCreated }: { onAnnouncementCreat
       setMessage("");
       setAnnouncementType("general");
 
-      try {
-        onAnnouncementCreated();
-      } catch {
-        window.dispatchEvent(new CustomEvent("announcements:updated"));
-      }
+      window.dispatchEvent(new CustomEvent("announcements:updated"));
     } catch (err: any) {
-      setError(err?.message || "Failed to send announcement.");
-      console.error("QuickAnnouncementPanel error:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="p-6 rounded-lg border shadow-sm h-full" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
-      <h3 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>Quick Announcement</h3>
+    <div
+      className="p-6 rounded-lg border shadow-sm h-full"
+      style={{
+        backgroundColor: colors.bgPrimary,
+        borderColor: colors.bgTertiary,
+      }}
+    >
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between mb-4 lg:cursor-default"
+        aria-expanded={isOpen}
+        aria-controls="quick-announcement-panel"
+      >
+        <h3 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
+          Quick Announcement
+        </h3>
+        <div className="lg:hidden">
+          {isOpen ? (
+            <ChevronUp className="w-5 h-5" style={{ color: colors.textSecondary }} />
+          ) : (
+            <ChevronDown className="w-5 h-5" style={{ color: colors.textSecondary }} />
+          )}
+        </div>
+      </button>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form id="quick-announcement-panel" onSubmit={handleSubmit} className={`space-y-4 ${isOpen ? 'block' : 'hidden'} lg:block`}>
         <div>
-          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Type</label>
+          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+            Announcement Type
+          </label>
           <div className="flex gap-2">
-            <button type="button" onClick={() => setAnnouncementType("general")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "general" ? colors.primary : colors.bgSecondary, color: announcementType === "general" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}` }}>📢 General</button>
-            <button type="button" onClick={() => setAnnouncementType("book")} className="flex-1 py-2 px-4 rounded-lg font-medium transition-all" style={{ backgroundColor: announcementType === "book" ? colors.success : colors.bgSecondary, color: announcementType === "book" ? "#ffffff" : colors.textSecondary, border: `2px solid ${announcementType === "book" ? colors.success : colors.bgTertiary}` }}>📚 New Book</button>
+            <button
+              type="button"
+              onClick={() => setAnnouncementType("general")}
+              className="flex-1 py-2 px-4 rounded-lg font-medium transition-all"
+              style={{
+                backgroundColor: announcementType === "general" ? colors.primary : colors.bgSecondary,
+                color: announcementType === "general" ? "#ffffff" : colors.textSecondary,
+                border: `2px solid ${announcementType === "general" ? colors.primary : colors.bgTertiary}`,
+              }}
+            >
+              📢 General
+            </button>
+            <button
+              type="button"
+              onClick={() => setAnnouncementType("book")}
+              className="flex-1 py-2 px-4 rounded-lg font-medium transition-all"
+              style={{
+                backgroundColor: announcementType === "book" ? colors.primary : colors.bgSecondary,
+                color: announcementType === "book" ? "#ffffff" : colors.textSecondary,
+                border: `2px solid ${announcementType === "book" ? colors.primary : colors.bgTertiary}`,
+              }}
+            >
+              📚 New Book
+            </button>
           </div>
         </div>
 
         {announcementType === "book" ? (
           <>
             <div>
-              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Book Title <span style={{ color: colors.danger }}>*</span></label>
-              <input name="bookTitle" value={bookTitle} onChange={(e) => setBookTitle(e.target.value)} required placeholder="E.g.: Norwegian Wood" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
+              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+                Book Title <span style={{ color: colors.danger }}>*</span>
+              </label>
+              <input
+                name="bookTitle"
+                value={bookTitle}
+                onChange={(e) => setBookTitle(e.target.value)}
+                required
+                placeholder="E.g.: Norwegian Wood"
+                className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
+                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = colors.success;
+                  e.target.style.boxShadow = `0 0 0 2px ${colors.success}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = colors.bgTertiary;
+                  e.target.style.boxShadow = "none";
+                }}
+              />
             </div>
 
             <div>
-              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Title <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(optional)</span></label>
-              <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Default: New Book: [Book Title]" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
+              <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+                Announcement Title <span style={{ color: colors.textSecondary, fontSize: "0.85em" }}>(optional)</span>
+              </label>
+              <input
+                name="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Default: New Book: [Book Title]"
+                className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
+                style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = colors.success;
+                  e.target.style.boxShadow = `0 0 0 2px ${colors.success}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = colors.bgTertiary;
+                  e.target.style.boxShadow = "none";
+                }}
+              />
             </div>
           </>
         ) : (
           <div>
-            <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Announcement Title <span style={{ color: colors.danger }}>*</span></label>
-            <input name="title" value={title} onChange={(e) => setTitle(e.target.value)} required placeholder="E.g.: The Library is Closed Tomorrow" className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} />
+            <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+              Announcement Title <span style={{ color: colors.danger }}>*</span>
+            </label>
+            <input
+              name="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+              placeholder="E.g.: The Library is Closed Tomorrow"
+              className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all"
+              style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+              onFocus={(e) => {
+                e.target.style.borderColor = colors.primary;
+                e.target.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              }}
+              onBlur={(e) => {
+                e.target.style.borderColor = colors.bgTertiary;
+                e.target.style.boxShadow = "none";
+              }}
+            />
           </div>
         )}
 
         <div>
-          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>Message<span style={{ color: colors.danger }}>*</span></label>
-          <textarea name="message" value={message} onChange={(e) => setMessage(e.target.value)} required rows={4} placeholder={announcementType === "book" ? "Description about the new book..." : "Enter the announcement..."} className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none" style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }} onFocus={(e) => { const color = announcementType === "book" ? colors.success : colors.primary; (e.currentTarget as HTMLTextAreaElement).style.borderColor = color; (e.currentTarget as HTMLTextAreaElement).style.boxShadow = `0 0 0 2px ${color}20`; }} onBlur={(e) => { (e.currentTarget as HTMLTextAreaElement).style.borderColor = colors.bgTertiary; (e.currentTarget as HTMLTextAreaElement).style.boxShadow = "none"; }} />
+          <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
+            Message <span style={{ color: colors.danger }}>*</span>
+          </label>
+          <textarea
+            name="message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            required
+            rows={4}
+            placeholder={announcementType === "book" ? "Description about the new book..." : "Enter the announcement..."}
+            className="w-full px-4 py-2 rounded-lg border focus:outline-none transition-all resize-none"
+            style={{ backgroundColor: colors.bgSecondary, color: colors.textPrimary, borderColor: colors.bgTertiary }}
+            onFocus={(e) => {
+              const color = announcementType === "book" ? colors.success : colors.primary;
+              e.currentTarget.style.borderColor = color;
+              e.currentTarget.style.boxShadow = `0 0 0 2px ${color}20`;
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.borderColor = colors.bgTertiary;
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          />
         </div>
 
         {error && <p className="text-sm" style={{ color: colors.danger }}>{error}</p>}
         {success && <p className="text-sm" style={{ color: colors.success }}>{success}</p>}
 
-        <button type="submit" disabled={loading} className="w-full py-3 mt-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 text-white" style={{ backgroundColor: announcementType === "book" ? colors.success : colors.primary }}>
-          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {loading ? "Sending..." : "Send to All Users"}
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full py-3 mt-6 rounded-lg font-medium flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 text-white"
+          style={{ backgroundColor: announcementType === "book" ? colors.primary : colors.primary }}
+        >
+          {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+          {loading ? "Sending..." : "Send to All Users"}
         </button>
       </form>
     </div>

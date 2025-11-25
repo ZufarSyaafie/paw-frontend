@@ -332,16 +332,102 @@ export default function ManageBooksPage(): React.JSX.Element {
 
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold" style={{ color: colors.textPrimary }}>Manage Books</h1>
-        <Button onClick={openCreateModal} variant="primary" className="flex items-center gap-2 px-4 py-2.5 font-semibold rounded-lg text-white" style={{ backgroundColor: colors.primary }}>
-          <Plus className="w-4 h-4" /> Add Book
+        <Button onClick={openCreateModal} variant="primary" 
+          className="flex items-center gap-2 px-3 sm:px-4 py-2.5 font-semibold rounded-lg text-white transition-all hover:opacity-90" 
+          style={{ backgroundColor: colors.primary }}>
+          <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Add Book</span>
         </Button>
       </div>
 
-      <div className="rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
+      {/* mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {books.map((book) => {
+             const key = book._id ?? (book as any).id;
+             const stock = book.stock as number;
+             const borrowed = book.borrowedCount ?? 0;
+             
+             // Logic Status
+             let finalStatus: string = book.status;
+             let statusLabel: string = book.status;
+             if (stock === 0) {
+                 if (borrowed > 0) {
+                     finalStatus = 'out_of_stock';
+                     statusLabel = 'Out of Stock';
+                 } else {
+                     finalStatus = 'unavailable';
+                     statusLabel = 'Unavailable';
+                 }
+             }
+
+             let bgStatus = `${colors.success}20`;
+             let textStatus = colors.success;
+             if (finalStatus === 'unavailable') {
+                 bgStatus = `${colors.danger}20`;
+                 textStatus = colors.danger;
+             } else if (finalStatus === 'out_of_stock') {
+                 bgStatus = `${colors.warning}20`;
+                 textStatus = colors.warning;
+             }
+
+             return (
+                <div 
+                    key={key}
+                    className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3"
+                >
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                             <img 
+                                src={book.cover || "https://via.placeholder.com/150"} 
+                                alt={book.title}
+                                className="w-16 h-24 object-cover rounded border border-slate-100 shadow-sm flex-shrink-0"
+                            />
+                            <div>
+                                <h3 className="font-semibold text-slate-900 line-clamp-2 text-sm mb-1">
+                                    {book.title}
+                                </h3>
+                                <p className="text-xs text-slate-500 mb-2">{book.author}</p>
+                                <span 
+                                    className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                                    style={{ backgroundColor: bgStatus, color: textStatus }}
+                                >
+                                    {statusLabel}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        {/* Actions */}
+                        <div className="flex flex-col gap-2">
+                            <button onClick={() => openEditModal(book)} className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors">
+                                <Edit className="w-4 h-4" />
+                            </button>
+                            <button onClick={() => handleDelete(key)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors">
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 border-t border-slate-100 pt-3 mt-1">
+                        <div className="bg-slate-50 p-2 rounded border border-slate-100 text-center">
+                            <span className="block text-slate-400 uppercase tracking-wider text-[10px]">Stock</span>
+                            <span className={`font-bold text-sm ${stock === 0 ? 'text-red-600' : 'text-slate-800'}`}>{stock}</span>
+                        </div>
+                        <div className="bg-slate-50 p-2 rounded border border-slate-100 text-center">
+                            <span className="block text-slate-400 uppercase tracking-wider text-[10px]">Borrowed</span>
+                            <span className={`font-bold text-sm ${borrowed > 0 ? 'text-amber-600' : 'text-slate-800'}`}>{borrowed}</span>
+                        </div>
+                    </div>
+                </div>
+             );
+        })}
+      </div>
+
+      {/* desktop */}
+      <div className="hidden md:block rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
-              <tr>
+            <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}><tr>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}></th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Title</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Author</th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Stock</th>
@@ -350,48 +436,49 @@ export default function ManageBooksPage(): React.JSX.Element {
                 <th className="text-center p-4 font-semibold" style={{ color: colors.textPrimary }}>Actions</th>
               </tr>
             </thead>
-
             <tbody>
               {books.map((book) => {
                 const key = book._id ?? (book as any).id;
                 const stock = book.stock as number;
                 const borrowed = book.borrowedCount ?? 0;
 
-                let finalStatus: string = book.status; 
+                let finalStatus: string = book.status;
                 let statusLabel: string = book.status;
 
                 if (stock === 0) {
                     if (borrowed > 0) {
-                        // Stok 0, tapi ada yg pinjem -> Out of Stock (KUNING)
                         finalStatus = 'out_of_stock';
                         statusLabel = 'Out of Stock';
                     } else {
-                        // Stok 0, gak ada yg pinjem -> Unavailable (MERAH)
                         finalStatus = 'unavailable';
                         statusLabel = 'Unavailable';
                     }
                 }
 
-                // Tentukan Warna Badge
-                let bgStatus = `${colors.success}20`; // Ijo muda
-                let textStatus = colors.success;      // Ijo tua
+                let bgStatus = `${colors.success}20`;
+                let textStatus = colors.success;
 
                 if (finalStatus === 'unavailable') {
-                    bgStatus = `${colors.danger}20`;  // Merah muda
-                    textStatus = colors.danger;       // Merah tua
+                    bgStatus = `${colors.danger}20`;
+                    textStatus = colors.danger;
                 } else if (finalStatus === 'out_of_stock') {
-                    bgStatus = `${colors.warning}20`; // Kuning muda
-                    textStatus = colors.warning;      // Kuning tua
+                    bgStatus = `${colors.warning}20`;
+                    textStatus = colors.warning;
                 }
 
                 return (
                   <tr key={key} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
+                    <td className="p-4 align-middle">
+                        <img 
+                            src={book.cover || "https://via.placeholder.com/150"} 
+                            alt={book.title}
+                            className="w-10 h-14 object-cover rounded shadow-sm border border-slate-100"
+                        />
+                    </td>
                     <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{book.title}</td>
                     <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{book.author}</td>
                     <td className="p-4 align-top font-semibold" style={{ color: stock === 0 ? colors.danger : colors.textPrimary }}>{stock}</td>
                     <td className="p-4 align-top font-semibold" style={{ color: borrowed > 0 ? colors.warning : colors.textSecondary }}>{borrowed}</td>
-                    
-                    {/* STATUS BADGE */}
                     <td className="p-4 align-top">
                       <span 
                         className="px-3 py-1.5 rounded-full text-xs font-semibold inline-block capitalize" 
@@ -400,7 +487,6 @@ export default function ManageBooksPage(): React.JSX.Element {
                         {statusLabel}
                       </span>
                     </td>
-
                     <td className="p-4 align-top text-center">
                       <div className="flex gap-2 justify-center">
                         <button onClick={() => openEditModal(book)} className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex" style={{ backgroundColor: `${colors.info}15`, color: colors.info }} title="Edit">

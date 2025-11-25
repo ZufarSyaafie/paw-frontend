@@ -402,18 +402,84 @@ export default function ManageRoomsPage() {
         <Button 
           onClick={openCreateModal} 
           variant="primary" 
-          className="flex items-center gap-2 px-4 py-2.5 font-semibold rounded-lg text-white transition-all hover:opacity-90"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2.5 font-semibold rounded-lg text-white transition-all hover:opacity-90"
           style={{
             backgroundColor: colors.primary,
           }}
         >
-          <Plus className="w-4 h-4" />
-          Add New Room
+          <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Add New Room</span>
         </Button>
       </div>
 
+      {/* mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {rooms.map((room) => (
+          <div 
+            key={room._id || room.id} 
+            className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3"
+          >
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="font-semibold text-slate-900 text-lg">{room.name}</h3>
+                <span 
+                  className="inline-block mt-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                  style={{
+                    backgroundColor: room.status === 'available' ? `${colors.success}15` : `${colors.warning}15`,
+                    color: room.status === 'available' ? colors.success : colors.warning,
+                  }}
+                >
+                  {room.status}
+                </span>
+              </div>
+              {/* actions */}
+              <div className="flex gap-2">
+                 <button 
+                    onClick={() => openEditModal(room)} 
+                    className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                 >
+                    <Edit className="w-4 h-4" />
+                 </button>
+                 <button 
+                    onClick={() => handleDelete(room._id || room.id)} 
+                    className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                 >
+                    <Trash2 className="w-4 h-4" />
+                 </button>
+              </div>
+            </div>
+
+            <div className="space-y-2 text-sm text-slate-600 border-t border-slate-100 pt-3 mt-1">
+              <div className="flex justify-between">
+                <span className="text-slate-400">Capacity:</span>
+                <span className="font-medium text-slate-800">{room.capacity} People</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-400">Price:</span>
+                <span className="font-medium text-slate-800">Rp {room.price?.toLocaleString('id-ID')}/hr</span>
+              </div>
+              <div className="flex flex-col gap-1 mt-2">
+                <span className="text-slate-400 text-xs uppercase">Facilities:</span>
+                <div className="flex flex-wrap gap-1">
+                    {(room.facilities || []).length > 0 ? (
+                        room.facilities.slice(0, 4).map((fac, idx) => (
+                            <span key={idx} className="bg-slate-100 text-slate-600 text-xs px-2 py-1 rounded border border-slate-200">
+                                {fac}
+                            </span>
+                        ))
+                    ) : (
+                        <span className="text-xs italic text-slate-400">No facilities listed</span>
+                    )}
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* table desktop */}
       <div 
-        className="rounded-lg border shadow-sm overflow-hidden"
+        className="hidden md:block rounded-lg border shadow-sm overflow-hidden"
         style={{
           backgroundColor: colors.bgPrimary,
           borderColor: colors.bgTertiary,
@@ -421,68 +487,20 @@ export default function ManageRoomsPage() {
       >
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
-            <thead 
-              className="border-b"
-              style={{
-                backgroundColor: colors.bgSecondary,
-                borderColor: colors.bgTertiary,
-              }}
-            >
+            <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
               <tr>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Room Name
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Status
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Capacity
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Price per Hour (IDR)
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Facilities
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Actions
-                </th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Room Name</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Status</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Capacity</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Price per Hour (IDR)</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Facilities</th>
+                <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Actions</th>
               </tr>
             </thead>
             <tbody>
               {rooms.map((room) => (
-                <tr 
-                  key={room._id || room.id} 
-                  className="border-b transition-colors hover:opacity-80"
-                  style={{
-                    borderColor: colors.bgTertiary,
-                    backgroundColor: colors.bgPrimary,
-                  }}
-                >
-                  <td 
-                    className="p-4 align-top"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {room.name}
-                  </td>
+                <tr key={room._id || room.id} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
+                  <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{room.name}</td>
                   <td className="p-4 align-top">
                     <span 
                       className="px-3 py-1 rounded-full text-xs font-semibold"
@@ -494,45 +512,14 @@ export default function ManageRoomsPage() {
                       {room.status}
                     </span>
                   </td>
-                  <td 
-                    className="p-4 align-top"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    {room.capacity}
-                  </td>
-                  <td 
-                    className="p-4 align-top"
-                    style={{ color: colors.textPrimary }}
-                  >
-                    Rp {room.price?.toLocaleString('id-ID')}
-                  </td>
-                  <td 
-                    className="p-4 align-top text-sm"
-                    style={{ color: colors.textSecondary }}
-                  >
-                    {(room.facilities || []).join(', ')}
-                  </td>
+                  <td className="p-4 align-top" style={{ color: colors.textPrimary }}>{room.capacity}</td>
+                  <td className="p-4 align-top" style={{ color: colors.textPrimary }}>Rp {room.price?.toLocaleString('id-ID')}</td>
+                  <td className="p-4 align-top text-sm" style={{ color: colors.textSecondary }}>{(room.facilities || []).join(', ')}</td>
                   <td className="p-4 align-top flex gap-3">
-                    <button 
-                      onClick={() => openEditModal(room)} 
-                      className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
-                      style={{
-                        backgroundColor: `${colors.info}15`,
-                        color: colors.info,
-                      }}
-                      title="Edit"
-                    >
+                    <button onClick={() => openEditModal(room)} className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex" style={{ backgroundColor: `${colors.info}15`, color: colors.info }} title="Edit">
                       <Edit className="w-5 h-5" />
                     </button>
-                    <button 
-                      onClick={() => handleDelete(room._id || room.id)} 
-                      className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex"
-                      style={{
-                        backgroundColor: `${colors.danger}15`,
-                        color: colors.danger,
-                      }}
-                      title="Delete"
-                    >
+                    <button onClick={() => handleDelete(room._id || room.id)} className="p-1.5 rounded-lg transition-colors hover:opacity-80 inline-flex" style={{ backgroundColor: `${colors.danger}15`, color: colors.danger }} title="Delete">
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </td>

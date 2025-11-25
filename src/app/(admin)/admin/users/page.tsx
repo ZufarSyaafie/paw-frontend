@@ -301,109 +301,87 @@ export default function ManageUsersPage() {
         <Button 
           onClick={() => setShowModal(true)} 
           variant="primary" 
-          className="flex items-center gap-2 px-4 py-2.5 font-semibold rounded-lg text-white transition-all hover:opacity-90"
+          className="flex items-center gap-2 px-3 sm:px-4 py-2.5 font-semibold rounded-lg text-white transition-all hover:opacity-90"          
           style={{
             backgroundColor: colors.primary,
           }}
         >
-          <Plus className="w-4 h-4" />
-          Add User
+          <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
+          <span className="hidden sm:inline">Add User</span>
         </Button>
       </div>
 
-      <div 
-        className="rounded-lg border shadow-sm overflow-hidden"
-        style={{
-          backgroundColor: colors.bgPrimary,
-          borderColor: colors.bgTertiary,
-        }}
-      >
+      {/* tabel mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {users.map((user) => (
+          <div key={user._id || user.id} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3">
+            <div className="flex justify-between items-start">
+              <div className="flex items-center gap-3">
+                <img src={user.profilePicture || "https://api.dicebear.com/7.x/avataaars/svg?seed=user_default"} alt={user.name} className="w-12 h-12 rounded-full object-cover border border-slate-100" />
+                <div>
+                  <h3 className="font-semibold text-slate-900">{user.name}</h3>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide" style={{ backgroundColor: user.role === 'admin' ? `${colors.primary}15` : `${colors.textSecondary}15`, color: user.role === 'admin' ? colors.primary : colors.textSecondary }}>
+                    {user.role}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => handleDelete(user._id || user.id)} className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors" disabled={user.email.includes('main_admin')}>
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-2 text-sm text-slate-600 border-t border-slate-100 pt-3 mt-1">
+              <div className="flex justify-between items-center gap-3">
+                 <span className="text-slate-400 flex-shrink-0">Email:</span>
+                 <span className="font-medium text-slate-800 truncate text-right flex-1 min-w-0" title={user.email}>
+                    {user.email}
+                 </span>
+              </div>
+              <div className="flex justify-between"><span className="text-slate-400">Phone:</span><span className="font-medium text-slate-800">{user.phone || "-"}</span></div>
+              <div className="flex flex-col gap-1"><span className="text-slate-400">Bio:</span><p className="font-medium text-slate-800 italic line-clamp-2 text-xs">{user.bio || "No bio available."}</p></div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* table desktop */}
+      <div className="hidden md:block rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
           <div className="overflow-x-auto">  
-            <table className="w-full min-w-[600px]">
-            <thead 
-              className="border-b"
-              style={{
-                backgroundColor: colors.bgSecondary,
-                borderColor: colors.bgTertiary,
-              }}
-            >
+            <table className="w-full min-w-[900px]">
+              <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
                 <tr>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Name
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Email
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Role
-                </th>
-                <th 
-                  className="text-left p-4 font-semibold"
-                  style={{ color: colors.textPrimary }}
-                >
-                  Actions
-                </th>
+                  <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>User</th>
+                  <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Email</th>
+                  <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Phone</th>
+                  <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Bio</th>
+                  <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Role</th>
+                  <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>Actions</th>
                 </tr>
-            </thead>
-            <tbody>
+              </thead>
+              <tbody>
                 {users.map((user) => (
-                <tr 
-                  key={user._id || user.id} 
-                  className="border-b transition-colors hover:opacity-80"
-                  style={{
-                    borderColor: colors.bgTertiary,
-                    backgroundColor: colors.bgPrimary,
-                  }}
-                >
-                    <td 
-                      className="p-4"
-                      style={{ color: colors.textPrimary }}
-                    >
-                      {user.name}
+                  <tr key={user._id || user.id} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
+                    <td className="p-4 align-middle">
+                        <div className="flex items-center gap-3">
+                            <img src={user.profilePicture || "https://api.dicebear.com/7.x/avataaars/svg?seed=user_default"} alt={user.name} className="w-10 h-10 rounded-full object-cover border border-slate-200 shadow-sm flex-shrink-0" />
+                            <span className="font-medium" style={{ color: colors.textPrimary }}>{user.name}</span>
+                        </div>
                     </td>
-                    <td 
-                      className="p-4"
-                      style={{ color: colors.textPrimary }}
-                    >
-                      {user.email}
+                    <td className="p-4 align-middle" style={{ color: colors.textPrimary }}>{user.email}</td>
+                    <td className="p-4 align-middle text-sm" style={{ color: colors.textSecondary }}>{user.phone || "-"}</td>
+                    <td className="p-4 align-middle text-sm" style={{ color: colors.textSecondary }}><span className="line-clamp-1 max-w-[200px]" title={user.bio}>{user.bio || "-"}</span></td>
+                    <td className="p-4 align-middle">
+                      <span className="px-3 py-1 rounded-full text-xs font-semibold" style={{ backgroundColor: user.role === 'admin' ? `${colors.primary}15` : `${colors.textSecondary}15`, color: user.role === 'admin' ? colors.primary : colors.textSecondary }}>
+                          {user.role.toUpperCase()}
+                      </span>
                     </td>
-                    <td className="p-4">
-                    <span 
-                      className="px-3 py-1 rounded-full text-xs font-semibold"
-                      style={{
-                        backgroundColor: user.role === 'admin' ? `${colors.primary}15` : `${colors.textSecondary}15`,
-                        color: user.role === 'admin' ? colors.primary : colors.textSecondary,
-                      }}
-                    >
-                        {user.role.toUpperCase()}
-                    </span>
+                    <td className="p-4 align-middle">
+                      <button onClick={() => handleDelete(user._id || user.id)} className="p-2 rounded-lg transition-colors hover:opacity-80 disabled:opacity-50" style={{ backgroundColor: `${colors.danger}15`, color: colors.danger }} title="Delete" disabled={user.email.includes('main_admin')}>
+                          <Trash2 className="w-5 h-5" />
+                      </button>
                     </td>
-                    <td className="p-4">
-                    <button 
-                        onClick={() => handleDelete(user._id || user.id)} 
-                        className="p-2 rounded-lg transition-colors hover:opacity-80 disabled:opacity-50"
-                        style={{
-                          backgroundColor: `${colors.danger}15`,
-                          color: colors.danger,
-                        }}
-                        title="Delete"
-                        disabled={user.email.includes('main_admin')}
-                    >
-                        <Trash2 className="w-5 h-5" />
-                    </button>
-                    </td>
-                </tr>
+                  </tr>
                 ))}
-            </tbody>
+              </tbody>
             </table>
           </div>
       </div>

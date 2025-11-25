@@ -246,9 +246,78 @@ export default function ManageBookingsPage() {
         )}
       </div>
 
-      {/* Table */}
+      {/* mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {filteredBookings.map((booking) => {
+           const displayStatus = (booking as any).displayStatus as keyof typeof statusConfig;
+           const statusInfo = statusConfig[displayStatus] || statusConfig.cancelled;
+           const isCancellable = (booking.status === 'pending_payment' || booking.status === 'confirmed') && displayStatus !== 'completed';
+
+           return (
+              <div 
+                key={booking._id || booking.id} 
+                className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3"
+              >
+                {/* Header: Room Name & Status */}
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-semibold text-slate-900 text-lg">{booking.room?.name || 'Room Deleted'}</h3>
+                    <span 
+                      className="inline-flex items-center gap-1 px-2 py-0.5 mt-1 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                      style={{ color: statusInfo.color.split(' ')[0].replace('text-', 'text-'), 
+                        borderColor: statusInfo.color.split(' ')[0].replace('text-', 'bg-').replace('800', '100') 
+                      }}
+                    >
+                      <statusInfo.icon className="w-3 h-3" />
+                      {statusInfo.label}
+                    </span>
+                  </div>
+                  
+                  {/* Action */}
+                  {isCancellable && (
+                      <button
+                        onClick={() => handleCancel(booking._id || booking.id)}
+                        className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                        title="Cancel Booking"
+                      >
+                        <XCircle className="w-5 h-5" />
+                      </button>
+                  )}
+                </div>
+
+                {/* Details */}
+                <div className="space-y-2 text-sm text-slate-600 border-t border-slate-100 pt-3 mt-1">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">User:</span>
+                    <span className="font-medium text-slate-800 truncate max-w-[150px]">{booking.user?.email || 'User Deleted'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Date:</span>
+                    <span className="font-medium text-slate-800">{formatDate(booking.date)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Time:</span>
+                    <span className="font-medium text-slate-800">{booking.startTime} - {booking.endTime}</span>
+                  </div>
+                  {booking.status === 'cancelled' && booking.cancelledAt && (
+                     <p className="text-xs text-red-500 italic text-right">
+                        Canceled on {formatDate(booking.cancelledAt)}
+                     </p>
+                  )}
+                </div>
+              </div>
+           )
+        })}
+        {filteredBookings.length === 0 && (
+            <div className="text-center p-8 text-slate-500 bg-white rounded-xl border border-slate-200">
+                No matching booking data found.
+            </div>
+        )}
+      </div>
+
+      {/* desktop */}
       <div 
-        className="rounded-lg border shadow-sm overflow-hidden"
+        className="hidden md:block rounded-lg border shadow-sm overflow-hidden"
         style={{
           backgroundColor: colors.bgPrimary,
           borderColor: colors.bgTertiary,
@@ -351,7 +420,7 @@ export default function ManageBookingsPage() {
               ) : (
                 <tr>
                   <td colSpan={6} className="text-center p-8" style={{ color: colors.textSecondary }}>
-                    No matching booking data found.
+                    There is no matching booking data.
                   </td>
                 </tr>
               )}

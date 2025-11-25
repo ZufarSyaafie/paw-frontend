@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getAuthToken } from "@/lib/auth";
 import { 
   Loader2, Users, Book, Box, 
-  DoorOpen, Hourglass, AlarmClock, Send, CalendarCheck, Bell
+  DoorOpen, Hourglass, AlarmClock, Send, CalendarCheck, Bell, ChevronDown, ChevronUp
 } from "lucide-react";
 import type { Loan, Room, Booking } from "@/types"; 
 import { colors } from "@/styles/colors";
@@ -115,47 +115,48 @@ export default function AdminDashboardPage() {
             <p className="ml-3 font-medium" style={{ color: colors.textSecondary }}>Loading stats...</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-6 mb-8">
+          
           <Link href="/admin/users">
             <StatCard 
-              title="Total Users" 
+              title={<span><span className="hidden xl:inline">Total </span>Users</span>} 
               value={stats?.users?.toString() ?? '...'} 
-              icon={<Users className="w-6 h-6" style={{ color: colors.primary }} />}
+              icon={<Users className="w-5 h-5" style={{ color: colors.primary }} />}
             />
           </Link>
           <Link href="/admin/books">
             <StatCard 
-              title="Total Books" 
+              title={<span><span className="hidden xl:inline">Total </span>Books</span>} 
               value={stats?.books?.toString() ?? '...'} 
-              icon={<Book className="w-6 h-6" style={{ color: colors.success }} />} 
+              icon={<Book className="w-5 h-5" style={{ color: colors.success }} />} 
             />
           </Link>
           <Link href="/admin/loans">
             <StatCard 
-              title="Total Loans" 
+              title={<span><span className="hidden xl:inline">Total </span>Loans</span>} 
               value={stats?.loans?.toString() ?? '...'} 
-              icon={<Box className="w-6 h-6" style={{ color: colors.info }} />} 
+              icon={<Box className="w-5 h-5" style={{ color: colors.info }} />} 
             />
           </Link>
           <Link href="/admin/rooms">
             <StatCard 
-              title="Available Rooms" 
+              title={<span><span className="hidden xl:inline">Available </span>Rooms</span>} 
               value={stats?.availableRooms?.toString() ?? '...'} 
-              icon={<DoorOpen className="w-6 h-6" style={{ color: colors.warning }} />} 
+              icon={<DoorOpen className="w-5 h-5" style={{ color: colors.warning }} />} 
             />
           </Link>
           <Link href="/admin/bookings">
             <StatCard 
-              title="Pending Bookings" 
+              title={<span><span className="hidden xl:inline">Pending </span>Bookings</span>} 
               value={stats?.pendingBookings?.toString() ?? '...'} 
-              icon={<Hourglass className="w-6 h-6" style={{ color: colors.danger }} />} 
+              icon={<Hourglass className="w-5 h-5" style={{ color: colors.danger }} />} 
             />
           </Link>
           <Link href="/admin/announcements">
             <StatCard
-              title="Announcements"
+              title="News"
               value={stats?.announcements?.toString() ?? '...'}
-              icon={<Bell className="w-6 h-6" style={{ color: colors.warning }} />}
+              icon={<Bell className="w-5 h-5" style={{ color: colors.warning }} />}
             />
           </Link>
         </div>
@@ -174,30 +175,32 @@ export default function AdminDashboardPage() {
   );
 }
 
-function StatCard({ title, value, icon }: { title: string, value: string, icon: React.ReactNode }) {
+function StatCard({ title, value, icon }: { title: React.ReactNode, value: string, icon: React.ReactNode }) {
   return (
     <div 
-      className="p-5 rounded-lg border shadow-sm flex flex-col justify-between h-32 transition-all hover:shadow-lg cursor-pointer"
+      className="flex flex-col justify-between p-5 rounded-xl border bg-white shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 cursor-pointer h-full"
       style={{
         backgroundColor: colors.bgPrimary,
         borderColor: colors.bgTertiary,
       }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.borderColor = colors.primary;
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.borderColor = colors.bgTertiary;
-      }}
     >
-      <div className="text-sm font-medium mb-2" style={{ color: colors.textSecondary }}>
-        {title}
-      </div>
-      <div className="flex items-center justify-between">
-        <div className="p-3 rounded-full flex-shrink-0" style={{ backgroundColor: colors.bgSecondary }}>
-          {icon}
+      <div className="mb-2">
+        <div className="text-xs font-bold uppercase tracking-wider text-slate-500 truncate">
+          {title}
         </div>
-        <div className="text-4xl font-bold ml-4" style={{ color: colors.textPrimary }}>
-          {value}
+      </div>
+
+      <div className="flex items-center justify-between mt-2">
+        <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 shrink-0">
+           <div className="flex items-center justify-center">
+              {icon}
+           </div>
+        </div>
+
+        <div className="text-right">
+          <p className="text-3xl font-bold text-slate-900 leading-none">
+            {value}
+          </p>
         </div>
       </div>
     </div>
@@ -205,6 +208,8 @@ function StatCard({ title, value, icon }: { title: string, value: string, icon: 
 }
 
 function UpcomingDueDatesPanel({ loans }: { loans: Loan[] }) {
+  const [isOpen, setIsOpen] = useState(true);
+  
   const upcomingLoans = useMemo(() => {
     return loans
       .filter(loan => 
@@ -245,53 +250,73 @@ function UpcomingDueDatesPanel({ loans }: { loans: Loan[] }) {
         borderColor: colors.bgTertiary
       }}
     >
-      <h3 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>
-        Upcoming Due Dates
-      </h3>
-      {upcomingLoans.length > 0 ? (
-        <ul className="space-y-3">
-          {upcomingLoans.map(loan => (
-            <li 
-              key={loan._id || loan.id} 
-              className="flex justify-between items-center p-3 rounded-lg border"
-              style={{
-                backgroundColor: isOverdue(loan.dueDate) ? `${colors.danger}10` : colors.bgSecondary,
-                borderColor: isOverdue(loan.dueDate) ? `${colors.danger}30` : colors.bgTertiary
-              }}
-            >
-              <div>
-                <p className="font-semibold" style={{ color: colors.textPrimary }}>
-                  {loan.book.title}
-                </p>
-                <p className="text-sm" style={{ color: colors.textSecondary }}>
-                  oleh {loan.book.author}
-                </p>
-              </div>
-              <div className="text-right flex-shrink-0 ml-4">
-                <p 
-                  className="font-semibold flex items-center gap-1.5"
-                  style={{ color: isOverdue(loan.dueDate) ? colors.danger : colors.textSecondary }}
-                >
-                  {isOverdue(loan.dueDate) ? <CalendarCheck className="w-4 h-4" /> : <AlarmClock className="w-4 h-4" />}
-                  {formatDate(loan.dueDate)}
-                </p>
-                <p className="text-sm" style={{ color: colors.textSecondary }}>
-                  {loan.user.email}
-                </p>
-              </div>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p style={{ color: colors.textSecondary }}>
-          There is no active loan that will be due soon.
-        </p>
-      )}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between mb-4 lg:cursor-default"
+      >
+        <h3 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
+          Upcoming Due Dates
+        </h3>
+        <div className="lg:hidden">
+          {isOpen ? (
+            <ChevronUp className="w-5 h-5" style={{ color: colors.textSecondary }} />
+          ) : (
+            <ChevronDown className="w-5 h-5" style={{ color: colors.textSecondary }} />
+          )}
+        </div>
+      </button>
+      
+      <div className={`${isOpen ? 'block' : 'hidden'} lg:block`}>
+        {upcomingLoans.length > 0 ? (
+          <ul className="space-y-3">
+            {upcomingLoans.map(loan => (
+              <li 
+                key={loan._id || loan.id} 
+                className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 rounded-lg border"
+                style={{
+                  backgroundColor: isOverdue(loan.dueDate) ? `${colors.danger}10` : colors.bgSecondary,
+                  borderColor: isOverdue(loan.dueDate) ? `${colors.danger}30` : colors.bgTertiary
+                }}
+              >
+                <div className="w-full sm:w-auto">
+                  <p className="font-semibold line-clamp-1" style={{ color: colors.textPrimary }}>
+                    {loan.book.title}
+                  </p>
+                  <p className="text-sm line-clamp-1" style={{ color: colors.textSecondary }}>
+                    oleh {loan.book.author}
+                  </p>
+                </div>
+                <div className="w-full sm:w-auto flex flex-row sm:flex-col justify-between sm:items-end items-center gap-2 sm:gap-0 border-t sm:border-t-0 border-slate-200 pt-2 sm:pt-0 mt-1 sm:mt-0">
+                  <p 
+                    className="font-semibold flex items-center gap-1.5 text-sm"
+                    style={{ color: isOverdue(loan.dueDate) ? colors.danger : colors.textSecondary }}
+                  >
+                    {isOverdue(loan.dueDate) ? <CalendarCheck className="w-4 h-4" /> : <AlarmClock className="w-4 h-4" />}
+                    {formatDate(loan.dueDate)}
+                  </p>
+                  <p 
+                    className="text-sm truncate max-w-[150px] sm:max-w-[160px]" 
+                    style={{ color: colors.textSecondary }}
+                    title={loan.user.email}
+                  >
+                    {loan.user.email}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p style={{ color: colors.textSecondary }}>
+            There is no active loan that will be due soon.
+          </p>
+        )}
+      </div>
     </div>
   );
 }
 
 function QuickAnnouncementPanel() {
+  const [isOpen, setIsOpen] = useState(true);
   const [announcementType, setAnnouncementType] = useState<"general" | "book">("general");
   const [title, setTitle] = useState("");
   const [bookTitle, setBookTitle] = useState("");
@@ -311,14 +336,12 @@ function QuickAnnouncementPanel() {
       let payload: any = {};
 
       if (announcementType === "book") {
-        // Book announcement
         payload = {
           title: title || `Buku Baru: ${bookTitle}`,
           bookTitle: bookTitle,
           message: message,
         };
       } else {
-        // General announcement
         payload = {
           title: title,
           bookTitle: title,
@@ -337,10 +360,10 @@ function QuickAnnouncementPanel() {
 
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || "Gagal mengirim pengumuman.");
+        throw new Error(errData.message || "Failed to send announcement.");
       }
 
-      setSuccess("Pengumuman berhasil dikirim ke semua user!");
+      setSuccess("Announcement successfully sent to all users!");
       setTitle("");
       setBookTitle("");
       setMessage("");
@@ -362,12 +385,23 @@ function QuickAnnouncementPanel() {
         borderColor: colors.bgTertiary,
       }}
     >
-      <h3 className="text-xl font-bold mb-4" style={{ color: colors.textPrimary }}>
-        Quick Announcement
-      </h3>
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between mb-4 lg:cursor-default"
+      >
+        <h3 className="text-xl font-bold" style={{ color: colors.textPrimary }}>
+          Quick Announcement
+        </h3>
+        <div className="lg:hidden">
+          {isOpen ? (
+            <ChevronUp className="w-5 h-5" style={{ color: colors.textSecondary }} />
+          ) : (
+            <ChevronDown className="w-5 h-5" style={{ color: colors.textSecondary }} />
+          )}
+        </div>
+      </button>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Tipe Pengumuman */}
+      <form onSubmit={handleSubmit} className={`space-y-4 ${isOpen ? 'block' : 'hidden'} lg:block`}>
         <div>
           <label className="text-sm font-medium block mb-2" style={{ color: colors.textPrimary }}>
             Announcement Type
@@ -400,7 +434,6 @@ function QuickAnnouncementPanel() {
           </div>
         </div>
 
-        {/* Conditional Fields */}
         {announcementType === "book" ? (
           <>
             <div>

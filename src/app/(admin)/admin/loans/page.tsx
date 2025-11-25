@@ -306,94 +306,226 @@ export default function ManageLoansPage() {
         </h1>
       </div>
 
-      <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mb-4">
-        <div className="relative flex-1 sm:flex-none sm:w-64">
-          <Search
-            className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
-            style={{ color: colors.textSecondary }}
-          />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by book title or user email..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+      {/* Filter Bar */}
+      <div className="py-6 space-y-4 mb-4">
+        <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0 flex-wrap">
+          {/* Search bar */}
+          <div className="relative flex-1 min-w-0 sm:flex-auto">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 flex-shrink-0"
+              style={{ color: colors.textSecondary }}
+            />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by book title or user email..."
+              className="w-full sm:w-64 pl-10 pr-4 py-2.5 rounded-lg border transition-all focus:outline-none focus:ring-2 text-sm"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                color: colors.textPrimary,
+                borderColor: colors.bgTertiary,
+              }}
+              onFocus={(e: any) => {
+                e.currentTarget.style.borderColor = colors.primary;
+                e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
+              }}
+              onBlur={(e: any) => {
+                e.currentTarget.style.borderColor = colors.bgTertiary;
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            />
+          </div>
+
+          {/* Filter button */}
+          <Button
+            onClick={() => setShowFilters(!showFilters)}
+            className="px-3 sm:px-4 py-2.5 rounded-lg font-semibold transition-all flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap text-sm"
+            style={{
+              backgroundColor: showFilters ? colors.primary : colors.bgPrimary,
+              color: showFilters ? "white" : colors.textSecondary,
+              border: `1px solid ${showFilters ? colors.primary : colors.bgTertiary}`,
+              minHeight: "42px",
+              padding: "10px 12px",
+            }}
+          >
+            <Filter className="w-5 h-5 flex-shrink-0" />
+            <span className="hidden sm:inline">Filters</span>
+          </Button>
+
+          {/* Clear button */}
+          {(filter !== "all" || search !== "") && (
+            <Button
+              onClick={() => { setSearch(""); setFilter("all"); }}
+              className="px-3 py-2.5 rounded-lg font-semibold flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap transition-all text-sm"
+              style={{
+                backgroundColor: colors.bgPrimary,
+                color: colors.danger,
+                border: `1px solid ${colors.danger}40`,
+                minHeight: "42px",
+                padding: "10px 12px",
+              }}
+            >
+              <X className="w-5 h-5 flex-shrink-0" />
+              <span className="hidden sm:inline">Clear</span>
+            </Button>
+          )}
+        </div>
+
+        {/* Filter Panel */}
+        {showFilters && (
+          <div
+            className="rounded-lg p-4 sm:p-6 border space-y-4"
             style={{
               backgroundColor: colors.bgPrimary,
-              color: colors.textPrimary,
               borderColor: colors.bgTertiary,
             }}
-            onFocus={(e: any) => {
-              e.currentTarget.style.borderColor = colors.primary;
-              e.currentTarget.style.boxShadow = `0 0 0 2px ${colors.primary}20`;
-            }}
-            onBlur={(e: any) => {
-              e.currentTarget.style.borderColor = colors.bgTertiary;
-              e.currentTarget.style.boxShadow = "none";
-            }}
-          />
-        </div>
-
-        <div className="hidden sm:flex gap-2 flex-shrink-0">
-          {["all", "borrowed", "returned", "late"].map((option) => (
-            <Button
-              key={option}
-              variant={filter === option ? "primary" : "secondary"}
-              className={`px-3 py-1.5 rounded-md text-sm font-semibold transition-colors ${
-                filter === option ? "bg-slate-900 text-white shadow-sm" : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50"
-              } capitalize`}
-              onClick={() => setFilter(option)}
-            >
-              {option}
-            </Button>
-          ))}
-        </div>
-
-        <div className="sm:hidden w-full">
-          <Button
-            variant="secondary"
-            className="w-full justify-center px-3 py-2.5 rounded-md text-sm font-semibold flex items-center gap-2"
-            onClick={() => setShowFilters(!showFilters)}
           >
-            <Filter className="w-4 h-4" />
-            <span>Filters</span>
-          </Button>
-        </div>
-      </div>
-
-      {showFilters && (
-        <div className="rounded-lg p-4 sm:p-6 border space-y-4" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
-          <div>
-            <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
-              Status
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {["all", "borrowed", "returned", "late"].map((status) => (
-                <button
-                  key={status}
-                  onClick={() => setFilter(status)}
-                  className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
-                  style={{
-                    backgroundColor: filter === status ? colors.primary : colors.bgSecondary,
-                    color: filter === status ? "white" : colors.textPrimary,
-                    borderColor: filter === status ? colors.primary : colors.bgTertiary,
-                    borderWidth: "1px",
-                  }}
-                >
-                  {status.replace("_", " ")}
-                </button>
-              ))}
+            <div>
+              <p className="text-sm uppercase mb-3 font-bold" style={{ color: colors.textPrimary }}>
+                Status
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {["all", "borrowed", "returned", "late"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setFilter(status)}
+                    className="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium transition-all border whitespace-nowrap capitalize"
+                    style={{
+                      backgroundColor: filter === status ? colors.primary : colors.bgSecondary,
+                      color: filter === status ? "white" : colors.textPrimary,
+                      borderColor: filter === status ? colors.primary : colors.bgTertiary,
+                      borderWidth: "1px",
+                    }}
+                  >
+                    {status.replace("_", " ")}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      <div className="rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
+      {/* mobile */}
+      <div className="grid grid-cols-1 gap-4 md:hidden">
+        {filteredLoans.length > 0 ? (
+            filteredLoans.map((loan) => {
+              const loanStatus = (loan.status as keyof typeof statusConfig) || "borrowed";
+              const statusInfo = statusConfig[loanStatus] ?? statusConfig.borrowed;
+              const StatusIcon = statusInfo.icon;
+              const isLate = loan.status === "late";
+              const isReturned = loan.status === "returned";
+              const isUnpaid = (loan as any).paymentStatus === 'unpaid';
+              const borrowedDate = loan.borrowDate ? new Date(loan.borrowDate as any) : calculateBorrowedAt((loan as any).dueDate);
+
+              const textStatus = statusInfo.color;
+              const bgStatus = `${statusInfo.color}20`; 
+
+              return (
+                <div 
+                    key={loan._id || (loan as any).id}
+                    className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col gap-3"
+                >
+                    <div className="flex justify-between items-start">
+                        <div className="flex items-start gap-3">
+                             <img 
+                                src={loan.book?.cover || "/placeholder.png"} 
+                                alt="cover"
+                                className="w-12 h-16 object-cover rounded border border-slate-100 shadow-sm flex-shrink-0"
+                            />
+                            <div>
+                                <h3 className="font-semibold text-slate-900 line-clamp-2 text-sm mb-1">
+                                    {loan.book?.title || "Book Deleted"}
+                                </h3>
+                                {/* BADGE STATUS mobile */}
+                                <span 
+                                    className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                                    style={{
+                                        backgroundColor: bgStatus,
+                                        color: textStatus,
+                                    }}
+                                >
+                                    <StatusIcon className="w-3 h-3" />
+                                    {statusInfo.label}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Info Detail */}
+                    <div className="space-y-2 text-xs text-slate-600 border-t border-slate-100 pt-3 mt-1">
+                        <div className="flex justify-between">
+                            <span className="text-slate-400">User:</span>
+                            <span className="font-medium text-slate-800 truncate max-w-[150px]">{loan.user?.email || "User Deleted"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-400">Borrowed:</span>
+                            <span className="font-medium text-slate-800">{formatDate(borrowedDate)}</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-slate-400">Due Date:</span>
+                            <span 
+                                className="font-medium"
+                                style={{ color: isLate ? colors.danger : colors.textPrimary, fontWeight: isLate ? "bold" : "normal" }}
+                            >
+                                {formatDate((loan as any).dueDate)}
+                            </span>
+                        </div>
+                        {/* Penalty Info */}
+                        {isLate && (loan as any).fineAmount ? (
+                            <div className="flex justify-between text-red-600 font-bold bg-red-50 p-1.5 rounded">
+                                <span>Penalty:</span>
+                                <span>Rp {(loan as any).fineAmount.toLocaleString("id-ID")}</span>
+                            </div>
+                        ) : null}
+                        
+                        {/* Unpaid Badge */}
+                        {isUnpaid && (
+                             <div className="flex justify-center mt-2">
+                                <span className="text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded border border-amber-200 w-full text-center">
+                                    PAYMENT PENDING (UNPAID)
+                                </span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Actions */}
+                    <div className="flex gap-2 mt-2">
+                        {!isReturned && !isUnpaid && (
+                            <button
+                                onClick={() => handleReturn(loan._id || (loan as any).id)}
+                                className="flex-1 py-2 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
+                            >
+                                <RotateCcw className="w-4 h-4" /> Verify Return
+                            </button>
+                        )}
+                        {isUnpaid && (
+                            <button
+                                onClick={() => handleCancel(loan._id || (loan as any).id)}
+                                className="flex-1 py-2 rounded-lg font-semibold text-xs flex items-center justify-center gap-2 bg-red-50 text-red-600 hover:bg-red-100 transition-colors"
+                            >
+                                <X className="w-4 h-4" /> Cancel Loan
+                            </button>
+                        )}
+                    </div>
+                </div>
+              );
+            })
+        ) : (
+            <div className="text-center p-8 text-slate-500 bg-white rounded-xl border border-slate-200">
+                No matching loan data found.
+            </div>
+        )}
+      </div>
+
+      {/* desktop */}
+      <div className="hidden md:block rounded-lg border shadow-sm overflow-hidden" style={{ backgroundColor: colors.bgPrimary, borderColor: colors.bgTertiary }}>
         <div className="overflow-x-auto">
           <table className="w-full min-w-[900px]">
             <thead className="border-b" style={{ backgroundColor: colors.bgSecondary, borderColor: colors.bgTertiary }}>
               <tr>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
-                  Book Title
+                  Book
                 </th>
                 <th className="text-left p-4 font-semibold" style={{ color: colors.textPrimary }}>
                   User (Email)
@@ -424,10 +556,27 @@ export default function ManageLoansPage() {
 
                   const borrowedDate = loan.borrowDate ? new Date(loan.borrowDate as any) : calculateBorrowedAt((loan as any).dueDate);
 
+                  const textStatus = statusInfo.color;
+                  const bgStatus = `${statusInfo.color}20`; 
+
                   return (
                     <tr key={loan._id || (loan as any).id} className="border-b transition-colors hover:opacity-80" style={{ borderColor: colors.bgTertiary, backgroundColor: colors.bgPrimary }}>
-                      <td className="p-4 align-top" style={{ color: colors.textPrimary }}>
-                        {loan.book?.title || "Book Deleted"}
+                      <td className="p-4 align-top">
+                        <div className="flex items-start gap-3">
+                            <img 
+                                src={loan.book?.cover || "/placeholder.png"} 
+                                alt="cover"
+                                className="w-10 h-14 object-cover rounded border border-slate-200 shadow-sm flex-shrink-0"
+                            />
+                            <div>
+                                <p className="font-medium line-clamp-2" style={{ color: colors.textPrimary }}>
+                                    {loan.book?.title || "Book Deleted"}
+                                </p>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    {loan.book?.author}
+                                </p>
+                            </div>
+                        </div>
                       </td>
                       <td className="p-4 align-top text-sm" style={{ color: colors.textPrimary }}>
                         {loan.user?.email || "User Deleted"}
@@ -443,8 +592,13 @@ export default function ManageLoansPage() {
                           </span>
                         ) : null}
                       </td>
+                      
+                      {/* STATUS BADGE */}
                       <td className="p-4 align-top">
-                        <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: statusInfo.color }}>
+                        <span 
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold" 
+                            style={{ backgroundColor: bgStatus, color: textStatus }}
+                        >
                           <StatusIcon className="w-4 h-4" />
                           {statusInfo.label}
                         </span>
