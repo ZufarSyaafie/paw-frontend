@@ -130,12 +130,16 @@ export default function BookDetailPage() {
     if (displayStatusKey !== "available") return
     setIsBorrowing(true)
     setError(null)
+
     const token = getAuthToken()
     if (!token) {
       alert("Authentication required.")
       setIsBorrowing(false)
       return
     }
+
+    const newTab = window.open('about:blank', '_blank')
+    
     try {
       const response = await fetch(`${API_URL}/api/books/${bookId}/borrow`, {
         method: "POST",
@@ -144,20 +148,31 @@ export default function BookDetailPage() {
           Authorization: `Bearer ${token}`,
         },
       })
+
       const data = await response.json().catch(() => ({}))
+
       if (!response.ok) {
+        newTab?.close()
         throw new Error(data?.message || "Borrowing failed.")
       }
+
       if (data?.payment_url) {
         // alert("Borrow request created. Redirecting to payment.")
         // window.open(data.payment_url, '_blank')
-        window.location.href = data.payment_url
+        // window.location.href = data.payment_url
+        if (newTab) {
+          newTab.location.href = data.payment_url
+        } else {
+          window.location.href = data.payment_url
+        }
       } else {
+        newTab?.close()
         alert("Borrow request successful. Checking loans page.")
         router.push("/loans")
       }
     } catch (err: any) {
       console.error(err)
+      newTab?.close()
       setError(err?.message || "Failed to process borrowing.")
       alert(`Borrow failed: ${err?.message || "Unknown error"}`)
     } finally {

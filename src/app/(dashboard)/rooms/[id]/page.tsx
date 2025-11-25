@@ -367,7 +367,8 @@ export default function RoomDetailPage() {
             <div className="space-y-3">
               <button
                 onClick={() => {
-                  if (paymentUrl) window.location.href = paymentUrl
+                  // if (paymentUrl) window.location.href = paymentUrl
+                  if (paymentUrl) window.open(paymentUrl, "_blank")
                 }}
                 className="w-full bg-cyan-500 hover:bg-cyan-600 text-white font-bold py-3 rounded-lg transition-all flex items-center justify-center gap-2"
               >

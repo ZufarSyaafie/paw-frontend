@@ -330,8 +330,8 @@ export default function BookingDetailPage() {
                     <Button
                       onClick={() => {
                         if (paymentUrl) {
-                          // window.open(paymentUrl, '_blank')
-                          window.location.href = paymentUrl
+                          window.open(paymentUrl, '_blank')
+                          // window.location.href = paymentUrl
                         } else {
                           alert('Error: Payment URL not found. Please try re-booking.')
                         }
