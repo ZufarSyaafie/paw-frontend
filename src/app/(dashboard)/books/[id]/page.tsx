@@ -149,8 +149,9 @@ export default function BookDetailPage() {
         throw new Error(data?.message || "Borrowing failed.")
       }
       if (data?.payment_url) {
-        alert("Borrow request created. Redirecting to payment.")
-        window.open(data.payment_url, '_blank')
+        // alert("Borrow request created. Redirecting to payment.")
+        // window.open(data.payment_url, '_blank')
+        window.location.href = data.payment_url
       } else {
         alert("Borrow request successful. Checking loans page.")
         router.push("/loans")
