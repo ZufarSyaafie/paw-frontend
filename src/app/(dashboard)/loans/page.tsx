@@ -202,10 +202,10 @@ export default function LoansPage() {
             >
               My Book Loans
             </h1>
-            <span className="hidden sm:inline px-2 py-1 text-[12px] font-medium rounded-md
+            {/* <span className="hidden sm:inline px-2 py-1 text-[12px] font-medium rounded-md
                              bg-cyan-50 text-cyan-700 border border-cyan-200">
               Loan History
-            </span>
+            </span> */}
           </div>
           <p className="mt-1 text-[12px] sm:text-sm text-gray-600 leading-snug">
             Manage and monitor your book loan history.
